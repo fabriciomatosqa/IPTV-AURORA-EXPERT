@@ -1,119 +1,141 @@
-/* import { TestBed } from '@angular/core/testing';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MockStore, provideMockStore } from '@ngrx/store/testing';
+﻿import { TestBed } from '@angular/core/testing';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslateService } from '@ngx-translate/core';
-import { invoke } from '@tauri-apps/api/core';
-import { MockModule, MockProviders } from 'ng-mocks';
-import { DataService } from './data.service';
+import { firstValueFrom } from 'rxjs';
+import { EpgProgram } from 'shared-interfaces';
 import { EpgService } from './epg.service';
 
-jest.mock('@tauri-apps/api/core', () => ({
-    invoke: jest.fn(),
-    isTauri: () => true,
-}));
-
-describe('EpgService', () => {
+describe('EpgService Electron contracts', () => {
     let service: EpgService;
-    let snackBar: MatSnackBar;
-    let store: MockStore;
-    let translateService: TranslateService;
-    let dispatchSpy: jest.SpyInstance;
+    let originalElectron: unknown;
+    let api: { fetchEpg: jest.Mock; getChannelPrograms: jest.Mock };
+    let snackBar: { open: jest.Mock };
+    const program: EpgProgram = {
+        channel: 'test-channel',
+        title: 'Authorized test program',
+        desc: null,
+        category: null,
+        start: '2026-11-06T10:00:00.000Z',
+        stop: '2026-11-06T11:00:00.000Z',
+    };
 
     beforeEach(() => {
+        originalElectron = (globalThis as any).electron;
+        api = {
+            fetchEpg: jest.fn().mockResolvedValue({ success: true }),
+            getChannelPrograms: jest.fn().mockResolvedValue([program]),
+        };
+        (globalThis as any).electron = api;
+        snackBar = { open: jest.fn() };
         TestBed.configureTestingModule({
             providers: [
                 EpgService,
-                MockProviders(DataService, TranslateService, MatSnackBar),
-                provideMockStore(),
+                { provide: MatSnackBar, useValue: snackBar },
+                {
+                    provide: TranslateService,
+                    useValue: { instant: (key: string) => key },
+                },
             ],
-            imports: [MockModule(MatSnackBarModule)],
         });
-
         service = TestBed.inject(EpgService);
-        snackBar = TestBed.inject(MatSnackBar);
-        store = TestBed.inject(MockStore);
-        translateService = TestBed.inject(TranslateService);
-
-        jest.spyOn(translateService, 'instant').mockImplementation(
-            (key) => key
-        );
-        jest.spyOn(snackBar, 'open');
-        dispatchSpy = jest.spyOn(store, 'dispatch');
-
-        // Suppress console.error during tests
-        jest.spyOn(console, 'error').mockImplementation(() => {});
-        jest.spyOn(console, 'log').mockImplementation(() => {});
     });
 
     afterEach(() => {
-        jest.clearAllMocks();
+        (globalThis as any).electron = originalElectron;
+        jest.restoreAllMocks();
     });
 
-    it('should create a service instance', () => {
-        expect(service).toBeTruthy();
+    it('ignores empty URLs and updates EPG availability after a successful fetch', async () => {
+        service.fetchEpg(['', '  ', 'https://example.test/epg.xml']);
+        await Promise.resolve();
+        expect(api.fetchEpg).toHaveBeenCalledWith([
+            'https://example.test/epg.xml',
+        ]);
+        expect(await firstValueFrom(service.epgAvailable$)).toBe(true);
+        service.fetchEpg(['', ' ']);
+        expect(api.fetchEpg).toHaveBeenCalledTimes(1);
     });
 
-    describe('fetchEpg', () => {
-        it('should show success notification on successful fetch', async () => {
-            (invoke as jest.Mock).mockResolvedValueOnce({});
-            service.fetchEpg(['http://example.com/epg.xml']);
+    it('reports backend failures and resets availability', async () => {
+        api.fetchEpg.mockResolvedValue({
+            success: false,
+            message: 'Invalid XMLTV',
+        });
+        service.fetchEpg(['https://example.test/epg.xml']);
+        await Promise.resolve();
+        expect(await firstValueFrom(service.epgAvailable$)).toBe(false);
+        expect(snackBar.open).toHaveBeenCalledWith(
+            'Invalid XMLTV',
+            'CLOSE',
+            expect.any(Object)
+        );
+    });
 
-            await new Promise((resolve) => setTimeout(resolve, 0));
-            expect(snackBar.open).toHaveBeenCalledWith(
-                'EPG.FETCH_SUCCESS',
-                null,
-                expect.any(Object)
+    it('normalizes channel program dates and clears stale programs after errors', async () => {
+        jest.spyOn(console, 'error').mockImplementation(() => undefined);
+        api.getChannelPrograms.mockResolvedValue([
+            { ...program, start: '2026-11-06T07:00:00-03:00' },
+        ]);
+        service.getChannelPrograms('test-channel');
+        await Promise.resolve();
+        expect(await firstValueFrom(service.currentEpgPrograms$)).toEqual([
+            program,
+        ]);
+        expect(await firstValueFrom(service.epgAvailable$)).toBe(true);
+        api.getChannelPrograms.mockRejectedValue(new Error('Offline'));
+        service.getChannelPrograms('test-channel');
+        await Promise.resolve();
+        expect(await firstValueFrom(service.currentEpgPrograms$)).toEqual([]);
+        expect(await firstValueFrom(service.epgAvailable$)).toBe(false);
+    });
+
+    it('caches current programs for 60 seconds and supports explicit invalidation', async () => {
+        const now = new Date('2026-11-06T10:30:00Z');
+        jest.useFakeTimers({ now });
+        try {
+            expect(
+                await firstValueFrom(
+                    service.getCurrentProgramForChannel('test-channel')
+                )
+            ).toEqual(program);
+            await firstValueFrom(
+                service.getCurrentProgramForChannel('test-channel')
             );
-        });
-
-        it('should show error notification on fetch failure', async () => {
-            (invoke as jest.Mock).mockRejectedValueOnce(new Error('Failed'));
-            service.fetchEpg(['http://example.com/epg.xml']);
-
-            await new Promise((resolve) => setTimeout(resolve, 0));
-            expect(snackBar.open).toHaveBeenCalledWith(
-                'EPG.ERROR',
-                'CLOSE',
-                expect.any(Object)
+            expect(api.getChannelPrograms).toHaveBeenCalledTimes(1);
+            jest.setSystemTime(new Date(now.getTime() + 60001));
+            await firstValueFrom(
+                service.getCurrentProgramForChannel('test-channel')
             );
-        });
+            expect(api.getChannelPrograms).toHaveBeenCalledTimes(2);
+            service.clearCache();
+            await firstValueFrom(
+                service.getCurrentProgramForChannel('test-channel')
+            );
+            expect(api.getChannelPrograms).toHaveBeenCalledTimes(3);
+        } finally {
+            jest.useRealTimers();
+        }
     });
 
-    describe('getChannelPrograms', () => {
-        it('should update programs and set EPG flag to true when programs exist', (done) => {
-            const mockPrograms = [
-                {
-                    start: new Date().toISOString(),
-                    stop: new Date().toISOString(),
-                    title: 'Test',
-                },
-            ];
-            (invoke as jest.Mock).mockResolvedValueOnce(mockPrograms);
-
-            service.getChannelPrograms('test-channel');
-
-            service.currentEpgPrograms$.subscribe((programs) => {
-                expect(programs).toHaveLength(1);
-                expect(dispatchSpy).toHaveBeenCalledWith(
-                    expect.objectContaining({ value: true })
-                );
-                done();
-            });
-        });
-
-        it('should set EPG flag to false when no programs found', (done) => {
-            (invoke as jest.Mock).mockResolvedValueOnce([]);
-
-            service.getChannelPrograms('test-channel');
-
-            service.currentEpgPrograms$.subscribe((programs) => {
-                expect(programs).toHaveLength(0);
-                expect(dispatchSpy).toHaveBeenCalledWith(
-                    expect.objectContaining({ value: false })
-                );
-                done();
-            });
-        });
+    it('keeps successful channels when one channel fails in a batch', async () => {
+        jest.spyOn(console, 'error').mockImplementation(() => undefined);
+        jest.useFakeTimers({ now: new Date('2026-11-06T10:30:00Z') });
+        try {
+            api.getChannelPrograms.mockImplementation((channelId: string) =>
+                channelId === 'offline'
+                    ? Promise.reject(new Error('Offline'))
+                    : Promise.resolve([program])
+            );
+            const result = await firstValueFrom(
+                service.getCurrentProgramsForChannels([
+                    'test-channel',
+                    'offline',
+                ])
+            );
+            expect(result.get('test-channel')).toEqual(program);
+            expect(result.get('offline')).toBeNull();
+        } finally {
+            jest.useRealTimers();
+        }
     });
 });
- */

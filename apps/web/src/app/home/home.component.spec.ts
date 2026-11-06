@@ -1,77 +1,53 @@
-import { CommonModule } from '@angular/common';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { MatDialogModule } from '@angular/material/dialog';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { ActivatedRoute, RouterModule } from '@angular/router';
-import { Actions } from '@ngrx/effects';
-import { provideMockActions } from '@ngrx/effects/testing';
-import { MockStore, provideMockStore } from '@ngrx/store/testing';
-import { TranslateModule } from '@ngx-translate/core';
-import { MockComponent, MockModule, MockProvider } from 'ng-mocks';
-import { Observable } from 'rxjs';
-import { DataService } from '../../../../../libs/services/src/lib/data.service';
-import { RecentPlaylistsComponent } from '../../../../../libs/ui/components/src/lib/recent-playlists/recent-playlists.component';
-import { ElectronServiceStub } from '../services/electron.service.stub';
+﻿import { TestBed } from '@angular/core/testing';
+import { MatDialog } from '@angular/material/dialog';
 import { HomeComponent } from './home.component';
+import { AddPlaylistDialogComponent } from '../shared/components/add-playlist/add-playlist-dialog.component';
 
 describe('HomeComponent', () => {
     let component: HomeComponent;
-    let fixture: ComponentFixture<HomeComponent>;
-    let electronService: DataService;
-    let mockStore: MockStore;
-    const actions$ = new Observable<Actions>();
+    const dialog = { open: jest.fn() };
 
     beforeEach(() => {
+        dialog.open.mockClear();
         TestBed.configureTestingModule({
-            imports: [
-                HomeComponent,
-                CommonModule,
-                MockComponent(RecentPlaylistsComponent),
-                MockModule(MatProgressBarModule),
-                MockModule(MatSnackBarModule),
-                TranslateModule.forRoot(),
-                MockModule(RouterModule),
-                MockModule(MatDialogModule),
-            ],
-            providers: [
-                MockProvider(ActivatedRoute, {
-                    snapshot: { component: '' } as any,
-                }),
-                MockProvider(MatSnackBar),
-                { provide: DataService, useClass: ElectronServiceStub },
-                provideMockStore(),
-                provideMockActions(actions$),
-            ],
-        }).compileComponents();
+            providers: [{ provide: MatDialog, useValue: dialog }],
+        });
+        component = TestBed.runInInjectionContext(() => new HomeComponent());
     });
 
-    beforeEach(() => {
-        fixture = TestBed.createComponent(HomeComponent);
-        component = fixture.componentInstance;
-        electronService = TestBed.inject(DataService);
-
-        mockStore = TestBed.inject(MockStore);
-        mockStore.setState({});
+    it('updates the search query used to filter playlists', () => {
+        component.onSearchQueryChange('Aurora');
+        expect(component.searchQuery()).toBe('Aurora');
+        component.onSearchQueryChange('');
+        expect(component.searchQuery()).toBe('');
     });
 
-    it('should create', () => {
-        expect(component).toBeTruthy();
+    it('opens the selected playlist import flow', () => {
+        component.onAddPlaylist('url');
+        expect(dialog.open).toHaveBeenCalledWith(AddPlaylistDialogComponent, {
+            width: '600px',
+            data: { type: 'url' },
+        });
     });
 
-    it('should set IPC event listeners', () => {
-        jest.spyOn(electronService, 'listenOn');
-        component.setRendererListeners();
-        expect(electronService.listenOn).toHaveBeenCalledTimes(
-            component.commandsList.length
+    it('opens global search and recent content with their distinct contexts', () => {
+        component.openGlobalSearch();
+        expect(dialog.open).toHaveBeenLastCalledWith(
+            expect.any(Function),
+            expect.objectContaining({
+                data: { isGlobalSearch: true },
+                width: '100%',
+                height: '100%',
+            })
         );
-    });
-
-    it('should remove all ipc listeners on destroy', () => {
-        jest.spyOn(electronService, 'removeAllListeners');
-        component.ngOnDestroy();
-        expect(electronService.removeAllListeners).toHaveBeenCalledTimes(
-            component.commandsList.length
+        component.openGlobalRecent();
+        expect(dialog.open).toHaveBeenLastCalledWith(
+            expect.any(Function),
+            expect.objectContaining({
+                data: { isGlobal: true },
+                hasBackdrop: true,
+                disableClose: false,
+            })
         );
     });
 });
