@@ -45,9 +45,7 @@ interface PlaybackError {
     encapsulation: ViewEncapsulation.None,
     standalone: true,
 })
-export class VjsPlayerComponent
-    implements AfterViewInit, OnChanges, OnDestroy
-{
+export class VjsPlayerComponent implements AfterViewInit, OnChanges, OnDestroy {
     /** DOM-element reference */
     @ViewChild('target') target!: ElementRef<Element>;
     /** Options of VideoJs player */
@@ -94,8 +92,10 @@ export class VjsPlayerComponent
         // Any HTTPS IPTV provider URL (potential SSL issues)
         if (
             sourceUrl.startsWith('https://') &&
-            (sourceUrl.includes('cdn') || sourceUrl.includes('vod') ||
-             sourceUrl.includes('stream') || sourceUrl.includes('live'))
+            (sourceUrl.includes('cdn') ||
+                sourceUrl.includes('vod') ||
+                sourceUrl.includes('stream') ||
+                sourceUrl.includes('live'))
         ) {
             return true;
         }
@@ -127,7 +127,10 @@ export class VjsPlayerComponent
         const codeStr = errorCode ? ` (Code: ${errorCode})` : '';
         const typeStr = sourceType ? ` | Type: ${sourceType}` : '';
 
-        if (errorCode === 4 || errorMessage?.includes('MEDIA_ERR_SRC_NOT_SUPPORTED')) {
+        if (
+            errorCode === 4 ||
+            errorMessage?.includes('MEDIA_ERR_SRC_NOT_SUPPORTED')
+        ) {
             console.error(
                 `${baseInfo}${codeStr} - Format not supported or source unreachable${typeStr}. ` +
                     'This could indicate: (1) SSL/TLS certificate issue, (2) Network unreachable, (3) Format incompatibility.'
@@ -169,9 +172,16 @@ export class VjsPlayerComponent
         console.group('[VjsPlayer] Playback Error Summary');
         console.log(`Total errors encountered: ${this.playbackErrors.length}`);
 
-        const stages = ['initial', 'type-fallback', 'proxy-fallback', 'final'] as const;
+        const stages = [
+            'initial',
+            'type-fallback',
+            'proxy-fallback',
+            'final',
+        ] as const;
         stages.forEach((stage) => {
-            const stageErrors = this.playbackErrors.filter((e) => e.stage === stage);
+            const stageErrors = this.playbackErrors.filter(
+                (e) => e.stage === stage
+            );
             if (stageErrors.length > 0) {
                 console.log(
                     `  ${stage}: ${stageErrors.length} error(s) - ` +
@@ -181,7 +191,9 @@ export class VjsPlayerComponent
         });
 
         if (this.currentSourceUrl) {
-            console.log(`Last attempted source: ${this.maskUrl(this.currentSourceUrl)}`);
+            console.log(
+                `Last attempted source: ${this.maskUrl(this.currentSourceUrl)}`
+            );
         }
 
         console.log(
@@ -200,7 +212,9 @@ export class VjsPlayerComponent
             return;
         }
 
-        const playerElement = this.target?.nativeElement as HTMLElement | undefined;
+        const playerElement = this.target?.nativeElement as
+            | HTMLElement
+            | undefined;
         if (!playerElement?.isConnected) {
             return;
         }
@@ -247,7 +261,10 @@ export class VjsPlayerComponent
                 this.player.on('volumechange', () => {
                     const currentVolume = this.player.volume();
                     if (typeof currentVolume === 'number') {
-                        localStorage.setItem('volume', currentVolume.toString());
+                        localStorage.setItem(
+                            'volume',
+                            currentVolume.toString()
+                        );
                     }
                 });
 
@@ -284,12 +301,17 @@ export class VjsPlayerComponent
         this.pendingSources = null;
 
         try {
-            const playerWithQualitySelector = this.player as ReturnType<typeof videoJs> & {
+            const playerWithQualitySelector = this.player as ReturnType<
+                typeof videoJs
+            > & {
                 qualitySelectorHls?: (options: {
                     displayCurrentQuality: boolean;
                 }) => void;
             };
-            if (typeof playerWithQualitySelector.qualitySelectorHls === 'function') {
+            if (
+                typeof playerWithQualitySelector.qualitySelectorHls ===
+                'function'
+            ) {
                 playerWithQualitySelector.qualitySelectorHls({
                     displayCurrentQuality: true,
                 });
@@ -298,7 +320,9 @@ export class VjsPlayerComponent
             console.warn('qualitySelectorHls plugin failed to initialize:', e);
         }
         try {
-            const playerWithAspectPanel = this.player as ReturnType<typeof videoJs> & {
+            const playerWithAspectPanel = this.player as ReturnType<
+                typeof videoJs
+            > & {
                 aspectRatioPanel?: () => void;
             };
             if (typeof playerWithAspectPanel.aspectRatioPanel === 'function') {
@@ -349,8 +373,15 @@ export class VjsPlayerComponent
         for (let i = existing.length - 1; i >= 0; i--) {
             const t = existing[i];
             const trackWithSrc = t as TextTrack & { src?: string };
-            if (trackWithSrc.src && (t.kind === 'subtitles' || t.kind === 'captions')) {
-                this.player.removeRemoteTextTrack(t as unknown as Parameters<typeof this.player.removeRemoteTextTrack>[0]);
+            if (
+                trackWithSrc.src &&
+                (t.kind === 'subtitles' || t.kind === 'captions')
+            ) {
+                this.player.removeRemoteTextTrack(
+                    t as unknown as Parameters<
+                        typeof this.player.removeRemoteTextTrack
+                    >[0]
+                );
             }
         }
         this.player.addRemoteTextTrack(
@@ -371,7 +402,9 @@ export class VjsPlayerComponent
         for (let i = 0; i < tracks.length; i++) {
             const t = tracks[i];
             if (t.kind === 'subtitles' || t.kind === 'captions') {
-                (t as unknown as { mode: string }).mode = this.showCaptions ? 'showing' : 'hidden';
+                (t as unknown as { mode: string }).mode = this.showCaptions
+                    ? 'showing'
+                    : 'hidden';
             }
         }
     }
@@ -413,7 +446,10 @@ export class VjsPlayerComponent
 
         const nextSourcesKey = this.getSourcesKey(normalizedSources);
         if (this.lastAppliedSourcesKey === nextSourcesKey) {
-            console.log('Source already applied, skipping duplicate:', nextSourcesKey);
+            console.log(
+                'Source already applied, skipping duplicate:',
+                nextSourcesKey
+            );
             return;
         }
         this.lastAppliedSourcesKey = nextSourcesKey;
@@ -444,44 +480,54 @@ export class VjsPlayerComponent
                     { url: this.maskUrl(source.src) }
                 );
                 // Build proxy URL immediately and use it as the primary source
-                void this.buildProxyUrl(source.src, source.type).then((proxiedUrl) => {
-                    if (proxiedUrl) {
-                        console.log('[VjsPlayer] Using proxy as primary source for IPTV stream');
-                        // Pass the resolved MIME type so the browser doesn't reject the
-                        // proxy URL immediately (it has no file extension to sniff from).
-                        const isAudioTranscodedProxy =
-                            proxiedUrl.includes('transcode=audio');
-                        const isFullTranscodedProxy = proxiedUrl.includes('transcode=1');
-                        const resolvedType = isAudioTranscodedProxy
-                            ? 'video/mp4'
-                            : isFullTranscodedProxy
-                              ? 'video/mp4'
-                              : source.type || this.inferMimeType(source.src);
-                        // Apply proxy source directly to avoid recursive setPlayerSource()
-                        // calls toggling keys between original/proxy URLs.
-                        this.setPlayerSourceDirect(
-                            [{ src: proxiedUrl, type: resolvedType }],
-                            true,  // Allow type fallback for proxy responses
-                            true   // Allow one-shot proxy->transcode retry on failure
-                        );
-                    } else {
-                        console.warn(
-                            '[VjsPlayer] Proxy not available - falling back to direct source'
-                        );
-                        // Proxy not available, try direct with full fallback chain
-                        this.setPlayerSourceDirect(
-                            normalizedSources,
-                            allowTypeFallback,
-                            allowProxyFallback
-                        );
+                void this.buildProxyUrl(source.src, source.type).then(
+                    (proxiedUrl) => {
+                        if (proxiedUrl) {
+                            console.log(
+                                '[VjsPlayer] Using proxy as primary source for IPTV stream'
+                            );
+                            // Pass the resolved MIME type so the browser doesn't reject the
+                            // proxy URL immediately (it has no file extension to sniff from).
+                            const isAudioTranscodedProxy =
+                                proxiedUrl.includes('transcode=audio');
+                            const isFullTranscodedProxy =
+                                proxiedUrl.includes('transcode=1');
+                            const resolvedType = isAudioTranscodedProxy
+                                ? 'video/mp4'
+                                : isFullTranscodedProxy
+                                  ? 'video/mp4'
+                                  : source.type ||
+                                    this.inferMimeType(source.src);
+                            // Apply proxy source directly to avoid recursive setPlayerSource()
+                            // calls toggling keys between original/proxy URLs.
+                            this.setPlayerSourceDirect(
+                                [{ src: proxiedUrl, type: resolvedType }],
+                                true, // Allow type fallback for proxy responses
+                                true // Allow one-shot proxy->transcode retry on failure
+                            );
+                        } else {
+                            console.warn(
+                                '[VjsPlayer] Proxy not available - falling back to direct source'
+                            );
+                            // Proxy not available, try direct with full fallback chain
+                            this.setPlayerSourceDirect(
+                                normalizedSources,
+                                allowTypeFallback,
+                                allowProxyFallback
+                            );
+                        }
                     }
-                });
+                );
                 return;
             }
         }
 
         // Standard playback for local/direct sources
-        this.setPlayerSourceDirect(normalizedSources, allowTypeFallback, allowProxyFallback);
+        this.setPlayerSourceDirect(
+            normalizedSources,
+            allowTypeFallback,
+            allowProxyFallback
+        );
     }
 
     /**
@@ -514,8 +560,7 @@ export class VjsPlayerComponent
             const onSourceError = () => {
                 const currentError = this.player?.error();
                 if (currentError?.code === 4) {
-                    const errorMsg =
-                        `Media error ${currentError.code}: ${currentError.message || 'Format not supported'}`;
+                    const errorMsg = `Media error ${currentError.code}: ${currentError.message || 'Format not supported'}`;
                     this.logPlaybackError(
                         'initial',
                         typedSource.src,
@@ -553,7 +598,9 @@ export class VjsPlayerComponent
                         return;
                     }
 
-                    const targetUrl = new URL(directSource.src).searchParams.get('url');
+                    const targetUrl = new URL(
+                        directSource.src
+                    ).searchParams.get('url');
                     if (!targetUrl) {
                         return;
                     }
@@ -638,14 +685,11 @@ export class VjsPlayerComponent
                         return;
                     }
 
-                    console.log(
-                        '[VjsPlayer] Attempting proxy fallback...',
-                        {
-                            original: this.maskUrl(directSource.src),
-                            proxied: this.maskUrl(proxiedUrl),
-                            type: directSource.type,
-                        }
-                    );
+                    console.log('[VjsPlayer] Attempting proxy fallback...', {
+                        original: this.maskUrl(directSource.src),
+                        proxied: this.maskUrl(proxiedUrl),
+                        type: directSource.type,
+                    });
                     this.setPlayerSource(
                         { src: proxiedUrl, type: directSource.type },
                         true,
@@ -674,7 +718,9 @@ export class VjsPlayerComponent
 
         this.player.pause();
         console.log('Calling player.src() with:', normalizedSources);
-        this.player.src(normalizedSources as Parameters<typeof this.player.src>[0]);
+        this.player.src(
+            normalizedSources as Parameters<typeof this.player.src>[0]
+        );
         this.player.load();
 
         if (this.subtitleUrl) {
@@ -684,14 +730,12 @@ export class VjsPlayerComponent
         const playPromise = this.player.play();
         if (playPromise && typeof playPromise.catch === 'function') {
             playPromise.catch((err: unknown) => {
-                if (
-                    err instanceof DOMException &&
-                    err.name === 'AbortError'
-                ) {
+                if (err instanceof DOMException && err.name === 'AbortError') {
                     return;
                 }
 
-                const errorMsg = err instanceof Error ? err.message : String(err);
+                const errorMsg =
+                    err instanceof Error ? err.message : String(err);
                 const directSource = normalizedSources[0];
 
                 if (
@@ -753,7 +797,10 @@ export class VjsPlayerComponent
             const forceAudioTranscode = options?.forceAudioTranscode === true;
             const preferAudioTranscode =
                 forceAudioTranscode ||
-                this.shouldPreferAudioTranscodeProxySource(sourceUrl, sourceType);
+                this.shouldPreferAudioTranscodeProxySource(
+                    sourceUrl,
+                    sourceType
+                );
 
             if (preferAudioTranscode) {
                 params.set('transcode', 'audio');
@@ -773,7 +820,7 @@ export class VjsPlayerComponent
                         : '[VjsPlayer] Proxy will transcode (HEVC codec not supported)'
                 );
             }
-            
+
             const proxyUrl = `http://127.0.0.1:${port}/stream?${params.toString()}`;
             console.log(
                 '[VjsPlayer] Built proxy URL successfully',
@@ -816,7 +863,8 @@ export class VjsPlayerComponent
 
         const normalizedType = sourceType?.toLowerCase() ?? '';
         const isMp4Container =
-            /\.(mp4|m4v)(\?|$)/i.test(sourceUrl) || normalizedType.includes('mp4');
+            /\.(mp4|m4v)(\?|$)/i.test(sourceUrl) ||
+            normalizedType.includes('mp4');
 
         // Do not transcode MP4/M4V by default. Use passthrough first and only
         // force transcode when passthrough playback actually fails.
@@ -866,8 +914,6 @@ export class VjsPlayerComponent
         );
     }
 
-
-
     /**
      * Begin sampling audio levels from the underlying <video> element. After ~4s
      * of strictly silent samples, retry the current source through the proxy
@@ -896,7 +942,7 @@ export class VjsPlayerComponent
             ?.querySelector?.('video') as HTMLVideoElement | null;
         if (!videoEl) return;
 
-        // Tear down any previous Web Audio graph before creating a new one.
+        // Reuse the graph while Video.js retains the same media element.
         this.stopSilenceCheck();
         this.silenceCheckAttemptedFor = sourceUrl;
 
@@ -904,21 +950,29 @@ export class VjsPlayerComponent
             const Ctor =
                 (window as unknown as { AudioContext?: typeof AudioContext })
                     .AudioContext ??
-                (window as unknown as { webkitAudioContext?: typeof AudioContext })
-                    .webkitAudioContext;
+                (
+                    window as unknown as {
+                        webkitAudioContext?: typeof AudioContext;
+                    }
+                ).webkitAudioContext;
             if (!Ctor) return;
 
-            const ctx = new Ctor();
-            const src = ctx.createMediaElementSource(videoEl);
-            const analyser = ctx.createAnalyser();
-            analyser.fftSize = 256;
-            src.connect(analyser);
-            // Keep audio routed to speakers (MediaElementSource hijacks output otherwise).
-            analyser.connect(ctx.destination);
-
-            this.audioContext = ctx;
-            this.audioMediaSource = src;
-            this.audioAnalyser = analyser;
+            if (!this.audioContext || !this.audioAnalyser) {
+                const ctx = new Ctor();
+                this.audioContext = ctx;
+                const src = ctx.createMediaElementSource(videoEl);
+                const analyser = ctx.createAnalyser();
+                analyser.fftSize = 256;
+                src.connect(analyser);
+                // Keep audio routed to speakers (MediaElementSource hijacks output otherwise).
+                analyser.connect(ctx.destination);
+                this.audioMediaSource = src;
+                this.audioAnalyser = analyser;
+            }
+            if (this.audioContext.state === 'suspended') {
+                void this.audioContext.resume().catch(() => undefined);
+            }
+            const analyser = this.audioAnalyser;
             this.silenceSamples = [];
 
             const buffer = new Uint8Array(analyser.frequencyBinCount);
@@ -999,7 +1053,12 @@ export class VjsPlayerComponent
             const transcodedUrl = await this.buildProxyUrl(target, undefined, {
                 forceAudioTranscode: true,
             });
-            if (!transcodedUrl) return;
+            if (
+                !transcodedUrl ||
+                this.isDestroyed ||
+                this.currentSourceUrl !== sourceUrl
+            )
+                return;
             this.setPlayerSource(
                 { src: transcodedUrl, type: 'video/mp4' },
                 true,

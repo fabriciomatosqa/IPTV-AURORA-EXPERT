@@ -156,18 +156,24 @@ export class ArtPlayerComponent implements OnInit, OnDestroy, OnChanges {
                     this.currentPlaybackUrl = url;
                     video.crossOrigin = 'anonymous';
                     // Proxy transcode streams are fragmented MP4, not HLS manifests.
-                    if (url.includes('transcode=audio') || url.includes('transcode=1')) {
+                    if (
+                        url.includes('transcode=audio') ||
+                        url.includes('transcode=1')
+                    ) {
                         if (this.hls) {
                             this.hls.destroy();
                             this.hls = null;
                         }
                         video.src = url;
-                        void video.play().then(() => {
-                            this.markPlaybackStarted();
-                            this.startSilenceCheck();
-                        }).catch(() => {
-                            // Browser autoplay policies may block this; user interaction can still start playback.
-                        });
+                        void video
+                            .play()
+                            .then(() => {
+                                this.markPlaybackStarted();
+                                this.startSilenceCheck();
+                            })
+                            .catch(() => {
+                                // Browser autoplay policies may block this; user interaction can still start playback.
+                            });
                         return;
                     }
 
@@ -182,24 +188,33 @@ export class ArtPlayerComponent implements OnInit, OnDestroy, OnChanges {
                         this.hls.loadSource(url);
                         this.hls.attachMedia(video);
                         this.hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                            void video.play().then(() => {
-                                this.markPlaybackStarted();
-                                this.startSilenceCheck();
-                            }).catch(() => {
-                                // Browser autoplay policies may block this; user interaction can still start playback.
-                            });
+                            void video
+                                .play()
+                                .then(() => {
+                                    this.markPlaybackStarted();
+                                    this.startSilenceCheck();
+                                })
+                                .catch(() => {
+                                    // Browser autoplay policies may block this; user interaction can still start playback.
+                                });
                         });
                         this.hls.on(Hls.Events.ERROR, (_evt, data) => {
                             if (!data.fatal) {
                                 return;
                             }
 
-                            if (data.type === Hls.ErrorTypes.MEDIA_ERROR && this.hls) {
+                            if (
+                                data.type === Hls.ErrorTypes.MEDIA_ERROR &&
+                                this.hls
+                            ) {
                                 this.hls.recoverMediaError();
                                 return;
                             }
 
-                            if (data.type === Hls.ErrorTypes.NETWORK_ERROR && this.hls) {
+                            if (
+                                data.type === Hls.ErrorTypes.NETWORK_ERROR &&
+                                this.hls
+                            ) {
                                 this.hls.startLoad();
                             }
 
@@ -215,12 +230,15 @@ export class ArtPlayerComponent implements OnInit, OnDestroy, OnChanges {
                         video.canPlayType('application/vnd.apple.mpegurl')
                     ) {
                         video.src = url;
-                        void video.play().then(() => {
-                            this.markPlaybackStarted();
-                            this.startSilenceCheck();
-                        }).catch(() => {
-                            // Browser autoplay policies may block this; user interaction can still start playback.
-                        });
+                        void video
+                            .play()
+                            .then(() => {
+                                this.markPlaybackStarted();
+                                this.startSilenceCheck();
+                            })
+                            .catch(() => {
+                                // Browser autoplay policies may block this; user interaction can still start playback.
+                            });
                     } else {
                         this.playbackError.emit();
                     }
@@ -309,20 +327,30 @@ export class ArtPlayerComponent implements OnInit, OnDestroy, OnChanges {
             const Ctor =
                 (window as unknown as { AudioContext?: typeof AudioContext })
                     .AudioContext ??
-                (window as unknown as { webkitAudioContext?: typeof AudioContext })
-                    .webkitAudioContext;
+                (
+                    window as unknown as {
+                        webkitAudioContext?: typeof AudioContext;
+                    }
+                ).webkitAudioContext;
             if (!Ctor) return;
 
-            const ctx = new Ctor();
-            const mediaSource = ctx.createMediaElementSource(video);
-            const analyser = ctx.createAnalyser();
-            analyser.fftSize = 256;
-            mediaSource.connect(analyser);
-            analyser.connect(ctx.destination);
-
-            this.audioContext = ctx;
-            this.audioMediaSource = mediaSource;
-            this.audioAnalyser = analyser;
+            // A transcode retry changes the URL on the same <video>. Creating
+            // another MediaElementSource for that element would throw.
+            if (!this.audioContext || !this.audioAnalyser) {
+                const ctx = new Ctor();
+                this.audioContext = ctx;
+                const mediaSource = ctx.createMediaElementSource(video);
+                const analyser = ctx.createAnalyser();
+                analyser.fftSize = 256;
+                mediaSource.connect(analyser);
+                analyser.connect(ctx.destination);
+                this.audioMediaSource = mediaSource;
+                this.audioAnalyser = analyser;
+            }
+            if (this.audioContext.state === 'suspended') {
+                void this.audioContext.resume().catch(() => undefined);
+            }
+            const analyser = this.audioAnalyser;
             this.silenceSamples = [];
 
             const buffer = new Uint8Array(analyser.frequencyBinCount);
@@ -498,8 +526,12 @@ export class ArtPlayerComponent implements OnInit, OnDestroy, OnChanges {
                 return null;
             }
 
-            const current = Number.parseInt(parsed.searchParams.get('aidx') ?? '0', 10);
-            const currentSafe = Number.isInteger(current) && current >= 0 ? current : 0;
+            const current = Number.parseInt(
+                parsed.searchParams.get('aidx') ?? '0',
+                10
+            );
+            const currentSafe =
+                Number.isInteger(current) && current >= 0 ? current : 0;
             const next = currentSafe + 1;
             if (next > ArtPlayerComponent.MAX_AUDIO_TRACK_INDEX) {
                 return null;
@@ -601,8 +633,9 @@ export class ArtPlayerComponent implements OnInit, OnDestroy, OnChanges {
             return url;
         }
 
-        const proxyBase = (globalThis as { __iptvmateProxyBase?: string })
-            .__iptvmateProxyBase || ArtPlayerComponent.PWA_PROXY_BASE;
+        const proxyBase =
+            (globalThis as { __iptvmateProxyBase?: string })
+                .__iptvmateProxyBase || ArtPlayerComponent.PWA_PROXY_BASE;
         const params = new URLSearchParams({ url });
         return `${proxyBase}/stream?${params.toString()}`;
     }
@@ -647,8 +680,14 @@ export class ArtPlayerComponent implements OnInit, OnDestroy, OnChanges {
             if (nested) {
                 const decodedNested = decodeURIComponent(nested);
                 const lowerNested = decodedNested.toLowerCase();
-                if (lowerNested.includes('/live/') && tsRegex.test(lowerNested)) {
-                    const replacedNested = decodedNested.replace(tsRegex, '.m3u8');
+                if (
+                    lowerNested.includes('/live/') &&
+                    tsRegex.test(lowerNested)
+                ) {
+                    const replacedNested = decodedNested.replace(
+                        tsRegex,
+                        '.m3u8'
+                    );
                     outer.searchParams.set('url', replacedNested);
                     return outer.toString();
                 }

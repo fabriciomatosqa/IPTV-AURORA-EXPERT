@@ -45,10 +45,32 @@ describe('HtmlVideoPlayerComponent', () => {
     }));
 
     beforeEach(() => {
+        // jsdom does not implement media playback or TextTrackList events.
+        jest.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(
+            () => undefined
+        );
+        jest.spyOn(HTMLMediaElement.prototype, 'load').mockImplementation(
+            () => undefined
+        );
+        jest.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(
+            undefined
+        );
         fixture = TestBed.createComponent(HtmlVideoPlayerComponent);
         component = fixture.componentInstance;
         dataService = TestBed.inject(DataService);
+        Object.defineProperty(
+            fixture.nativeElement.querySelector('video'),
+            'textTracks',
+            {
+                configurable: true,
+                value: { length: 0, addEventListener: jest.fn() },
+            }
+        );
         fixture.detectChanges();
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
     });
 
     it('should create', () => {
@@ -71,7 +93,9 @@ describe('HtmlVideoPlayerComponent', () => {
     it('should use Hls for proxied m3u8 urls', () => {
         const proxiedM3u8 =
             'http://127.0.0.1:50339/stream?url=' +
-            encodeURIComponent('http://provider.example/live/user/pass/12345.m3u8');
+            encodeURIComponent(
+                'http://provider.example/live/user/pass/12345.m3u8'
+            );
 
         const playNativeSpy = jest
             .spyOn(component as any, 'playNative')
@@ -91,7 +115,9 @@ describe('HtmlVideoPlayerComponent', () => {
     it('should use native mp4 playback for proxied mp4 urls', () => {
         const proxiedMp4 =
             'http://127.0.0.1:50339/stream?url=' +
-            encodeURIComponent('http://provider.example/movie/user/pass/777.mp4');
+            encodeURIComponent(
+                'http://provider.example/movie/user/pass/777.mp4'
+            );
 
         const playNativeSpy = jest
             .spyOn(component as any, 'playNative')
@@ -103,5 +129,105 @@ describe('HtmlVideoPlayerComponent', () => {
         });
 
         expect(playNativeSpy).toHaveBeenCalledWith(proxiedMp4, 'video/mp4');
+    });
+
+    it('keeps the same audio graph when checking a second channel', () => {
+        const analyser = {
+            fftSize: 0,
+            frequencyBinCount: 128,
+            connect: jest.fn(),
+            disconnect: jest.fn(),
+            getByteTimeDomainData: jest.fn(),
+        };
+        const source = { connect: jest.fn(), disconnect: jest.fn() };
+        const context = {
+            state: 'running',
+            destination: {},
+            createMediaElementSource: jest.fn(() => source),
+            createAnalyser: jest.fn(() => analyser),
+            close: jest.fn().mockResolvedValue(undefined),
+        };
+        const original = Object.getOwnPropertyDescriptor(
+            window,
+            'AudioContext'
+        );
+        Object.defineProperty(window, 'AudioContext', {
+            configurable: true,
+            value: jest.fn(() => context),
+        });
+        try {
+            (component as any).electronApi = { getStreamProxyPort: jest.fn() };
+            (component as any).currentSourceUrl =
+                'http://example.test/first.mp4';
+            (component as any).startSilenceCheck();
+            (component as any).currentSourceUrl =
+                'http://example.test/second.mp4';
+            (component as any).startSilenceCheck();
+
+            expect(context.createMediaElementSource).toHaveBeenCalledTimes(1);
+            expect(source.connect).toHaveBeenCalledWith(analyser);
+            expect(analyser.connect).toHaveBeenCalledWith(context.destination);
+        } finally {
+            fixture.destroy();
+            if (original) {
+                Object.defineProperty(window, 'AudioContext', original);
+            } else {
+                delete (window as any).AudioContext;
+            }
+        }
+        expect(source.disconnect).toHaveBeenCalledTimes(1);
+        expect(context.close).toHaveBeenCalledTimes(1);
+    });
+
+    it.each(['channel change', 'destroy'])(
+        'discards pending recovery after %s',
+        async (action) => {
+            let resolvePort!: (port: number) => void;
+            const sourceUrl = 'http://example.test/first.mp4';
+            (component as any).electronApi = {
+                getStreamProxyPort: () =>
+                    new Promise<number>((resolve) => {
+                        resolvePort = resolve;
+                    }),
+            };
+            (component as any).currentSourceUrl = sourceUrl;
+            const recovery = (component as any).retryWithAudioTranscode(
+                sourceUrl
+            );
+            const playNative = jest
+                .spyOn(component as any, 'playNative')
+                .mockImplementation(() => undefined);
+            jest.spyOn(
+                component as any,
+                'resetVideoElement'
+            ).mockImplementation(() => undefined);
+            if (action === 'channel change') {
+                component.playChannel({
+                    ...TEST_CHANNEL,
+                    url: 'http://example.test/second.mp4',
+                });
+                playNative.mockClear();
+            } else {
+                fixture.destroy();
+            }
+            resolvePort(50339);
+            await recovery;
+
+            expect(playNative).not.toHaveBeenCalled();
+        }
+    );
+
+    it('removes document fullscreen listeners when destroyed', () => {
+        const removeListener = jest.spyOn(document, 'removeEventListener');
+        fixture.destroy();
+
+        expect(removeListener).toHaveBeenCalledWith(
+            'fullscreenchange',
+            (component as any).updateFullscreenState
+        );
+        expect(removeListener).toHaveBeenCalledWith(
+            'webkitfullscreenchange',
+            (component as any).updateFullscreenState
+        );
     });
 });

@@ -36,14 +36,16 @@ export class HtmlVideoPlayerComponent implements OnInit, OnChanges, OnDestroy {
     }>();
 
     private readonly dataService = inject(DataService);
-    private readonly electronApi = (globalThis as {
-        electron?: {
-            setUserAgent?: (userAgent: string, referrer?: string) => void;
-            toggleFullScreen?: () => Promise<boolean>;
-            isFullScreen?: () => Promise<boolean>;
-            getStreamProxyPort?: () => Promise<number>;
-        };
-    }).electron;
+    private readonly electronApi = (
+        globalThis as {
+            electron?: {
+                setUserAgent?: (userAgent: string, referrer?: string) => void;
+                toggleFullScreen?: () => Promise<boolean>;
+                isFullScreen?: () => Promise<boolean>;
+                getStreamProxyPort?: () => Promise<number>;
+            };
+        }
+    ).electron;
 
     /** Video player DOM element */
     @ViewChild('videoPlayer', { static: true })
@@ -60,6 +62,7 @@ export class HtmlVideoPlayerComponent implements OnInit, OnChanges, OnDestroy {
     private hlsRecoveryAttempted = false;
     /** Original (pre-transcode) URL for the current channel, used to build transcode retries. */
     private currentSourceUrl: string | null = null;
+    private sourceGeneration = 0;
     /** Tracks which transcode retry stage we're at for the current channel. */
     private transcodeAttempt: 'none' | 'audio' | 'full' = 'none';
     /** Per-source guard so silence detection only retries once per stream. */
@@ -76,6 +79,14 @@ export class HtmlVideoPlayerComponent implements OnInit, OnChanges, OnDestroy {
     /** Whether the user has been recently active (drives controls visibility). */
     isActive = true;
     private activityTimer: ReturnType<typeof setTimeout> | null = null;
+    private readonly updateFullscreenState = () => {
+        const doc = document as Document & {
+            webkitFullscreenElement?: Element;
+        };
+        this.isFullscreen = !!(
+            doc.fullscreenElement ?? doc.webkitFullscreenElement
+        );
+    };
 
     /** Toggle fullscreen on the .player-host wrapper (so overlays remain visible). */
     toggleFullscreen(): void {
@@ -107,7 +118,10 @@ export class HtmlVideoPlayerComponent implements OnInit, OnChanges, OnDestroy {
                 doc.exitFullscreen?.bind(doc) ??
                 doc.webkitExitFullscreen?.bind(doc);
             const result = exit?.();
-            if (result && typeof (result as Promise<void>).catch === 'function') {
+            if (
+                result &&
+                typeof (result as Promise<void>).catch === 'function'
+            ) {
                 (result as Promise<void>).catch(() => fallbackToWindow());
             } else if (!exit) {
                 fallbackToWindow();
@@ -173,11 +187,14 @@ export class HtmlVideoPlayerComponent implements OnInit, OnChanges, OnDestroy {
     @Input() subtitleUrl: string | null = null;
 
     ngOnInit() {
-        this.videoPlayer.nativeElement.textTracks.addEventListener('addtrack', () => {
-            if (this.showCaptions) {
-                this.enableCaptions();
+        this.videoPlayer.nativeElement.textTracks.addEventListener(
+            'addtrack',
+            () => {
+                if (this.showCaptions) {
+                    this.enableCaptions();
+                }
             }
-        });
+        );
 
         this.videoPlayer.nativeElement.addEventListener('volumechange', () => {
             this.isMuted = this.videoPlayer.nativeElement.muted;
@@ -187,11 +204,14 @@ export class HtmlVideoPlayerComponent implements OnInit, OnChanges, OnDestroy {
         // Initial sync (autoplay starts muted)
         this.isMuted = this.videoPlayer.nativeElement.muted;
 
-        this.videoPlayer.nativeElement.addEventListener('loadedmetadata', () => {
-            if (this.startTime > 0) {
-                this.videoPlayer.nativeElement.currentTime = this.startTime;
+        this.videoPlayer.nativeElement.addEventListener(
+            'loadedmetadata',
+            () => {
+                if (this.startTime > 0) {
+                    this.videoPlayer.nativeElement.currentTime = this.startTime;
+                }
             }
-        });
+        );
 
         this.videoPlayer.nativeElement.addEventListener('timeupdate', () => {
             this.timeUpdate.emit({
@@ -207,14 +227,13 @@ export class HtmlVideoPlayerComponent implements OnInit, OnChanges, OnDestroy {
         });
 
         // Track fullscreen state of the host wrapper to swap the FS button icon.
-        const updateFs = () => {
-            const doc = document as Document & { webkitFullscreenElement?: Element };
-            this.isFullscreen = !!(doc.fullscreenElement ?? doc.webkitFullscreenElement);
-        };
-        document.addEventListener('fullscreenchange', updateFs);
+        document.addEventListener(
+            'fullscreenchange',
+            this.updateFullscreenState
+        );
         document.addEventListener(
             'webkitfullscreenchange' as keyof DocumentEventMap,
-            updateFs,
+            this.updateFullscreenState
         );
 
         // Auto-hide controls (and our overlay buttons) on mouse inactivity.
@@ -245,6 +264,7 @@ export class HtmlVideoPlayerComponent implements OnInit, OnChanges, OnDestroy {
      * @param channel given channel object
      */
     playChannel(channel: Channel): void {
+        this.sourceGeneration++;
         if (this.hls) {
             this.hls.destroy();
             this.hls = null;
@@ -263,7 +283,8 @@ export class HtmlVideoPlayerComponent implements OnInit, OnChanges, OnDestroy {
             const playbackUrl = this.preferInitialAudioTranscode(url);
             this.currentSourceUrl = playbackUrl;
             const effectiveSourceUrl = this.getEffectiveSourceUrl(playbackUrl);
-            const extension = getExtensionFromUrl(effectiveSourceUrl)?.toLowerCase();
+            const extension =
+                getExtensionFromUrl(effectiveSourceUrl)?.toLowerCase();
 
             // Set user agent if specified on channel
             if (channel.http?.['user-agent']) {
@@ -339,11 +360,9 @@ export class HtmlVideoPlayerComponent implements OnInit, OnChanges, OnDestroy {
                 /\.(mp4|m4v|webm)(\?|$)/i.test(nested);
             const prefersAudioFirst =
                 /\.(mkv|avi|mov)(\?|$)/i.test(nested) ||
-                (
-                    isLikelyMovieOrSeriesPath &&
+                (isLikelyMovieOrSeriesPath &&
                     !isLikelyHls &&
-                    !isLikelyDirectPlayableContainer
-                );
+                    !isLikelyDirectPlayableContainer);
             if (!prefersAudioFirst) {
                 return url;
             }
@@ -413,7 +432,10 @@ export class HtmlVideoPlayerComponent implements OnInit, OnChanges, OnDestroy {
     enableCaptions(): void {
         const tracks = this.videoPlayer.nativeElement.textTracks;
         for (let i = 0; i < tracks.length; i++) {
-            if (tracks[i].kind === 'subtitles' || tracks[i].kind === 'captions') {
+            if (
+                tracks[i].kind === 'subtitles' ||
+                tracks[i].kind === 'captions'
+            ) {
                 tracks[i].mode = 'showing';
             }
         }
@@ -489,8 +511,7 @@ export class HtmlVideoPlayerComponent implements OnInit, OnChanges, OnDestroy {
                 // User-initiated abort — don't show an error.
                 return;
             case 2: // MEDIA_ERR_NETWORK
-                this.errorMessage =
-                    'Network error while loading the stream.';
+                this.errorMessage = 'Network error while loading the stream.';
                 this.errorHint =
                     'Check your connection and try a different channel or playlist.';
                 break;
@@ -527,7 +548,11 @@ export class HtmlVideoPlayerComponent implements OnInit, OnChanges, OnDestroy {
      * one in-place recovery (swapAudioCodec + recoverMediaError) before
      * giving up and showing the error overlay.
      */
-    private handleHlsError(data: { fatal?: boolean; type?: string; details?: string }): void {
+    private handleHlsError(data: {
+        fatal?: boolean;
+        type?: string;
+        details?: string;
+    }): void {
         if (!data?.fatal) return;
         if (!this.hls) return;
 
@@ -635,7 +660,10 @@ export class HtmlVideoPlayerComponent implements OnInit, OnChanges, OnDestroy {
     ): string | null {
         try {
             const u = new URL(streamUrl, window.location.origin);
-            if (!/\/stream$/.test(u.pathname) && !/\/transcode$/.test(u.pathname)) {
+            if (
+                !/\/stream$/.test(u.pathname) &&
+                !/\/transcode$/.test(u.pathname)
+            ) {
                 return null;
             }
             u.pathname = u.pathname
@@ -680,7 +708,8 @@ export class HtmlVideoPlayerComponent implements OnInit, OnChanges, OnDestroy {
         // Only available in Electron where the proxy can do the transcoding.
         if (!this.electronApi?.getStreamProxyPort) return;
 
-        // Tear down any previous Web Audio graph before creating a new one.
+        // Reuse the graph: a media element can only have one MediaElementSource
+        // over its lifetime, including after a channel change.
         this.stopSilenceCheck();
         this.silenceCheckAttemptedFor = sourceUrl;
 
@@ -688,21 +717,29 @@ export class HtmlVideoPlayerComponent implements OnInit, OnChanges, OnDestroy {
             const Ctor =
                 (window as unknown as { AudioContext?: typeof AudioContext })
                     .AudioContext ??
-                (window as unknown as { webkitAudioContext?: typeof AudioContext })
-                    .webkitAudioContext;
+                (
+                    window as unknown as {
+                        webkitAudioContext?: typeof AudioContext;
+                    }
+                ).webkitAudioContext;
             if (!Ctor) return;
 
-            const ctx = new Ctor();
-            const src = ctx.createMediaElementSource(video);
-            const analyser = ctx.createAnalyser();
-            analyser.fftSize = 256;
-            src.connect(analyser);
-            // Keep audio routed to speakers (MediaElementSource hijacks output otherwise).
-            analyser.connect(ctx.destination);
-
-            this.audioContext = ctx;
-            this.audioMediaSource = src;
-            this.audioAnalyser = analyser;
+            if (!this.audioContext || !this.audioAnalyser) {
+                const ctx = new Ctor();
+                this.audioContext = ctx;
+                const src = ctx.createMediaElementSource(video);
+                const analyser = ctx.createAnalyser();
+                analyser.fftSize = 256;
+                src.connect(analyser);
+                // Keep audio routed to speakers (MediaElementSource hijacks output otherwise).
+                analyser.connect(ctx.destination);
+                this.audioMediaSource = src;
+                this.audioAnalyser = analyser;
+            }
+            if (this.audioContext.state === 'suspended') {
+                void this.audioContext.resume().catch(() => undefined);
+            }
+            const analyser = this.audioAnalyser;
             this.silenceSamples = [];
 
             const buffer = new Uint8Array(analyser.frequencyBinCount);
@@ -773,9 +810,15 @@ export class HtmlVideoPlayerComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     private async retryWithAudioTranscode(sourceUrl: string): Promise<void> {
+        const generation = this.sourceGeneration;
         try {
             const port = await this.electronApi?.getStreamProxyPort?.();
-            if (!port) return;
+            if (
+                !port ||
+                generation !== this.sourceGeneration ||
+                this.currentSourceUrl !== sourceUrl
+            )
+                return;
             // If sourceUrl is already proxied, unwrap to the inner target first.
             let target = sourceUrl;
             try {
@@ -787,8 +830,7 @@ export class HtmlVideoPlayerComponent implements OnInit, OnChanges, OnDestroy {
             } catch {
                 // not a URL we can parse — use as-is
             }
-            const proxyUrl =
-                `http://127.0.0.1:${port}/stream?url=${encodeURIComponent(target)}&transcode=audio`;
+            const proxyUrl = `http://127.0.0.1:${port}/stream?url=${encodeURIComponent(target)}&transcode=audio`;
             this.transcodeAttempt = 'audio';
             this.errorMessage = null;
             this.errorHint = null;
@@ -811,6 +853,16 @@ export class HtmlVideoPlayerComponent implements OnInit, OnChanges, OnDestroy {
      * Destroy hls instance on component destroy and clean up event listener
      */
     ngOnDestroy(): void {
+        this.sourceGeneration++;
+        this.currentSourceUrl = null;
+        document.removeEventListener(
+            'fullscreenchange',
+            this.updateFullscreenState
+        );
+        document.removeEventListener(
+            'webkitfullscreenchange' as keyof DocumentEventMap,
+            this.updateFullscreenState
+        );
         this.videoPlayer.nativeElement.removeEventListener(
             'volumechange',
             this.onVolumeChange
