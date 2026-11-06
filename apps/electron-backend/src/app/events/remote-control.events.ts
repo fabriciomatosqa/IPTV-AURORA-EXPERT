@@ -73,7 +73,7 @@ class RemoteControlEvents {
 
         // Start HTTP server if remote control is enabled in settings
         const remoteControlEnabled = store.get('remoteControl', false);
-        const remoteControlPort = store.get('remoteControlPort', 8765);
+        const remoteControlPort = store.get('remoteControlPort', 8876);
         if (remoteControlEnabled) {
             httpServer.start(remoteControlPort);
         }
@@ -302,7 +302,11 @@ class RemoteControlEvents {
 
             try {
                 const parsed = JSON.parse(data);
-                if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                if (
+                    parsed &&
+                    typeof parsed === 'object' &&
+                    !Array.isArray(parsed)
+                ) {
                     callback(parsed as JsonObject);
                     return;
                 }

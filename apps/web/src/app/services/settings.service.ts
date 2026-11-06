@@ -47,7 +47,7 @@ export class SettingsService {
         if (withCallback) {
             return this.storage.set(key, value);
         } else {
-            this.storage.set(key, value).subscribe(() => {});
+            this.storage.set(key, value).subscribe();
         }
     }
 
@@ -57,9 +57,9 @@ export class SettingsService {
      */
     getAppVersion(): Observable<string | null> {
         return this.http
-            .get<{ created_at: string; name: string }[]>(
-                'https://api.github.com/repos/thomasmcintee/iptvmate/releases'
-            )
+            .get<
+                { created_at: string; name: string }[]
+            >('https://api.github.com/repos/fabriciomatosqa/IPTV-AURORA-EXPERT/releases')
             .pipe(
                 map((response) => {
                     // Filter out pre-release versions (beta, alpha, rc, etc.)
@@ -107,7 +107,9 @@ export class SettingsService {
                 catchError((err: HttpErrorResponse) => {
                     // Missing/renamed GitHub release endpoint should not surface as a runtime error.
                     if (err.status !== 404) {
-                        console.warn('Unable to fetch latest release information.');
+                        console.warn(
+                            'Unable to fetch latest release information.'
+                        );
                     }
                     return of(null);
                 })
@@ -120,10 +122,7 @@ export class SettingsService {
      * @param latestVersion latest stable version from GitHub
      * @returns true if current version is outdated
      */
-    isVersionOutdated(
-        currentVersion: string,
-        latestVersion: string
-    ): boolean {
+    isVersionOutdated(currentVersion: string, latestVersion: string): boolean {
         // Clean and coerce versions to handle invalid formats
         const cleanCurrent = semver.coerce(currentVersion);
         const cleanLatest = semver.coerce(latestVersion);

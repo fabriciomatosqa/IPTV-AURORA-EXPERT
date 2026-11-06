@@ -8,7 +8,7 @@ import * as path from 'path';
  */
 export class HttpServer {
     private server: http.Server | null = null;
-    private port = 8765;
+    private port = 8876;
     private isEnabled = false;
     private distPath: string | null = null;
     private remoteControlHandlers: Map<
@@ -43,11 +43,7 @@ export class HttpServer {
         } else {
             // Production mode - files are bundled with the app
             // electron-builder copies remote-control-web/**/* directly to app root
-            this.distPath = path.join(
-                appPath,
-                'remote-control-web',
-                'browser'
-            );
+            this.distPath = path.join(appPath, 'remote-control-web', 'browser');
         }
 
         console.log('[HTTP Server] Serving from:', this.distPath);
@@ -67,8 +63,19 @@ export class HttpServer {
             return;
         }
 
-        this.server = http.createServer((req, res) => {
+        const server = http.createServer((req, res) => {
             this.handleRequest(req, res);
+        });
+        this.server = server;
+        server.on('error', (error: NodeJS.ErrnoException) => {
+            // An occupied port must not crash the desktop application.
+            console.error(
+                `[HTTP Server] Unable to listen on port ${this.port}: ${error.code}`
+            );
+            if (this.server === server) {
+                this.server = null;
+                this.isEnabled = false;
+            }
         });
 
         this.server.listen(this.port, () => {
@@ -101,6 +108,11 @@ export class HttpServer {
      * Update server settings
      */
     updateSettings(enabled: boolean, port: number): void {
+        if (!Number.isInteger(port) || port < 1 || port > 65535) {
+            throw new RangeError(
+                'Remote control port must be between 1 and 65535'
+            );
+        }
         const needsRestart = this.isEnabled && enabled && this.port !== port;
 
         if (!enabled && this.isEnabled) {

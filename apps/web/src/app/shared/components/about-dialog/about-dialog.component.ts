@@ -8,16 +8,26 @@ import { TranslateModule } from '@ngx-translate/core';
     template: `
         <div mat-dialog-content>
             <img
-                src="./assets/icons/icon-tv-256.png"
+                src="./assets/aurora/aurora.svg"
                 width="128"
-                alt="logo"
+                alt="IPTV AURORA EXPERT"
             /><br />
             <h2 mat-dialog-title>{{ 'ABOUT.TITLE' | translate }}</h2>
             <p>{{ 'ABOUT.DESCRIPTION' | translate }}</p>
             <p>{{ 'ABOUT.VERSION' | translate }}: {{ appVersion }}</p>
             <p>
+                Baseado no projeto aberto
                 <a
-                    href="https://github.com/thomasmcintee/iptvmate"
+                    href="https://github.com/ThomasMcIntee/iptvmate"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >iptvmate</a
+                >, de Thomas McIntee e colaboradores, e no IPTVnator de 4gray.
+                Licença MIT. Avisos originais preservados na distribuição.
+            </p>
+            <p>
+                <a
+                    href="https://github.com/fabriciomatosqa/IPTV-AURORA-EXPERT"
                     target="_blank"
                     [title]="'ABOUT.GITHUB_TOOLTIP' | translate"
                     [attr.aria-label]="'ABOUT.GITHUB_TOOLTIP' | translate"
@@ -27,7 +37,7 @@ import { TranslateModule } from '@ngx-translate/core';
                         alt="GitHub" /></a
                 >&nbsp;
                 <a
-                    href="http://twitter.com/share?text=iptvmate &mdash; free cross-platform IPTV player. Available as PWA and as native application.&url=https://github.com/thomasmcintee/iptvmate&hashtags=iptv,m3u,video-player"
+                    href="https://twitter.com/intent/tweet?text=IPTV%20AURORA%20EXPERT&url=https://github.com/fabriciomatosqa/IPTV-AURORA-EXPERT"
                     [title]="'ABOUT.TWITTER_TOOLTIP' | translate"
                 >
                     <img
@@ -38,7 +48,7 @@ import { TranslateModule } from '@ngx-translate/core';
                     />
                 </a>
                 <a
-                    href="https://github.com/sponsors/thomasmcintee"
+                    href="https://github.com/fabriciomatosqa/IPTV-AURORA-EXPERT#contribuicoes"
                     target="_blank"
                     [title]="'ABOUT.BUY_ME_A_COFFEE_TOOLTIP' | translate"
                     [attr.aria-label]="

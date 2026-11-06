@@ -139,7 +139,7 @@ export class SettingsComponent implements OnInit {
         vlcPlayerPath: '',
         remoteControl: false,
         remoteControlPort: [
-            8765,
+            8876,
             [
                 Validators.required,
                 Validators.min(1),
@@ -164,8 +164,8 @@ export class SettingsComponent implements OnInit {
 
     constructor() {
         const data = inject<{
-    isDialog: boolean;
-}>(MAT_DIALOG_DATA, { optional: true });
+            isDialog: boolean;
+        }>(MAT_DIALOG_DATA, { optional: true });
 
         this.isDialog = data?.isDialog ?? false;
     }
@@ -397,7 +397,9 @@ export class SettingsComponent implements OnInit {
     clearEpgData(): void {
         this.dialogService.openConfirmDialog({
             title: this.translate.instant('SETTINGS.CLEAR_EPG_DIALOG.TITLE'),
-            message: this.translate.instant('SETTINGS.CLEAR_EPG_DIALOG.MESSAGE'),
+            message: this.translate.instant(
+                'SETTINGS.CLEAR_EPG_DIALOG.MESSAGE'
+            ),
             onConfirm: async (): Promise<void> => {
                 if (window.electron?.clearEpgData) {
                     await window.electron.clearEpgData();

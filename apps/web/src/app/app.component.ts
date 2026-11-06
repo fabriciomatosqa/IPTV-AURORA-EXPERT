@@ -46,7 +46,7 @@ export class AppComponent implements OnInit {
     private settingsService = inject(SettingsService);
 
     /** Default language as fallback */
-    private readonly DEFAULT_LANG = Language.ENGLISH;
+    private readonly DEFAULT_LANG = Language.PORTUGUESE;
 
     constructor() {
         if (
@@ -118,10 +118,11 @@ export class AppComponent implements OnInit {
                     if (settings.theme) {
                         this.settingsService.changeTheme(settings.theme);
                     } else {
-                        this.detectDarkMode();
+                        this.settingsService.changeTheme(Theme.DarkTheme);
                     }
                 } else {
-                    this.detectDarkMode();
+                    this.translate.use(this.DEFAULT_LANG);
+                    this.settingsService.changeTheme(Theme.DarkTheme);
                 }
             });
     }

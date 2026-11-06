@@ -1,20 +1,28 @@
 {
-    "appId": "com.iptvmate",
-    "productName": "iptvmate",
+    "appId": "com.aurora.iptvexpert",
+    "productName": "IPTV AURORA EXPERT",
     "artifactName": "${name}-${version}-${os}-${arch}.${ext}",
     "directories": {
         "buildResources": "dist/apps",
         "output": "dist/executables"
     },
     "files": [
+        "package.json",
+        {
+            "from": "dist/apps/electron-backend",
+            "to": "electron-backend",
+            "filter": ["main.js", "main.preload.js", "assets/**/*"]
+        },
+        {
+            "from": "dist/apps/web",
+            "to": "web",
+            "filter": ["**/*", "!**/*.map"]
+        },
         {
             "from": "dist/apps/remote-control-web",
             "to": "remote-control-web",
-            "filter": ["**/*"]
-        },
-        "electron-backend/**/*",
-        "web/**/*",
-        "!**/*.map"
+            "filter": ["**/*", "!**/*.map"]
+        }
     ],
     "asarUnpack": [
         "**/better-sqlite3/**",
@@ -24,9 +32,31 @@
         "**/ffmpeg-static/**"
     ],
     "extraMetadata": {
-        "main": "electron-backend/main.js"
+        "main": "electron-backend/main.js",
+        "name": "iptv-aurora-expert",
+        "productName": "IPTV AURORA EXPERT",
+        "homepage": "https://github.com/fabriciomatosqa/IPTV-AURORA-EXPERT"
     },
-    "extraResources": ["dist/apps/electron-backend/workers"],
+    "extraResources": [
+        {
+            "from": "dist/apps/electron-backend/workers",
+            "to": "workers",
+            "filter": ["*.js"]
+        },
+        {
+            "from": "LICENSE.md",
+            "to": "legal/LICENSE.md"
+        },
+        {
+            "from": "THIRD_PARTY_NOTICES.md",
+            "to": "legal/THIRD_PARTY_NOTICES.md"
+        },
+        {
+            "from": "dist/aurora-media",
+            "to": "media",
+            "filter": ["**/*"]
+        }
+    ],
     "mac": {
         "target": [
             {
@@ -46,7 +76,7 @@
         "hardenedRuntime": false,
         "entitlements": null,
         "entitlementsInherit": null,
-        "icon": "apps/web/src/assets/icons/favicon.icns"
+        "icon": "apps/web/src/assets/aurora/aurora.icns"
     },
     "linux": {
         "category": "Video",
@@ -73,9 +103,9 @@
             }
         ],
         "artifactName": "${name}-${version}-${os}-${arch}.${ext}",
-        "icon": "apps/web/src/assets/icons"
+        "icon": "apps/web/src/assets/aurora/aurora.png"
     },
-    "afterPack": "electron-builder-sandbox-fix",
+    "afterPack": "./scripts/verify-aurora-package.cjs",
     "snap": {
         "confinement": "strict",
         "grade": "stable",
@@ -93,9 +123,21 @@
             }
         ],
         "artifactName": "${name}-${version}-windows-${arch}-setup.${ext}",
-        "icon": "apps/web/src/assets/icons/icon.png"
+        "icon": "apps/web/src/assets/aurora/aurora.ico",
+        "signAndEditExecutable": true
     },
     "nsis": {
-        "artifactName": "${name}-${version}-windows-${arch}-setup.${ext}"
-    }
+        "artifactName": "${name}-${version}-windows-${arch}-setup.${ext}",
+        "guid": "a22e1596-7af8-48c0-9c97-dad3e81f3027",
+        "oneClick": false,
+        "perMachine": false,
+        "allowToChangeInstallationDirectory": true,
+        "createDesktopShortcut": true,
+        "createStartMenuShortcut": true,
+        "shortcutName": "IPTV AURORA EXPERT",
+        "uninstallDisplayName": "IPTV AURORA EXPERT",
+        "deleteAppDataOnUninstall": false
+    },
+    "executableName": "IPTV AURORA EXPERT",
+    "publish": null
 }

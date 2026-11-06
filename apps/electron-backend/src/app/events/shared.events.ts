@@ -32,8 +32,7 @@ ipcMain.handle(
             return null;
         }
 
-        const isEpisode =
-            Number.isFinite(season) && Number.isFinite(episode);
+        const isEpisode = Number.isFinite(season) && Number.isFinite(episode);
         const attempts: Array<Record<string, string>> = [];
 
         if (isEpisode) {
@@ -97,7 +96,7 @@ ipcMain.handle(
                     method: 'GET',
                     headers: {
                         'Api-Key': apiKey,
-                        'User-Agent': 'iptvmate v1',
+                        'User-Agent': 'IPTV-AURORA-EXPERT/1.1.2',
                         Accept: 'application/json',
                     },
                     signal: controller.signal,
@@ -127,7 +126,7 @@ ipcMain.handle(
                         method: 'POST',
                         headers: {
                             'Api-Key': apiKey,
-                            'User-Agent': 'iptvmate v1',
+                            'User-Agent': 'IPTV-AURORA-EXPERT/1.1.2',
                             Accept: 'application/json',
                             'Content-Type': 'application/json',
                         },
@@ -153,7 +152,9 @@ ipcMain.handle(
                     try {
                         const vttRes = await fetch(downloadData.link, {
                             method: 'GET',
-                            headers: { 'User-Agent': 'iptvmate v1' },
+                            headers: {
+                                'User-Agent': 'IPTV-AURORA-EXPERT/1.1.2',
+                            },
                             signal: controller.signal,
                         });
                         if (vttRes.ok) {

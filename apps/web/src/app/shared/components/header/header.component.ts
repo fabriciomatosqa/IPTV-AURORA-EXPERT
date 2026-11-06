@@ -1,10 +1,4 @@
-import {
-    Component,
-    HostBinding,
-    inject,
-    input,
-    output,
-} from '@angular/core';
+import { Component, HostBinding, inject, input, output } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatButtonModule } from '@angular/material/button';
@@ -49,7 +43,6 @@ export class HeaderComponent {
     private dialog = inject(MatDialog);
     private dataService = inject(DataService);
     private router = inject(Router);
-
 
     readonly isDesktop = !!window.electron;
     readonly title = input.required<string>();
@@ -104,10 +97,7 @@ export class HeaderComponent {
      * @param url url to open
      */
     async openUrl(url: string): Promise<void> {
-        if (this.isDesktop) {
-            console.log('TODO: implement me');
-            // await shell.openExternal(url);
-        } else {
+        if (/^https?:\/\//i.test(url)) {
             window.open(url, '_blank');
         }
     }

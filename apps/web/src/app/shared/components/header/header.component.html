@@ -9,9 +9,12 @@
 
     <div class="brand-block">
         <div class="logo-pulse">
-            <img src="./assets/icons/icon-tv-256.png" alt="iptvmate logo" />
+            <img src="./assets/aurora/aurora.svg" alt="IPTV AURORA EXPERT" />
         </div>
         <div class="brand-text">
+            @if (title() !== 'IPTV AURORA EXPERT') {
+                <div class="aurora-name">IPTV AURORA EXPERT</div>
+            }
             <div class="title">{{ title() }}</div>
         </div>
     </div>
@@ -26,7 +29,9 @@
                     class="search-input"
                     spellcheck="false"
                     autocomplete="off"
-                    [placeholder]="'HOME.PLAYLISTS.SEARCH_PLAYLISTS' | translate"
+                    [placeholder]="
+                        'HOME.PLAYLISTS.SEARCH_PLAYLISTS' | translate
+                    "
                     (input)="onSearchQueryUpdate(searchInput.value)"
                 />
             </div>
@@ -47,253 +52,288 @@
                     <mat-icon aria-hidden="false">filter_list</mat-icon>
                     <span>{{ 'HOME.FILTER_AND_SORT' | translate }}</span>
                 </button>
-                <app-filter-sort-menu #quickFilterMenu [menuTrigger]="quickFilterTrigger" />
+                <app-filter-sort-menu
+                    #quickFilterMenu
+                    [menuTrigger]="quickFilterTrigger"
+                />
             </div>
         </div>
     }
 
-        <!-- Desktop menu buttons -->
-        <div class="menu desktop-menu">
+    <!-- Desktop menu buttons -->
+    <div class="menu desktop-menu">
+        <button
+            mat-icon-button
+            class="add-playlist-btn"
+            [matMenuTriggerFor]="desktopAddPlaylistMenu.menu()"
+            [matTooltip]="'HOME.URL_UPLOAD.ADD_PLAYLIST' | translate"
+            data-test-id="add-playlist"
+        >
+            <mat-icon>add</mat-icon>
+        </button>
+        <app-add-playlist-menu
+            #desktopAddPlaylistMenu
+            (playlistTypeSelected)="openAddPlaylistDialog($event)"
+        />
+        <button
+            mat-icon-button
+            (click)="navigateToGlobalFavorites()"
+            [matTooltip]="'HOME.PLAYLISTS.GLOBAL_FAVORITES' | translate"
+            data-test-id="global-favorites"
+        >
+            <mat-icon>star</mat-icon>
+        </button>
+        <button
+            mat-icon-button
+            (click)="onGlobalSearchClick()"
+            [matTooltip]="
+                ('PORTALS.SIDEBAR.SEARCH' | translate) + ' (Ctrl/Cmd+F)'
+            "
+            data-test-id="global-search"
+        >
+            <mat-icon>travel_explore</mat-icon>
+        </button>
+        <button
+            mat-icon-button
+            (click)="onGlobalRecentClick()"
+            [matTooltip]="
+                ('PORTALS.SIDEBAR.RECENT' | translate) + ' (Ctrl/Cmd+R)'
+            "
+            data-test-id="global-recent"
+        >
+            <mat-icon>history</mat-icon>
+        </button>
+        @if (showFilterControls) {
             <button
                 mat-icon-button
-                class="add-playlist-btn"
-                [matMenuTriggerFor]="desktopAddPlaylistMenu.menu()"
-                [matTooltip]="'HOME.URL_UPLOAD.ADD_PLAYLIST' | translate"
-                data-test-id="add-playlist"
+                #desktopFilterTrigger="matMenuTrigger"
+                [matMenuTriggerFor]="desktopFilterMenu.menu()"
+                [matTooltip]="'HOME.FILTER_AND_SORT' | translate"
+                [matBadge]="desktopFilterMenu.activeFiltersCount"
+                [matBadgeHidden]="desktopFilterMenu.activeFiltersCount === 0"
+                matBadgeSize="small"
+                matBadgeColor="accent"
+                data-test-id="filter-sort-playlists"
             >
-                <mat-icon>add</mat-icon>
+                <mat-icon aria-hidden="false">tune</mat-icon>
             </button>
-            <app-add-playlist-menu
-                #desktopAddPlaylistMenu
-                (playlistTypeSelected)="openAddPlaylistDialog($event)"
+            <app-filter-sort-menu
+                #desktopFilterMenu
+                [menuTrigger]="desktopFilterTrigger"
             />
+        }
+        @if (isDesktopShell) {
             <button
                 mat-icon-button
-                (click)="navigateToGlobalFavorites()"
-                [matTooltip]="'HOME.PLAYLISTS.GLOBAL_FAVORITES' | translate"
-                data-test-id="global-favorites"
+                (click)="openSettings()"
+                [matTooltip]="'MENU.SETTINGS' | translate"
+                data-test-id="open-settings"
             >
-                <mat-icon>star</mat-icon>
+                <mat-icon>settings</mat-icon>
             </button>
+        } @else {
             <button
                 mat-icon-button
-                (click)="onGlobalSearchClick()"
-                [matTooltip]="
-                    ('PORTALS.SIDEBAR.SEARCH' | translate) + ' (Ctrl/Cmd+F)'
-                "
-                data-test-id="global-search"
+                [matMenuTriggerFor]="pwaMenu"
+                [attr.aria-label]="'MENU.OPEN' | translate"
+                data-test-id="pwa-menu"
             >
-                <mat-icon>travel_explore</mat-icon>
+                <mat-icon>menu</mat-icon>
             </button>
-            <button
-                mat-icon-button
-                (click)="onGlobalRecentClick()"
-                [matTooltip]="
-                    ('PORTALS.SIDEBAR.RECENT' | translate) + ' (Ctrl/Cmd+R)'
-                "
-                data-test-id="global-recent"
-            >
-                <mat-icon>history</mat-icon>
-            </button>
-            @if (showFilterControls) {
-                <button
-                    mat-icon-button
-                    #desktopFilterTrigger="matMenuTrigger"
-                    [matMenuTriggerFor]="desktopFilterMenu.menu()"
-                    [matTooltip]="'HOME.FILTER_AND_SORT' | translate"
-                    [matBadge]="desktopFilterMenu.activeFiltersCount"
-                    [matBadgeHidden]="desktopFilterMenu.activeFiltersCount === 0"
-                    matBadgeSize="small"
-                    matBadgeColor="accent"
-                    data-test-id="filter-sort-playlists"
-                >
-                    <mat-icon aria-hidden="false">tune</mat-icon>
-                </button>
-                <app-filter-sort-menu #desktopFilterMenu [menuTrigger]="desktopFilterTrigger" />
-            }
-            @if (isDesktopShell) {
-                <button
-                    mat-icon-button
-                    (click)="openSettings()"
-                    [matTooltip]="'MENU.SETTINGS' | translate"
-                    data-test-id="open-settings"
-                >
-                    <mat-icon>settings</mat-icon>
-                </button>
-            } @else {
-                <button
-                    mat-icon-button
-                    [matMenuTriggerFor]="pwaMenu"
-                    [attr.aria-label]="'MENU.OPEN' | translate"
-                    data-test-id="pwa-menu"
-                >
-                    <mat-icon>menu</mat-icon>
-                </button>
-                <mat-menu #pwaMenu="matMenu">
-                    @if (isHome) {
-                        <button
-                            mat-menu-item
-                            [attr.aria-label]="'MENU.SETTINGS_ARIA' | translate"
-                            (click)="openSettings()"
-                            data-test-id="pwa-open-settings"
-                        >
-                            <mat-icon>settings</mat-icon>
-                            <span>{{ 'MENU.SETTINGS' | translate }}</span>
-                        </button>
-                        <mat-divider></mat-divider>
-                    }
+            <mat-menu #pwaMenu="matMenu">
+                @if (isHome) {
                     <button
                         mat-menu-item
-                        [attr.aria-label]="'MENU.SUPPORT_ARIA' | translate"
-                        (click)="openUrl('https://github.com/thomasmcintee/iptvmate')"
+                        [attr.aria-label]="'MENU.SETTINGS_ARIA' | translate"
+                        (click)="openSettings()"
+                        data-test-id="pwa-open-settings"
                     >
-                        <mat-icon>recommend</mat-icon>
-                        <span>GitHub</span>
-                    </button>
-                    <button
-                        mat-menu-item
-                        [attr.aria-label]="'MENU.BUG_REPORT' | translate"
-                        (click)="
-                            openUrl('https://github.com/thomasmcintee/iptvmate/issues')
-                        "
-                    >
-                        <mat-icon>bug_report</mat-icon>
-                        <span>{{ 'MENU.BUG_REPORT' | translate }}</span>
-                    </button>
-                    <mat-divider />
-                    <button
-                        mat-menu-item
-                        [attr.aria-label]="'MENU.SUPPORT_PROJECT' | translate"
-                        (click)="openUrl('https://github.com/sponsors/thomasmcintee')"
-                    >
-                        <mat-icon>savings</mat-icon>
-                        <span>{{ 'MENU.SUPPORT_PROJECT' | translate }}</span>
+                        <mat-icon>settings</mat-icon>
+                        <span>{{ 'MENU.SETTINGS' | translate }}</span>
                     </button>
                     <mat-divider></mat-divider>
-                    <button
-                        mat-menu-item
-                        [attr.aria-label]="'MENU.ABOUT_ARIA' | translate"
-                        (click)="openAboutDialog()"
-                    >
-                        <mat-icon>info</mat-icon>
-                        <span>{{ 'MENU.ABOUT' | translate }}</span>
-                    </button>
-                </mat-menu>
-            }
-        </div>
-
-        <!-- Mobile three-dots menu (all buttons consolidated) -->
-        <div class="menu mobile-menu">
-            <button
-                mat-icon-button
-                [matMenuTriggerFor]="mobileActionsMenu"
-                [attr.aria-label]="'MENU.OPEN' | translate"
-                data-test-id="mobile-menu"
-            >
-                <mat-icon>more_vert</mat-icon>
-            </button>
-            <app-add-playlist-menu
-                #mobileAddPlaylistMenu
-                (playlistTypeSelected)="openAddPlaylistDialog($event)"
-            />
-            <mat-menu #mobileActionsMenu="matMenu">
-                <button
-                    mat-menu-item
-                    [matMenuTriggerFor]="mobileAddPlaylistMenu.menu()"
-                    data-test-id="mobile-add-playlist"
-                >
-                    <mat-icon>add</mat-icon>
-                    <span>{{ 'HOME.URL_UPLOAD.ADD_PLAYLIST' | translate }}</span>
-                </button>
-                <button
-                    mat-menu-item
-                    (click)="navigateToGlobalFavorites()"
-                    data-test-id="mobile-global-favorites"
-                >
-                    <mat-icon>star</mat-icon>
-                    <span>{{ 'HOME.PLAYLISTS.GLOBAL_FAVORITES' | translate }}</span>
-                </button>
-                <button
-                    mat-menu-item
-                    (click)="onGlobalSearchClick()"
-                    data-test-id="mobile-global-search"
-                >
-                    <mat-icon>travel_explore</mat-icon>
-                    <span
-                        >{{ 'PORTALS.SIDEBAR.SEARCH' | translate }}
-                        (Ctrl/Cmd+F)</span
-                    >
-                </button>
-                <button
-                    mat-menu-item
-                    (click)="onGlobalRecentClick()"
-                    data-test-id="mobile-global-recent"
-                >
-                    <mat-icon>history</mat-icon>
-                    <span
-                        >{{ 'PORTALS.SIDEBAR.RECENT' | translate }}
-                        (Ctrl/Cmd+R)</span
-                    >
-                </button>
-                @if (showFilterControls) {
-                    <button
-                        mat-menu-item
-                        #mobileFilterTrigger="matMenuTrigger"
-                        [matMenuTriggerFor]="mobileFilterMenu.menu()"
-                        data-test-id="mobile-filter-sort"
-                    >
-                        <mat-icon
-                            [matBadge]="mobileFilterMenu.activeFiltersCount"
-                            [matBadgeHidden]="mobileFilterMenu.activeFiltersCount === 0"
-                            matBadgeSize="small"
-                            matBadgeColor="accent"
-                            aria-hidden="false"
-                        >tune</mat-icon>
-                        <span>{{ 'HOME.FILTER_AND_SORT' | translate }}</span>
-                    </button>
-                    <app-filter-sort-menu #mobileFilterMenu [menuTrigger]="mobileFilterTrigger" />
                 }
+                <button
+                    mat-menu-item
+                    [attr.aria-label]="'MENU.SUPPORT_ARIA' | translate"
+                    (click)="
+                        openUrl(
+                            'https://github.com/fabriciomatosqa/IPTV-AURORA-EXPERT'
+                        )
+                    "
+                >
+                    <mat-icon>recommend</mat-icon>
+                    <span>GitHub</span>
+                </button>
+                <button
+                    mat-menu-item
+                    [attr.aria-label]="'MENU.BUG_REPORT' | translate"
+                    (click)="
+                        openUrl(
+                            'https://github.com/fabriciomatosqa/IPTV-AURORA-EXPERT/issues'
+                        )
+                    "
+                >
+                    <mat-icon>bug_report</mat-icon>
+                    <span>{{ 'MENU.BUG_REPORT' | translate }}</span>
+                </button>
                 <mat-divider />
                 <button
                     mat-menu-item
-                    (click)="openSettings()"
-                    data-test-id="mobile-settings"
+                    [attr.aria-label]="'MENU.SUPPORT_PROJECT' | translate"
+                    (click)="
+                        openUrl(
+                            'https://github.com/fabriciomatosqa/IPTV-AURORA-EXPERT#contribuicoes'
+                        )
+                    "
                 >
-                    <mat-icon>settings</mat-icon>
-                    <span>{{ 'MENU.SETTINGS' | translate }}</span>
+                    <mat-icon>savings</mat-icon>
+                    <span>{{ 'MENU.SUPPORT_PROJECT' | translate }}</span>
                 </button>
-                @if (!isDesktopShell) {
-                    <mat-divider />
-                    <button
-                        mat-menu-item
-                        (click)="openUrl('https://github.com/thomasmcintee/iptvmate')"
-                    >
-                        <mat-icon>recommend</mat-icon>
-                        <span>GitHub</span>
-                    </button>
-                    <button
-                        mat-menu-item
-                        (click)="openUrl('https://github.com/thomasmcintee/iptvmate/issues')"
-                    >
-                        <mat-icon>bug_report</mat-icon>
-                        <span>{{ 'MENU.BUG_REPORT' | translate }}</span>
-                    </button>
-                    <button
-                        mat-menu-item
-                        (click)="openUrl('https://github.com/sponsors/thomasmcintee')"
-                    >
-                        <mat-icon>savings</mat-icon>
-                        <span>{{ 'MENU.SUPPORT_PROJECT' | translate }}</span>
-                    </button>
-                    <mat-divider />
-                    <button
-                        mat-menu-item
-                        (click)="openAboutDialog()"
-                    >
-                        <mat-icon>info</mat-icon>
-                        <span>{{ 'MENU.ABOUT' | translate }}</span>
-                    </button>
-                }
+                <mat-divider></mat-divider>
+                <button
+                    mat-menu-item
+                    [attr.aria-label]="'MENU.ABOUT_ARIA' | translate"
+                    (click)="openAboutDialog()"
+                >
+                    <mat-icon>info</mat-icon>
+                    <span>{{ 'MENU.ABOUT' | translate }}</span>
+                </button>
             </mat-menu>
-        </div>
+        }
+    </div>
+
+    <!-- Mobile three-dots menu (all buttons consolidated) -->
+    <div class="menu mobile-menu">
+        <button
+            mat-icon-button
+            [matMenuTriggerFor]="mobileActionsMenu"
+            [attr.aria-label]="'MENU.OPEN' | translate"
+            data-test-id="mobile-menu"
+        >
+            <mat-icon>more_vert</mat-icon>
+        </button>
+        <app-add-playlist-menu
+            #mobileAddPlaylistMenu
+            (playlistTypeSelected)="openAddPlaylistDialog($event)"
+        />
+        <mat-menu #mobileActionsMenu="matMenu">
+            <button
+                mat-menu-item
+                [matMenuTriggerFor]="mobileAddPlaylistMenu.menu()"
+                data-test-id="mobile-add-playlist"
+            >
+                <mat-icon>add</mat-icon>
+                <span>{{ 'HOME.URL_UPLOAD.ADD_PLAYLIST' | translate }}</span>
+            </button>
+            <button
+                mat-menu-item
+                (click)="navigateToGlobalFavorites()"
+                data-test-id="mobile-global-favorites"
+            >
+                <mat-icon>star</mat-icon>
+                <span>{{ 'HOME.PLAYLISTS.GLOBAL_FAVORITES' | translate }}</span>
+            </button>
+            <button
+                mat-menu-item
+                (click)="onGlobalSearchClick()"
+                data-test-id="mobile-global-search"
+            >
+                <mat-icon>travel_explore</mat-icon>
+                <span
+                    >{{
+                        'PORTALS.SIDEBAR.SEARCH' | translate
+                    }}
+                    (Ctrl/Cmd+F)</span
+                >
+            </button>
+            <button
+                mat-menu-item
+                (click)="onGlobalRecentClick()"
+                data-test-id="mobile-global-recent"
+            >
+                <mat-icon>history</mat-icon>
+                <span
+                    >{{
+                        'PORTALS.SIDEBAR.RECENT' | translate
+                    }}
+                    (Ctrl/Cmd+R)</span
+                >
+            </button>
+            @if (showFilterControls) {
+                <button
+                    mat-menu-item
+                    #mobileFilterTrigger="matMenuTrigger"
+                    [matMenuTriggerFor]="mobileFilterMenu.menu()"
+                    data-test-id="mobile-filter-sort"
+                >
+                    <mat-icon
+                        [matBadge]="mobileFilterMenu.activeFiltersCount"
+                        [matBadgeHidden]="
+                            mobileFilterMenu.activeFiltersCount === 0
+                        "
+                        matBadgeSize="small"
+                        matBadgeColor="accent"
+                        aria-hidden="false"
+                        >tune</mat-icon
+                    >
+                    <span>{{ 'HOME.FILTER_AND_SORT' | translate }}</span>
+                </button>
+                <app-filter-sort-menu
+                    #mobileFilterMenu
+                    [menuTrigger]="mobileFilterTrigger"
+                />
+            }
+            <mat-divider />
+            <button
+                mat-menu-item
+                (click)="openSettings()"
+                data-test-id="mobile-settings"
+            >
+                <mat-icon>settings</mat-icon>
+                <span>{{ 'MENU.SETTINGS' | translate }}</span>
+            </button>
+            @if (!isDesktopShell) {
+                <mat-divider />
+                <button
+                    mat-menu-item
+                    (click)="
+                        openUrl(
+                            'https://github.com/fabriciomatosqa/IPTV-AURORA-EXPERT'
+                        )
+                    "
+                >
+                    <mat-icon>recommend</mat-icon>
+                    <span>GitHub</span>
+                </button>
+                <button
+                    mat-menu-item
+                    (click)="
+                        openUrl(
+                            'https://github.com/fabriciomatosqa/IPTV-AURORA-EXPERT/issues'
+                        )
+                    "
+                >
+                    <mat-icon>bug_report</mat-icon>
+                    <span>{{ 'MENU.BUG_REPORT' | translate }}</span>
+                </button>
+                <button
+                    mat-menu-item
+                    (click)="
+                        openUrl(
+                            'https://github.com/fabriciomatosqa/IPTV-AURORA-EXPERT#contribuicoes'
+                        )
+                    "
+                >
+                    <mat-icon>savings</mat-icon>
+                    <span>{{ 'MENU.SUPPORT_PROJECT' | translate }}</span>
+                </button>
+                <mat-divider />
+                <button mat-menu-item (click)="openAboutDialog()">
+                    <mat-icon>info</mat-icon>
+                    <span>{{ 'MENU.ABOUT' | translate }}</span>
+                </button>
+            }
+        </mat-menu>
+    </div>
 </div>

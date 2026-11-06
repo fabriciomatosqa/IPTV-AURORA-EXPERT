@@ -62,9 +62,11 @@ export default class App {
 
         // Allow IPTV stream servers with non-standard TLS configurations
         // (e.g. outdated cipher suites) by bypassing certificate verification.
-        session.defaultSession.setCertificateVerifyProc((_request, callback) => {
-            callback(0); // 0 = success, bypass certificate errors
-        });
+        session.defaultSession.setCertificateVerifyProc(
+            (_request, callback) => {
+                callback(0); // 0 = success, bypass certificate errors
+            }
+        );
 
         if (rendererAppName) {
             App.initMainWindow();
@@ -136,13 +138,17 @@ export default class App {
                     {
                         label: 'Website',
                         click: () => {
-                            void shell.openExternal('https://thomasmcintee.github.io/iptvmate/');
+                            void shell.openExternal(
+                                'https://github.com/fabriciomatosqa/IPTV-AURORA-EXPERT'
+                            );
                         },
                     },
                     {
                         label: 'Report Issue',
                         click: () => {
-                            void shell.openExternal('https://github.com/ThomasMcIntee/iptvmate/issues');
+                            void shell.openExternal(
+                                'https://github.com/fabriciomatosqa/IPTV-AURORA-EXPERT/issues'
+                            );
                         },
                     },
                 ],
@@ -166,7 +172,7 @@ export default class App {
             });
         } else {
             template.unshift({
-                label: 'IPTVmate',
+                label: 'IPTV AURORA EXPERT',
                 submenu: [
                     {
                         label: 'Show Main Window',
@@ -176,7 +182,7 @@ export default class App {
                     },
                     { type: 'separator' },
                     {
-                        label: 'About IPTVmate',
+                        label: 'Sobre IPTV AURORA EXPERT',
                         role: 'about',
                     },
                     { type: 'separator' },
@@ -212,11 +218,12 @@ export default class App {
         const defaultHeight = Math.min(720, workAreaSize.height || 720);
 
         const savedWindowBounds = store.get(WINDOW_BOUNDS);
-        const { width, height, ...restSavedWindowBounds } = savedWindowBounds ?? {};
+        const { width, height, ...restSavedWindowBounds } =
+            savedWindowBounds ?? {};
 
         // Create the browser window.
         App.mainWindow = new BrowserWindow({
-            title: 'iptvmate',
+            title: 'IPTV AURORA EXPERT',
             show: false,
             autoHideMenuBar: true,
             ...restSavedWindowBounds,
@@ -254,9 +261,12 @@ export default class App {
             if (input.type !== 'keyDown') return;
             const isToggleDevtools =
                 input.key === 'F12' ||
-                ((input.control || input.meta) && input.shift && (input.key === 'I' || input.key === 'i'));
+                ((input.control || input.meta) &&
+                    input.shift &&
+                    (input.key === 'I' || input.key === 'i'));
             const isReload =
-                ((input.control || input.meta) && (input.key === 'R' || input.key === 'r')) ||
+                ((input.control || input.meta) &&
+                    (input.key === 'R' || input.key === 'r')) ||
                 input.key === 'F5';
             if (isToggleDevtools) {
                 if (mainWindow.webContents.isDevToolsOpened()) {
@@ -376,7 +386,9 @@ export default class App {
                 mainWindow.webContents.openDevTools({ mode: 'bottom' });
             }
         } else {
-            mainWindow.loadFile(join(__dirname, '..', rendererAppName, 'index.html'));
+            mainWindow.loadFile(
+                join(__dirname, '..', rendererAppName, 'index.html')
+            );
         }
     }
 

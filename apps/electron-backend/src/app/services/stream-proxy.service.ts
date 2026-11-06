@@ -1,7 +1,6 @@
 import * as http from 'http';
 import * as https from 'https';
 import * as tls from 'tls';
-import * as fs from 'fs';
 
 // Permissive TLS options for IPTV providers with legacy SSL/TLS configurations.
 // Many IPTV CDNs use TLS 1.0/1.1 or old cipher suites that Node.js 18+ rejects by default.
@@ -13,8 +12,8 @@ const PERMISSIVE_TLS_OPTIONS: https.RequestOptions = {
 import { spawn } from 'child_process';
 import { IncomingMessage, ServerResponse } from 'http';
 import { URL } from 'url';
-import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
-import ffmpegPath from 'ffmpeg-static';
+import { app } from 'electron';
+import { resolveFfmpegBinary } from './ffmpeg-paths';
 
 const M3U8_CONTENT_TYPES = [
     'application/x-mpegurl',
@@ -23,32 +22,10 @@ const M3U8_CONTENT_TYPES = [
 ];
 
 const STREAM_PROXY_VERSION = '2026-06-01-r10';
-// electron-builder unpacks native binaries from inside app.asar into a sibling
-// app.asar.unpacked directory; the module's reported `path` still references
-// the asar location and cannot be spawned, so rewrite it.
-function unpackAsarPath(p: string | null): string | null {
-    if (!p) return null;
-    return p.replace(/([\\/])app\.asar([\\/])/, '$1app.asar.unpacked$2');
-}
-const FFMPEG_STATIC_BIN = unpackAsarPath(
-    typeof ffmpegPath === 'string' ? ffmpegPath : null
+const { binary: FFMPEG_BIN, source: FFMPEG_SOURCE } = resolveFfmpegBinary(
+    app.isPackaged,
+    process.resourcesPath
 );
-const FFMPEG_INSTALLER_BIN = unpackAsarPath(
-    typeof ffmpegInstaller?.path === 'string' ? ffmpegInstaller.path : null
-);
-const FFMPEG_BIN =
-    (FFMPEG_STATIC_BIN && fs.existsSync(FFMPEG_STATIC_BIN)
-        ? FFMPEG_STATIC_BIN
-        : null) ??
-    (FFMPEG_INSTALLER_BIN && fs.existsSync(FFMPEG_INSTALLER_BIN)
-        ? FFMPEG_INSTALLER_BIN
-        : null);
-const FFMPEG_SOURCE =
-    FFMPEG_BIN === FFMPEG_STATIC_BIN
-        ? 'ffmpeg-static'
-        : FFMPEG_BIN === FFMPEG_INSTALLER_BIN
-          ? '@ffmpeg-installer/ffmpeg'
-          : 'none';
 const HAS_WORKING_FFMPEG = !!FFMPEG_BIN;
 let ffmpegUnavailableLogged = false;
 
@@ -80,16 +57,13 @@ function rewriteM3u8(
             // Skip comments and directives (but rewrite URI= attributes in tags)
             if (trimmed.startsWith('#')) {
                 // Rewrite URI values inside EXT-X-KEY, EXT-X-MAP etc.
-                return line.replace(
-                    /URI="([^"]+)"/g,
-                    (_m, rawUri) => {
-                        const target = resolveHttpTarget(rawUri, manifestUrl);
-                        if (!target) {
-                            return `URI="${rawUri}"`;
-                        }
-                        return `URI="${proxyBase}?url=${encodeURIComponent(target)}"`;
+                return line.replace(/URI="([^"]+)"/g, (_m, rawUri) => {
+                    const target = resolveHttpTarget(rawUri, manifestUrl);
+                    if (!target) {
+                        return `URI="${rawUri}"`;
                     }
-                );
+                    return `URI="${proxyBase}?url=${encodeURIComponent(target)}"`;
+                });
             }
             // Blank lines
             if (!trimmed) return line;
@@ -121,7 +95,7 @@ function maybeTranscodeResponse(
         if (!ffmpegUnavailableLogged) {
             ffmpegUnavailableLogged = true;
             console.warn(
-                `[StreamProxy] ffmpeg binary unavailable (ffmpeg-static=${FFMPEG_STATIC_BIN ?? 'none'}, installer=${FFMPEG_INSTALLER_BIN ?? 'none'}); serving source without transcoding`
+                '[StreamProxy] Development FFmpeg binary unavailable; serving source without transcoding'
             );
         }
         return false;
@@ -468,8 +442,10 @@ function handleProxyRequest(req: IncomingMessage, res: ServerResponse) {
         audioIndexParsed <= 8
             ? audioIndexParsed
             : undefined;
-    const shouldTranscode = transcodeParam === '1' || transcodeParam === 'audio';
-    const transcodeMode: TranscodeMode = transcodeParam === 'audio' ? 'audio' : 'full';
+    const shouldTranscode =
+        transcodeParam === '1' || transcodeParam === 'audio';
+    const transcodeMode: TranscodeMode =
+        transcodeParam === 'audio' ? 'audio' : 'full';
     const shouldTranscodeRequest = shouldTranscode && req.method === 'GET';
 
     if (!targetUrl) {
@@ -560,7 +536,10 @@ function handleProxyRequest(req: IncomingMessage, res: ServerResponse) {
                 location &&
                 redirectCount < MAX_REDIRECTS
             ) {
-                const nextUrl = resolveHttpTarget(location, currentTarget.toString());
+                const nextUrl = resolveHttpTarget(
+                    location,
+                    currentTarget.toString()
+                );
                 if (nextUrl) {
                     console.log(
                         `[StreamProxy] redirect(${redirectCount + 1}/${MAX_REDIRECTS}) -> ${nextUrl}`
@@ -601,8 +580,10 @@ function handleProxyRequest(req: IncomingMessage, res: ServerResponse) {
 
             // Allow renderer to use this resource
             responseHeaders['access-control-allow-origin'] = '*';
-            responseHeaders['access-control-allow-methods'] = 'GET, HEAD, OPTIONS';
-            responseHeaders['access-control-allow-headers'] = 'Range, Content-Type';
+            responseHeaders['access-control-allow-methods'] =
+                'GET, HEAD, OPTIONS';
+            responseHeaders['access-control-allow-headers'] =
+                'Range, Content-Type';
 
             const contentType = (
                 proxyRes.headers['content-type'] || ''
@@ -674,7 +655,9 @@ export function startStreamProxy(): Promise<number> {
         }
 
         if (proxyServer) {
-            reject(new Error('Stream proxy server exists without a bound port'));
+            reject(
+                new Error('Stream proxy server exists without a bound port')
+            );
             return;
         }
 
