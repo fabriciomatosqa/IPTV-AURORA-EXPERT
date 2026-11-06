@@ -261,7 +261,7 @@ See `docs/architecture/m3u-playlist-module.md` for complete documentation.
 **Data Storage (Environment-Specific)**:
 
 - **Electron**: libSQL/SQLite database via Drizzle ORM
-    - Location: `~/.iptvmate/databases/iptvmate.db`
+    - Location: `~/.iptv-aurora-expert/databases/aurora.db`
     - Full-featured relational database with foreign keys and indexes
     - Supports local file or remote Turso instance via env vars
 - **PWA (Web)**: IndexedDB via `ngx-indexed-db`
@@ -357,7 +357,7 @@ This project uses modern Angular signal-based APIs and patterns. **ALWAYS** use 
 **Database**:
 
 - **ORM**: Drizzle ORM with libSQL (local SQLite file or remote Turso)
-- **Location**: `~/.iptvmate/databases/iptvmate.db` (avoids spaces in path)
+- **Location**: `~/.iptv-aurora-expert/databases/aurora.db` (avoids spaces in path)
 - **Schema** (`apps/electron-backend/src/app/database/schema.ts`):
     - `playlists` - Playlist metadata (M3U, Xtream, Stalker)
     - `categories` - Content categories (live, movies, series)
@@ -436,7 +436,7 @@ iptvmate supports both Electron (desktop app) and PWA (web browser) to provide f
 - `app.config.ts` - `DataFactory()` selects DataService implementation based on environment
 - `app.routes.ts` - Different routes for Xtream portals (Electron uses Tauri-based routes, PWA uses standard routes)
 - Storage layer switches automatically:
-    - Electron → libSQL/Drizzle ORM → `~/.iptvmate/databases/iptvmate.db`
+    - Electron → libSQL/Drizzle ORM → `~/.iptv-aurora-expert/databases/aurora.db`
     - PWA → IndexedDB → Browser storage
 - External player support (MPV/VLC) only available in Electron
 - File system operations only available in Electron (uploading playlists from disk)

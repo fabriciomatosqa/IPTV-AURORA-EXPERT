@@ -1,5 +1,12 @@
 import { KeyValuePipe } from '@angular/common';
-import { Component, input, inject, output, signal, OnInit } from '@angular/core';
+import {
+    Component,
+    input,
+    inject,
+    output,
+    signal,
+    OnInit,
+} from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatIcon } from '@angular/material/icon';
@@ -15,7 +22,7 @@ import { DownloadsService } from '../../services/downloads.service';
 import { createLogger } from '../../shared/utils/logger';
 
 type EpisodeViewMode = 'grid' | 'list';
-const EPISODE_VIEW_MODE_KEY = 'iptvmate_episode_view_mode';
+const EPISODE_VIEW_MODE_KEY = 'aurora_episode_view_mode';
 
 @Component({
     selector: 'app-season-container',
@@ -51,7 +58,9 @@ export class SeasonContainerComponent implements OnInit {
 
     ngOnInit() {
         // Load saved view mode preference
-        const savedMode = localStorage.getItem(EPISODE_VIEW_MODE_KEY) as EpisodeViewMode;
+        const savedMode = localStorage.getItem(
+            EPISODE_VIEW_MODE_KEY
+        ) as EpisodeViewMode;
         if (savedMode === 'grid' || savedMode === 'list') {
             this.viewMode.set(savedMode);
         }
@@ -364,7 +373,8 @@ export class SeasonContainerComponent implements OnInit {
 
         // Build episode title
         const selectedItem = this.stalkerStore.selectedItem();
-        const seriesName = selectedItem?.info?.name || this.seriesTitle() || 'Series';
+        const seriesName =
+            selectedItem?.info?.name || this.seriesTitle() || 'Series';
         const seasonNum = Number(this.selectedSeason) || 1;
         const episodeNum = episode.episode_num || 1;
         const episodeTitle = `${seriesName} - S${String(seasonNum).padStart(2, '0')}E${String(episodeNum).padStart(2, '0')} - ${episode.title}`;

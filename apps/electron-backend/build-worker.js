@@ -39,6 +39,7 @@ async function buildWorker() {
             minify: isProduction,
             // Resolve workspace libraries from tsconfig paths
             alias: {
+                'aurora-paths': path.join(__dirname, '../../libs/shared/database/src/lib/app-paths.ts'),
                 'shared-interfaces': path.join(__dirname, '../../libs/shared/interfaces/src/index.ts'),
                 'database': path.join(__dirname, '../../libs/shared/database/src/index.ts'),
             },

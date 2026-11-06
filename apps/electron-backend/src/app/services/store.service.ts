@@ -1,4 +1,5 @@
 import { Conf } from 'electron-conf/main';
+import { ensureAppDirectories } from 'database';
 
 export const WINDOW_BOUNDS = 'WINDOW_BOUNDS';
 export const MPV_PLAYER_PATH = 'MPV_PLAYER_PATH';
@@ -13,4 +14,7 @@ export type StoreType = {
 };
 
 // Export singleton store instance
-export const store = new Conf<StoreType>();
+export const store = new Conf<StoreType>({
+    dir: ensureAppDirectories().config,
+    name: 'aurora-settings',
+});

@@ -9,7 +9,7 @@ export enum DbStores {
 
 /** Defines db tables and schema */
 export const dbConfig: DBConfig = {
-    name: 'iptvmate',
+    name: 'iptv-aurora-expert',
     version: 1,
     objectStoresMeta: [
         {

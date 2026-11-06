@@ -1,7 +1,7 @@
 import type BetterSqlite3 from 'better-sqlite3';
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync } from 'fs';
 import { createRequire } from 'module';
-import { homedir } from 'os';
+import { ensureAppDirectories } from 'aurora-paths';
 import { join } from 'path';
 import { SaxesParser, SaxesTagPlain } from 'saxes';
 import { Readable } from 'stream';
@@ -41,7 +41,9 @@ function loadBetterSqlite3(): typeof BetterSqlite3 {
         ).resourcesPath;
 
         if (!resourcesPath) {
-            throw new Error('Electron resourcesPath was unexpectedly unavailable');
+            throw new Error(
+                'Electron resourcesPath was unexpectedly unavailable'
+            );
         }
 
         const unpackedPath = join(
@@ -150,11 +152,7 @@ const PROGRAM_BATCH_SIZE = 1000;
  * Get database file path (same as main app)
  */
 function getDatabasePath(): string {
-    const dbDir = join(homedir(), '.iptvmate', 'databases');
-    if (!existsSync(dbDir)) {
-        mkdirSync(dbDir, { recursive: true });
-    }
-    return join(dbDir, 'iptvmate.db');
+    return workerData?.databasePath || ensureAppDirectories().database;
 }
 
 /**

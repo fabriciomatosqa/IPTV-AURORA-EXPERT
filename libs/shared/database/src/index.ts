@@ -1,8 +1,9 @@
 /**
- * Shared Database module for iptvmate
+ * Shared Database module for IPTV AURORA EXPERT
  * Provides Drizzle ORM schema and connection utilities for SQLite database
  * Used by both electron-backend (read-write) and agent-backend (read-only)
  */
 
 export * from './lib/schema';
 export * from './lib/connection';
+export * from './lib/app-paths';

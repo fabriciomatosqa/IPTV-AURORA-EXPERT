@@ -10,7 +10,7 @@
         [minWidth]="200"
         [maxWidth]="600"
         [defaultWidth]="350"
-        storageKey="iptvmate_video_sidebar_width"
+        storageKey="aurora_video_sidebar_width"
         handlePosition="right"
     >
         @defer {
@@ -60,7 +60,9 @@
                 <!-- Add ArtPlayer component -->
                 @if (playerSettings.player === 'artplayer') {
                     <app-web-player-view
-                        [streamUrl]="activeChannel.url + (activeChannel.epgParams || '')"
+                        [streamUrl]="
+                            activeChannel.url + (activeChannel.epgParams || '')
+                        "
                         [streamHeaders]="streamHeaders"
                     />
                 }

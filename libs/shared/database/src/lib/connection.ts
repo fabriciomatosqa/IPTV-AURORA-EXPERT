@@ -1,7 +1,7 @@
 /**
- * Database connection and initialization for iptvmate
+ * Database connection and initialization for IPTV AURORA EXPERT
  * Uses Drizzle ORM with better-sqlite3
- * Stores database file under ~/.iptvmate/databases/
+ * Stores database file under ~/.iptv-aurora-expert/databases/
  *
  * Provides two connection modes:
  * - Full access (for electron-backend): creates tables, read-write
@@ -11,9 +11,8 @@
 import Database from 'better-sqlite3';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
-import { existsSync, mkdirSync } from 'fs';
-import { homedir } from 'os';
-import { join } from 'path';
+import { ensureAppDirectories } from './app-paths';
+import { runMigrations } from './migrations';
 import * as schema from './schema';
 
 export type DatabaseInstance = BetterSQLite3Database<typeof schema>;
@@ -26,14 +25,7 @@ let initPromise: Promise<DatabaseInstance> | null = null;
  * Get the database file path
  */
 export function getDatabasePath(): string {
-    const dbDir = join(homedir(), '.iptvmate', 'databases');
-
-    // Ensure the directory exists
-    if (!existsSync(dbDir)) {
-        mkdirSync(dbDir, { recursive: true });
-    }
-
-    return join(dbDir, 'iptvmate.db');
+    return ensureAppDirectories().database;
 }
 
 /**
@@ -203,35 +195,11 @@ const CREATE_TABLE_STATEMENTS = [
 ];
 
 /**
- * Migration statements that may fail if already applied
- * These are run with try-catch to handle existing columns
- */
-const MIGRATION_STATEMENTS = [
-    // v1.0.0 -> v1.1.0: Add hidden column to categories for category management
-    `ALTER TABLE categories ADD COLUMN hidden INTEGER DEFAULT 0`,
-];
-
-/**
  * Create tables if they don't exist
  */
 function createTables(sqliteDb: Database.Database): void {
     for (const stmt of CREATE_TABLE_STATEMENTS) {
         sqliteDb.exec(stmt);
-    }
-}
-
-/**
- * Run migrations that may fail if already applied
- */
-function runMigrations(sqliteDb: Database.Database): void {
-    for (const stmt of MIGRATION_STATEMENTS) {
-        try {
-            sqliteDb.exec(stmt);
-        } catch (error) {
-            // Log and ignore errors for migrations that may have already been applied
-            // (e.g., "duplicate column name" for ALTER TABLE ADD COLUMN)
-            console.debug('Migration already applied or failed:', error);
-        }
     }
 }
 
@@ -261,6 +229,8 @@ export async function initDatabase(
 
         // Enable foreign keys
         sqlite.pragma('foreign_keys = ON');
+        if (!readonly) sqlite.pragma('journal_mode = WAL');
+        sqlite.pragma('busy_timeout = 5000');
 
         // Create tables only for read-write connections
         if (!readonly && !skipTableCreation) {
@@ -271,7 +241,11 @@ export async function initDatabase(
         const database = drizzle(sqlite, { schema });
         db = database;
         return database;
-    })();
+    })().catch((error) => {
+        closeDatabase();
+        initPromise = null;
+        throw error;
+    });
 
     return initPromise;
 }

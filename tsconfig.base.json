@@ -17,6 +17,7 @@
         "ignoreDeprecations": "6.0",
         "baseUrl": ".",
         "paths": {
+            "aurora-paths": ["libs/shared/database/src/lib/app-paths.ts"],
             "@iptvmate/pipes": ["libs/ui/pipes/src/index.ts"],
             "@package": ["./package.json"],
             "components": ["libs/ui/components/src/index.ts"],

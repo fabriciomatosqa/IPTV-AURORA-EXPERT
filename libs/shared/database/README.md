@@ -1,6 +1,6 @@
 # Database
 
-Shared database library for iptvmate providing Drizzle ORM schema and connection utilities.
+Shared database library for IPTV AURORA EXPERT providing Drizzle ORM schema and connection utilities.
 
 ## Usage
 
@@ -18,10 +18,12 @@ import { content, categories, playlists, type Content } from 'database';
 ## Exports
 
 ### Schema (`schema.ts`)
+
 - **Tables**: `playlists`, `categories`, `content`, `recentlyViewed`, `favorites`
 - **Types**: `Playlist`, `Category`, `Content`, `RecentlyViewed`, `Favorite` (and `New*` variants)
 
 ### Connection (`connection.ts`)
+
 - `getDatabase(options?)` - Full read-write access
 - `getReadOnlyDatabase()` - Read-only access for agent queries
 - `initDatabase(options?)` - Initialize with custom options
@@ -30,4 +32,4 @@ import { content, categories, playlists, type Content } from 'database';
 
 ## Database Location
 
-The SQLite database is stored at: `~/.iptvmate/databases/iptvmate.db`
+The SQLite database is stored at: `~/.iptv-aurora-expert/databases/aurora.db`

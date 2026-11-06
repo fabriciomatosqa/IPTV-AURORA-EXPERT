@@ -4,7 +4,7 @@ import * as path from 'path';
 import { EpgProgram } from 'shared-interfaces';
 import { pathToFileURL } from 'url';
 import { Worker } from 'worker_threads';
-import { getDatabase } from '../database/connection';
+import { getDatabase, getDatabasePath } from '../database/connection';
 import * as schema from '../database/schema';
 
 /**
@@ -249,12 +249,9 @@ export default class EpgEvents {
             let workerPath: string;
 
             if (app.isPackaged) {
-                const resourcesPath = path.dirname(app.getAppPath());
+                const resourcesPath = process.resourcesPath;
                 workerPath = path.join(
                     resourcesPath,
-                    'dist',
-                    'apps',
-                    'electron-backend',
                     'workers',
                     'epg-parser.worker.js'
                 );
@@ -283,7 +280,10 @@ export default class EpgEvents {
                         maxOldGenerationSizeMb: 4096,
                         maxYoungGenerationSizeMb: 512,
                     },
-                    workerData: { nativeModulesPath },
+                    workerData: {
+                        nativeModulesPath,
+                        databasePath: getDatabasePath(),
+                    },
                 });
             } catch (error) {
                 console.error(
@@ -564,12 +564,9 @@ export default class EpgEvents {
             let workerPath: string;
 
             if (app.isPackaged) {
-                const resourcesPath = path.dirname(app.getAppPath());
+                const resourcesPath = process.resourcesPath;
                 workerPath = path.join(
                     resourcesPath,
-                    'dist',
-                    'apps',
-                    'electron-backend',
                     'workers',
                     'epg-parser.worker.js'
                 );
@@ -593,7 +590,10 @@ export default class EpgEvents {
                       )
                     : undefined;
                 worker = new Worker(workerURL, {
-                    workerData: { nativeModulesPath },
+                    workerData: {
+                        nativeModulesPath,
+                        databasePath: getDatabasePath(),
+                    },
                 });
             } catch (error) {
                 console.error(

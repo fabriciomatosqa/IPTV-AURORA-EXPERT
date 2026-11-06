@@ -4,11 +4,12 @@
  */
 
 import { and, eq, inArray, sql } from 'drizzle-orm';
-import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron';
+import { BrowserWindow, dialog, ipcMain, shell } from 'electron';
 import { existsSync, unlinkSync } from 'fs';
 import { extname, join } from 'path';
 import { getDatabase } from '../../database/connection';
 import * as schema from '../../database/schema';
+import { ensureAppDirectories } from 'database';
 
 type ElectronDownloadFn = (
     window: BrowserWindow,
@@ -200,7 +201,10 @@ async function startDownload(task: DownloadTask) {
                     try {
                         unlinkSync(partialPath);
                     } catch (e) {
-                        console.error('[Downloads] Failed to delete partial file:', e);
+                        console.error(
+                            '[Downloads] Failed to delete partial file:',
+                            e
+                        );
                     }
                 }
 
@@ -242,7 +246,8 @@ async function startDownload(task: DownloadTask) {
             .update(schema.downloads)
             .set({
                 status: 'failed',
-                errorMessage: error instanceof Error ? error.message : String(error),
+                errorMessage:
+                    error instanceof Error ? error.message : String(error),
                 updatedAt: sql`CURRENT_TIMESTAMP`,
             })
             .where(eq(schema.downloads.id, task.id));
@@ -274,7 +279,12 @@ ipcMain.handle(
             episodeNumber?: number;
             // Playlist info for auto-creation if needed
             playlistName?: string;
-            playlistType?: 'xtream' | 'stalker' | 'm3u-file' | 'm3u-text' | 'm3u-url';
+            playlistType?:
+                | 'xtream'
+                | 'stalker'
+                | 'm3u-file'
+                | 'm3u-text'
+                | 'm3u-url';
             serverUrl?: string;
             portalUrl?: string;
             macAddress?: string;
@@ -294,7 +304,10 @@ ipcMain.handle(
 
                 if (existingPlaylist.length === 0) {
                     // Create playlist entry for downloads to work
-                    console.log('[Downloads] Creating playlist entry for:', data.playlistId);
+                    console.log(
+                        '[Downloads] Creating playlist entry for:',
+                        data.playlistId
+                    );
                     await db.insert(schema.playlists).values({
                         id: data.playlistId,
                         name: data.playlistName || 'Unknown Playlist',
@@ -344,7 +357,9 @@ ipcMain.handle(
                         id: item.id,
                         url: data.url,
                         fileName,
-                        directory: data.downloadFolder,
+                        directory:
+                            data.downloadFolder ||
+                            ensureAppDirectories().downloads,
                         headers: data.headers
                             ? {
                                   'User-Agent': data.headers.userAgent || '',
@@ -360,7 +375,11 @@ ipcMain.handle(
                 }
 
                 // Already queued or downloading
-                return { success: false, error: 'Download already in progress', id: item.id };
+                return {
+                    success: false,
+                    error: 'Download already in progress',
+                    id: item.id,
+                };
             }
 
             // Create new download entry
@@ -387,7 +406,8 @@ ipcMain.handle(
                 id: insertedId,
                 url: data.url,
                 fileName,
-                directory: data.downloadFolder,
+                directory:
+                    data.downloadFolder || ensureAppDirectories().downloads,
                 headers: data.headers
                     ? {
                           'User-Agent': data.headers.userAgent || '',
@@ -469,7 +489,10 @@ ipcMain.handle(
 
             const item = existing[0];
             if (!['failed', 'canceled'].includes(item.status)) {
-                return { success: false, error: 'Can only retry failed or canceled downloads' };
+                return {
+                    success: false,
+                    error: 'Can only retry failed or canceled downloads',
+                };
             }
 
             await db
@@ -490,7 +513,7 @@ ipcMain.handle(
                 id: item.id,
                 url: item.url,
                 fileName,
-                directory: downloadFolder,
+                directory: downloadFolder || ensureAppDirectories().downloads,
             });
 
             broadcastUpdate();
@@ -526,7 +549,9 @@ ipcMain.handle('DOWNLOADS_REMOVE', async (_event, downloadId: number) => {
         }
 
         // Delete from database
-        await db.delete(schema.downloads).where(eq(schema.downloads.id, downloadId));
+        await db
+            .delete(schema.downloads)
+            .where(eq(schema.downloads.id, downloadId));
 
         broadcastUpdate();
         return { success: true };
@@ -585,7 +610,7 @@ ipcMain.handle('DOWNLOADS_GET', async (_event, downloadId: number) => {
  * Get default download folder
  */
 ipcMain.handle('DOWNLOADS_GET_DEFAULT_FOLDER', async () => {
-    return app.getPath('downloads');
+    return ensureAppDirectories().downloads;
 });
 
 /**
@@ -595,7 +620,7 @@ ipcMain.handle('DOWNLOADS_SELECT_FOLDER', async () => {
     const result = await dialog.showOpenDialog({
         properties: ['openDirectory', 'createDirectory'],
         title: 'Select Download Folder',
-        defaultPath: app.getPath('downloads'),
+        defaultPath: ensureAppDirectories().downloads,
     });
 
     if (result.canceled || result.filePaths.length === 0) {
@@ -630,34 +655,45 @@ ipcMain.handle('DOWNLOADS_PLAY_FILE', async (_event, filePath: string) => {
 /**
  * Clear all completed downloads
  */
-ipcMain.handle('DOWNLOADS_CLEAR_COMPLETED', async (_event, playlistId?: string) => {
-    try {
-        const db = await getDatabase();
+ipcMain.handle(
+    'DOWNLOADS_CLEAR_COMPLETED',
+    async (_event, playlistId?: string) => {
+        try {
+            const db = await getDatabase();
 
-        if (playlistId) {
-            await db
-                .delete(schema.downloads)
-                .where(
-                    and(
-                        eq(schema.downloads.playlistId, playlistId),
-                        inArray(schema.downloads.status, ['completed', 'failed', 'canceled'])
-                    )
-                );
-        } else {
-            await db
-                .delete(schema.downloads)
-                .where(
-                    inArray(schema.downloads.status, ['completed', 'failed', 'canceled'])
-                );
+            if (playlistId) {
+                await db
+                    .delete(schema.downloads)
+                    .where(
+                        and(
+                            eq(schema.downloads.playlistId, playlistId),
+                            inArray(schema.downloads.status, [
+                                'completed',
+                                'failed',
+                                'canceled',
+                            ])
+                        )
+                    );
+            } else {
+                await db
+                    .delete(schema.downloads)
+                    .where(
+                        inArray(schema.downloads.status, [
+                            'completed',
+                            'failed',
+                            'canceled',
+                        ])
+                    );
+            }
+
+            broadcastUpdate();
+            return { success: true };
+        } catch (error) {
+            console.error('[Downloads] Error clearing completed:', error);
+            throw error;
         }
-
-        broadcastUpdate();
-        return { success: true };
-    } catch (error) {
-        console.error('[Downloads] Error clearing completed:', error);
-        throw error;
     }
-});
+);
 
 /**
  * Reset stale downloads on startup (downloading -> failed)
@@ -672,9 +708,7 @@ export async function resetStaleDownloads() {
                 errorMessage: 'Download interrupted by application restart',
                 updatedAt: sql`CURRENT_TIMESTAMP`,
             })
-            .where(
-                inArray(schema.downloads.status, ['queued', 'downloading'])
-            );
+            .where(inArray(schema.downloads.status, ['queued', 'downloading']));
         console.log('[Downloads] Reset stale downloads');
     } catch (error) {
         console.error('[Downloads] Error resetting stale downloads:', error);

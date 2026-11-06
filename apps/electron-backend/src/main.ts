@@ -1,4 +1,6 @@
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
+import { ensureAppDirectories } from 'database';
+import { appendFileSync } from 'fs';
 import { join } from 'path';
 import App from './app/app';
 import { initDatabase } from './app/database/connection';
@@ -22,13 +24,20 @@ import SquirrelEvents from './app/events/squirrel.events';
 import StalkerEvents from './app/events/stalker.events';
 import XtreamEvents from './app/events/xtream.events';
 
-app.setName('iptvmate');
+app.setName('IPTV AURORA EXPERT');
+app.setAppUserModelId('com.aurora.iptvexpert');
+const auroraPaths = ensureAppDirectories();
+app.setPath('userData', auroraPaths.profile);
+app.setPath('sessionData', auroraPaths.profile);
+app.setAppLogsPath(auroraPaths.logs);
+appendFileSync(
+    join(auroraPaths.logs, 'startup.log'),
+    `${new Date().toISOString()} IPTV AURORA EXPERT ${app.getVersion()} started\n`
+);
 
-// Keep userData path stable in development so single-instance lock works reliably
-// across repeated Nx/Electron launches.
+// The dedicated profile also makes the single-instance lock independent of upstream.
 if (!app.isPackaged) {
     process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
-    app.setPath('userData', join(app.getPath('appData'), 'iptvmate-dev'));
 }
 
 // Allow IPTV stream servers with outdated TLS versions/cipher suites

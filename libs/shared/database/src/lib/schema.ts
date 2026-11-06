@@ -1,5 +1,5 @@
 /**
- * Drizzle ORM schema for iptvmate database
+ * Drizzle ORM schema for IPTV AURORA EXPERT database
  * This schema defines the structure for Xtream Codes API data storage
  *
  * Single source of truth for database schema - used by:
