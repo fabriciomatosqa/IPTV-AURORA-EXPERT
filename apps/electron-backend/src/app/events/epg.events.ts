@@ -296,6 +296,7 @@ export default class EpgEvents {
             }
 
             this.workers.set(url, worker);
+            let completed = false;
 
             worker.on(
                 'message',
@@ -328,6 +329,7 @@ export default class EpgEvents {
                                 break;
 
                             case 'EPG_COMPLETE':
+                                completed = true;
                                 console.log(
                                     this.loggerLabel,
                                     `EPG parsing complete for ${url}:`,
@@ -384,7 +386,8 @@ export default class EpgEvents {
             });
 
             worker.on('exit', (code) => {
-                if (code !== 0) {
+                // terminate() returns code 1 even after a successful completed job.
+                if (code !== 0 && !completed) {
                     console.error(
                         this.loggerLabel,
                         `Worker stopped with exit code ${code}`
