@@ -1,146 +1,106 @@
-# IPTVmate - IPTV Player Application
+﻿# IPTV AURORA EXPERT
 
-![IPTVmate icon](https://raw.githubusercontent.com/ThomasMcIntee/iptvmate/electron/src/assets/icons/favicon.256x256.png "IPTV player application")
-[![Release](https://img.shields.io/github/release/thomasmcintee/iptvmate.svg?style=for-the-badge&logo=github)](https://github.com/thomasmcintee/iptvmate/releases)
-[![Pre-release](https://img.shields.io/github/v/release/thomasmcintee/iptvmate?include_prereleases&label=pre-release&logo=github&style=for-the-badge)](https://github.com/thomasmcintee/iptvmate/releases)
-![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/thomasmcintee/iptvmate/build-and-test.yaml?style=for-the-badge&logo=github)
-[![Releases](https://img.shields.io/github/downloads/thomasmcintee/iptvmate/total?style=for-the-badge&logo=github)](https://github.com/thomasmcintee/iptvmate/releases)
-[![Codecov](https://img.shields.io/codecov/c/github/thomasmcintee/iptvmate?style=for-the-badge)](https://codecov.io/gh/thomasmcintee/iptvmate)
+Player desktop independente para Windows, baseado no código aberto do iptvmate. Suporta playlists M3U/M3U8 por arquivo, URL e texto, Xtream Codes, Stalker, EPG XMLTV, favoritos, histórico, downloads e continuidade de reprodução.
 
+A interface conserva os fluxos da base Angular/Electron e recebe nome, símbolo e metadados AURORA. Português e tema escuro são os padrões da primeira execução; os demais idiomas e temas continuam disponíveis.
 
-🌐 **[Website](https://thomasmcintee.github.io/iptvmate/)** |  [Buy me a coffee](https://ko-fi.com/thomasmcintee) | [GitHub Sponsors](https://github.com/sponsors/thomasmcintee)
+## Desenvolvimento no Windows
 
-**iptvmate** is a video player application that provides support for IPTV playlist playback (m3u, m3u8). The application allows users to import playlists using remote URLs or by uploading files from the local file system. Additionally, it supports EPG information in XMLTV format which can be provided via URL.
+Requisitos: Node.js **24.15.0**, pnpm **10** e dependências do projeto. Nesta máquina, o Node portátil está em `C:\Users\Fabricio\Tools\node-v24.15.0-win-x64`.
 
-The application is a cross-platform, open-source project built with Electron and Angular.
+No PowerShell, ajuste apenas a sessão atual:
 
-⚠️ Note: iptvmate does not provide any playlists or other digital content. The channels and pictures in the screenshots are for demonstration purposes only.
-
-![iptvmate: Channels list, player and epg list](./iptv-dark-theme.png)
-
-## Features
-
-- M3u and M3u8 playlist support 📺
-- Xtream Code (XC) and Stalker portal (STB) support
-- External player support - MPV, VLC
-- Add playlists from the file system or remote URLs 📂
-- Automatic playlist updates on application startup
-- Channel search functionality 🔍
-- EPG support (TV Guide) with detailed information
-- TV archive/catchup/timeshift functionality
-- Group-based channel list
-- Favorite channels management
-- Global favorites aggregated from all playlists
-- HTML video player with HLS.js support or Video.js-based player
-- Internationalization with support for 16 languages:
-  - Arabic
-  - Moroccan arabic
-  - English
-  - Russian
-  - German
-  - Korean
-  - Spanish
-  - Chinese
-  - Traditional chinese
-  - French
-  - Italian
-  - Turkish
-  - Japanese
-  - Dutch
-  - Belarusian
-  - Polish  
-- Custom "User Agent" header configuration for playlists
-- Light and Dark themes
-- Docker version available for self-hosting
-
-## Screenshots
-
-|                 Welcome screen: Playlists overview                 | Main player interface with channels sidebar and video player  |
-| :----------------------------------------------------------------: | :-----------------------------------------------------------: |
-|       ![Welcome screen: Playlists overview](./playlists.png)       |   ![Sidebar with channel and video player](./iptv-main.png)   |
-|            Welcome screen: Add playlist via file upload            |             Welcome screen: Add playlist via URL              |
-| ![Welcome screen: Add playlist via file upload](./iptv-upload.png) | ![Welcome screen: Add playlist via URL](./upload-via-url.png) |
-|              EPG Sidebar: TV guide on the right side               |                 General application settings                  |
-|     ![Playlist settings](./iptv-playlist-settings.png)             | ![EPG: TV guide on the right side](./iptv-epg.png)            |
-|                       Playlist settings                            |                   EPG: TV guide on the right side             |
-
-_Note: First version of the application which was developed as a PWA is available in an extra git branch._
-
-## Download
-
-Download the latest version of the application for macOS, Windows, and Linux from the [release page](https://github.com/thomasmcintee/iptvmate/releases).
-
-Alternatively, you can install the application using one of the following package managers:
-
-### Homebrew
-
-```shell
-brew install iptvmate
+```powershell
+$env:PATH = 'C:\Users\Fabricio\Tools\node-v24.15.0-win-x64;' + $env:PATH
+$env:NX_DAEMON = 'false'
+pnpm.cmd install --frozen-lockfile
+pnpm.cmd nx build electron-backend --configuration=production
 ```
 
-### Snap
+Use `pnpm.cmd` quando a política do PowerShell bloquear `pnpm.ps1`. Nenhuma mudança permanente de PATH ou da política de execução é necessária.
 
-```shell
-sudo snap install iptvmate
+Para desenvolver com recarregamento:
+
+```powershell
+pnpm.cmd nx serve electron-backend
 ```
 
-### Arch
+Para executar o build local sem servidor Angular:
 
-Also available as an Arch PKG, [iptvmate-bin](https://aur.archlinux.org/packages/iptvmate-bin/), in the AUR (using your favourite AUR-helper, .e.g. `yay`)
-
-```shell
-yay -S iptvmate-bin
+```powershell
+$env:ELECTRON_IS_DEV = '0'
+Remove-Item Env:ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue
+pnpm.cmd exec electron dist/apps/electron-backend/main.js
 ```
 
-### Gentoo
+## Dados independentes
 
-You can install iptvmate from the [gentoo-zh overlay](https://github.com/microcai/gentoo-zh)
+A raiz padrão é `%USERPROFILE%\.iptv-aurora-expert`. O aplicativo nunca importa automaticamente perfis ou dados do iptvmate ou do TvMate.
 
-```shell
-sudo eselect repository enable gentoo-zh
-sudo emerge --sync gentoo-zh
-sudo emerge iptvmate-bin
+| Caminho                                                                   | Uso                                                                                                            |
+| ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `databases/aurora.db`                                                     | Catálogos SQLite, categorias, favoritos, histórico, EPG, retomada e registro de downloads                      |
+| `profile/`                                                                | Perfil Chromium, IndexedDB de playlists M3U e preferências da interface, cache HTTP                            |
+| `config/aurora-settings.json`                                             | Preferências nativas, janela, players e controle remoto                                                        |
+| `downloads/`                                                              | Destino padrão dos arquivos baixados; a interface permite escolher outro                                       |
+| `logs/startup.log`                                                        | Registro mínimo de inicialização, sem credenciais                                                              |
+| `logs/main-process.log`                                                   | Diagnóstico antecipado, ambiente relevante e erros do processo principal; aplica redação de credenciais comuns |
+| `catalogs/`, `cache/images/`, `cache/metadata/`, `favorites/`, `history/` | Diretórios exclusivos preparados para extensões; atualmente os registros persistem no banco/perfil acima       |
+
+`AURORA_DATA_DIR` aceita uma raiz **absoluta** alternativa, útil para perfis de teste. O processo principal e o worker EPG usam o mesmo banco. Desenvolvimento e build local usam a mesma raiz padrão; defina uma raiz de teste para não misturar seus próprios dados.
+
+O AppUserModelID é `com.aurora.iptvexpert`. O controle remoto permanece opcional e usa a porta padrão **8876**, configurável. O proxy de streams escolhe uma porta local disponível. A desinstalação preserva os dados do usuário.
+
+## Verificação
+
+```powershell
+pnpm.cmd nx run electron-backend:verify-data
+pnpm.cmd nx run-many -t test --parallel=2
+pnpm.cmd nx run electron-backend-e2e:e2e
 ```
 
-[
-<a href="https://github.com/sponsors/thomasmcintee" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-green.png" alt="Buy Me A Coffee" width="185"></a>
+O teste de dados usa SQLite real com o ABI do Electron, em pastas de teste sob `dist`. O teste de ponta a ponta usa listas fictícias, XMLTV local e vídeos sintéticos gerados com FFmpeg; não exige provedor ou credenciais. `ELECTRON_RUN_AS_NODE` é removido do ambiente somente ao lançar a janela de teste.
 
-## Troubleshooting
+Para repetir a validação de uma cópia instalada, configure `AURORA_E2E_EXECUTABLE` com o caminho absoluto de seu executável e `AURORA_E2E_PROFILE_BASE` com uma pasta de teste existente, preferencialmente fora do workspace. A suíte cria um perfil novo, usa seu diretório como diretório de trabalho e introduz caminhos inválidos de desenvolvimento em `NODE_PATH` e `FFMPEG_BIN` para verificar a independência do pacote.
 
-`
+## Instalador Windows
 
-## How to Build and Develop
-
-Requirements:
-
-- Node.js with npm
-
-1. Clone this repository and install project dependencies:
-
-    ```
-    npm install
-    ```
-
-2. Start the application:
-
-    ```
-    npm run serve:backend
-    ```
-
-This will open the Electron app in a separate window, while the Angular dev server will run at <http://localhost:4200>.
-
-To run only the Angular app without Electron, use:
-
-```
-npm run serve:frontend
+```powershell
+pnpm.cmd nx run electron-backend:make
 ```
 
-## Disclaimer
+O alvo compila o frontend, o controle remoto, o worker EPG e o backend de produção; depois executa o electron-builder com publicação `never`. A configuração está em `electron-builder.json`; o empacotamento explícito está em `scripts/package-aurora.cjs`.
 
-**iptvmate doesn't provide any playlists or other digital content.**
+O script inclui o FFmpeg disponível em `resources/media/`, com licença, identificação e SHA-256. `scripts/verify-aurora-package.cjs` verifica o binário, o módulo SQLite, o worker, os arquivos legais e as entradas do ASAR antes de aceitar o pacote. A versão instalada carrega o FFmpeg desses recursos e não dos módulos de desenvolvimento.
 
-<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+Saída esperada: `dist/executables/iptv-aurora-expert-1.1.2-windows-x64-setup.exe`, além da pasta `win-unpacked`. O instalador NSIS usa identidade e GUID próprios, instalação por usuário e atalhos AURORA. Não há assinatura comercial configurada nesta etapa. A assinatura pode ser adicionada posteriormente com um certificado do responsável pelo produto.
 
-[![All Contributors](https://img.shields.io/badge/all_contributors-13-orange.svg?style=flat-square)](#contributors)
+`pnpm.cmd nx run electron-backend:package` gera somente a pasta executável. Após um build já verificado, `pnpm.cmd nx run electron-backend:make-native` executa apenas o empacotamento. Mantenha iguais as versões do `package.json` raiz e de `apps/electron-backend/package.json`.
 
-<!-- ALL-CONTRIBUTORS-BADGE:END -->
+Não há feed de atualização configurado, publicação automática de releases ou criação automática de release no workflow. O workflow de build apenas armazena artefatos de CI. O comando de empacotamento também força publicação desativada.
+
+## Escopo e limitações
+
+- Xtream e Stalker, busca, filmes/séries, players externos, áudio, legendas, temas e idiomas permanecem na base. A validação com cada provedor, codecs e players externos depende de conteúdo autorizado e dos programas locais correspondentes.
+- A referência instalada fornecida é **TvMate IPTV Player 7.5.4 (Flutter/MSIX)**, distinta do iptvmate. Nenhum código ou arte desse produto foi copiado; paridade completa com suas telas não foi estabelecida.
+- A base possui compatibilidade TLS permissiva e credenciais locais sem criptografia de aplicação. Esses comportamentos herdados estão documentados para uma etapa de endurecimento antes de distribuição pública.
+- Avisos de dependências CommonJS, tamanho de bundles e Browserslist continuam registrados. Consulte os resultados efetivos de testes e empacotamento no relatório da etapa.
+
+## Documentação
+
+- [Arquitetura, módulos preservados e decisões](docs/architecture-and-first-stage.md)
+- [Análise estática da referência](docs/reference-analysis.md)
+- [Revisão e correções de reprodução](docs/playback-review.md)
+- [Resultados da primeira etapa](docs/first-stage-results.md)
+- [Causa e correção da exceção do processo principal](docs/main-process-incident.md)
+- [Créditos e avisos de terceiros](THIRD_PARTY_NOTICES.md)
+
+## Contribuicoes
+
+Problemas e sugestões: https://github.com/fabriciomatosqa/IPTV-AURORA-EXPERT/issues
+
+Faça alterações em branches de desenvolvimento. Esta etapa não publica na `main` e não cria releases.
+
+## Licença e autoria
+
+Licença MIT. AURORA deriva de **iptvmate**, de Thomas McIntee e colaboradores, e da base histórica **IPTVnator**, de 4gray e colaboradores. Os avisos originais em [LICENSE.md](LICENSE.md) permanecem intactos. Consulte [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) para atribuições e dependências.

@@ -1,10 +1,10 @@
 # Remote Control Web App
 
-A lightweight, mobile-optimized web application that provides remote control functionality for iptvmate. Control live channel switching from your phone or tablet on the same network.
+A lightweight, mobile-optimized web application that provides remote control functionality for IPTV AURORA EXPERT. Control live channel switching from your phone or tablet on the same network.
 
 ## Overview
 
-This is a standalone Angular application designed to be served by iptvmate's Electron backend via an HTTP server. It provides a beautiful, Apple TV-inspired remote control interface that communicates with the main iptvmate desktop application to change channels.
+This is a standalone Angular application designed to be served by IPTV AURORA EXPERT's Electron backend via an HTTP server. It provides a beautiful, Apple TV-inspired remote control interface that communicates with the main IPTV AURORA EXPERT desktop application to change channels.
 
 ## Features
 
@@ -35,7 +35,7 @@ This is a standalone Angular application designed to be served by iptvmate's Ele
                                           └──────────────────┘
 ```
 
-1. **HTTP Server**: Electron backend starts an HTTP server (default port: 8765)
+1. **HTTP Server**: Electron backend starts an HTTP server (default port: 8876)
 2. **Static Files**: Serves this Angular app's built files
 3. **REST API**: Exposes channel/volume/status endpoints for the web remote
 4. **IPC Communication**: HTTP server sends events to the main Electron window
@@ -56,22 +56,22 @@ This is a standalone Angular application designed to be served by iptvmate's Ele
 
 ### Enable Remote Control
 
-1. Open iptvmate desktop app
+1. Open IPTV AURORA EXPERT desktop app
 2. Go to **Settings**
 3. Enable **"Remote Control"** checkbox
-4. Optionally change the port (default: 8765)
+4. Optionally change the port (default: 8876)
 5. The HTTP server starts automatically
 
 ### Access from Mobile Device
 
 1. Ensure your phone/tablet is on the **same network** as your computer
 2. Find your computer's IP address:
-   - **Windows**: `ipconfig` (look for IPv4)
-   - **macOS**: `ifconfig` or System Preferences → Network
-   - **Linux**: `ip addr` or `hostname -I`
+    - **Windows**: `ipconfig` (look for IPv4)
+    - **macOS**: `ifconfig` or System Preferences → Network
+    - **Linux**: `ip addr` or `hostname -I`
 3. Open browser on your mobile device
-4. Navigate to: `http://<YOUR_IP>:8765`
-   - Example: `http://192.168.1.100:8765`
+4. Navigate to: `http://<YOUR_IP>:8876`
+    - Example: `http://192.168.1.100:8876`
 
 ### Controls
 
@@ -101,7 +101,7 @@ The app is designed to be served by the Electron backend's HTTP server. To test:
 # Start Electron backend (includes HTTP server)
 nx serve electron-backend
 
-# Access at http://localhost:8765
+# Access at http://localhost:8876
 ```
 
 ### Project Structure
@@ -124,6 +124,7 @@ apps/remote-control-web/
 ## Shared UI Library
 
 The remote control component is located in:
+
 ```
 libs/ui/remote-control/
 ├── src/lib/remote-control/
@@ -148,6 +149,7 @@ This library is shared and can be reused in other applications if needed.
 ## Design Philosophy
 
 The interface is inspired by Apple TV's remote control:
+
 - **Minimalism**: Clean, uncluttered design with essential controls only
 - **Glass Morphism**: Frosted glass effects with subtle reflections
 - **Touch-Optimized**: Large touch targets (50% of circle per button)
@@ -163,6 +165,7 @@ The interface is inspired by Apple TV's remote control:
 ## Future Enhancements
 
 Potential improvements:
+
 - Volume control
 - Play/pause functionality
 - Channel search
@@ -182,4 +185,4 @@ Potential improvements:
 
 ## License
 
-Same as iptvmate main project.
+Same as IPTV AURORA EXPERT main project.
