@@ -1,108 +1,104 @@
-name: Build and Make Electron App
+name: Build Windows Installer
 
 on:
     push:
         branches:
             - main
-        tags:
-            - 'v*.*.*'
+            - 'feat/**'
     pull_request:
-        branches:
-            - main
+        branches: [main]
     workflow_dispatch:
 
+permissions:
+    contents: read
+
+concurrency:
+    group: windows-installer-${{ github.ref }}
+    cancel-in-progress: true
+
 jobs:
-    build:
-        name: Build on ${{ matrix.os }} ${{ matrix.arch }}
-        runs-on: ${{ matrix.runner }}
+    windows:
+        name: Build and verify Windows x64 installer
+        runs-on: windows-latest
         timeout-minutes: 60
-        strategy:
-            matrix:
-                include:
-                    # macOS builds - separate runners to avoid native module conflicts
-                    - os: macos
-                      runner: macos-15-intel
-                      arch: x64
-                    - os: macos
-                      runner: macos-latest
-                      arch: arm64
-                    # Linux and Windows
-                    - os: linux
-                      runner: ubuntu-latest
-                    - os: windows
-                      runner: windows-latest
+        env:
+            CI: 'true'
+            NX_DAEMON: 'false'
+            PLAYWRIGHT_HTML_OPEN: never
+            CSC_IDENTITY_AUTO_DISCOVERY: 'false'
 
         steps:
-            - name: Checkout code
+            - name: Checkout source
               uses: actions/checkout@v4
-
             - name: Install pnpm
               uses: pnpm/action-setup@v4
-
             - name: Setup Node.js
               uses: actions/setup-node@v4
               with:
-                  node-version: '24.15.0'
-                  cache: 'pnpm'
-
-            - name: Install Linux system dependencies
-              if: matrix.os == 'linux'
-              run: sudo apt-get install --no-install-recommends -y rpm libarchive-tools
-
+                  node-version-file: .nvmrc
+                  cache: pnpm
             - name: Install dependencies
               run: pnpm install --frozen-lockfile
-
-            - name: Build frontend
-              run: pnpm nx build web --skip-nx-cache
-
-            - name: Build backend
-              run: pnpm run build:backend
-
-            - name: Make Electron app
-              if: matrix.os != 'macos'
-              run: pnpm run make:app
-
-            - name: Make Electron app (macOS)
-              if: matrix.os == 'macos'
+            - name: Run unit tests
+              run: pnpm nx run-many -t test --parallel=2 --runInBand --outputStyle=static
+            - name: Build verified Windows installer
+              run: pnpm nx run electron-backend:make --outputStyle=static
+            - name: Verify SQLite data isolation and migrations
+              run: pnpm nx run electron-backend:verify-data --outputStyle=static
+            - name: Test packaged application
+              shell: pwsh
+              run: |
+                  $env:AURORA_E2E_EXECUTABLE = Join-Path $env:GITHUB_WORKSPACE 'dist/executables/win-unpacked/IPTV AURORA EXPERT.exe'
+                  $env:AURORA_E2E_PROFILE_BASE = Join-Path $env:RUNNER_TEMP 'aurora-e2e-profiles'
+                  New-Item -ItemType Directory -Path $env:AURORA_E2E_PROFILE_BASE -Force | Out-Null
+                  pnpm nx run-many -t e2e -p electron-backend-e2e --excludeTaskDependencies --skipNxCache --outputStyle=static
+            - name: Record installer SHA-256
+              shell: pwsh
+              run: |
+                  $setups = @(Get-ChildItem -LiteralPath 'dist/executables' -Filter '*-windows-x64-setup.exe')
+                  if ($setups.Count -ne 1) { throw 'Expected exactly one Windows x64 installer' }
+                  $setup = $setups[0]
+                  $hash = (Get-FileHash -LiteralPath $setup.FullName -Algorithm SHA256).Hash
+                  "$hash  $($setup.Name)" | Set-Content -LiteralPath 'dist/executables/SHA256SUMS.txt' -Encoding utf8
+                  [ordered]@{
+                      file = $setup.Name
+                      bytes = $setup.Length
+                      sha256 = $hash
+                      commit = $env:GITHUB_SHA
+                      branch = $env:GITHUB_REF_NAME
+                      run = $env:GITHUB_RUN_ID
+                  } | ConvertTo-Json | Set-Content -LiteralPath 'dist/executables/build-info.json' -Encoding utf8
+            - name: Upload Windows installer for download
+              id: installer
+              uses: actions/upload-artifact@v4.6.2
+              with:
+                  name: IPTV-AURORA-EXPERT-Windows-x64
+                  path: |
+                      dist/executables/*-windows-x64-setup.exe
+                      dist/executables/SHA256SUMS.txt
+                      dist/executables/build-info.json
+                  if-no-files-found: error
+                  retention-days: 30
+                  compression-level: 0
+            - name: Add download link to run summary
+              shell: pwsh
               env:
-                  CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-                  CSC_FOR_PULL_REQUEST: 'false'
-                  CSC_LINK: ''
-                  CSC_KEY_PASSWORD: ''
-              run: pnpm run make:app
+                  INSTALLER_ARTIFACT_URL: ${{ steps.installer.outputs.artifact-url }}
+              run: |
+                  @"
+                  ## IPTV AURORA EXPERT — Windows x64
+                  [Baixar o instalador verificado]($env:INSTALLER_ARTIFACT_URL)
 
-            - name: Upload artifacts (macOS)
-              if: matrix.os == 'macos'
+                  Extraia o ZIP e execute o arquivo de instalação .exe. O pacote inclui SHA256SUMS.txt e build-info.json.
+                  Artefato disponível por 30 dias. O download pelo Actions exige login no GitHub.
+                  Este workflow não publica releases nem altera a main.
+                  "@ >> $env:GITHUB_STEP_SUMMARY
+            - name: Upload diagnostics on failure
+              if: failure()
               uses: actions/upload-artifact@v4.6.2
               with:
-                  name: macos-${{ matrix.arch }}-artifacts
+                  name: windows-build-diagnostics
                   path: |
-                      dist/executables/**/*.dmg
-                      dist/executables/**/*.zip
-                  retention-days: 7
-
-            - name: Upload artifacts (Linux)
-              if: matrix.os == 'linux'
-              uses: actions/upload-artifact@v4.6.2
-              with:
-                  name: linux-artifacts
-                  path: |
-                      dist/executables/**/*.deb
-                      dist/executables/**/*.rpm
-                      dist/executables/**/*.snap
-                      dist/executables/**/*.AppImage
-                      dist/executables/**/*.tar.gz
-                      dist/executables/**/*.pacman
-                      dist/executables/**/*.flatpak
-                  retention-days: 7
-
-            - name: Upload artifacts (Windows)
-              if: matrix.os == 'windows'
-              uses: actions/upload-artifact@v4.6.2
-              with:
-                  name: windows-artifacts
-                  path: |
-                      dist/executables/**/*.exe
-                      dist/executables/**/*.msi
-                      dist/executables/**/*.zip
+                      dist/playwright-report/electron-backend-e2e/
+                      dist/test-results/electron-backend-e2e/
                   retention-days: 7

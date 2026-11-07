@@ -65,6 +65,14 @@ Para repetir a validação de uma cópia instalada, configure `AURORA_E2E_EXECUT
 
 ## Instalador Windows
 
+### Download pelo GitHub
+
+Abra **Actions → Build Windows Installer**, escolha a execução concluída com sucesso na branch de desenvolvimento e, em **Artifacts**, baixe **IPTV-AURORA-EXPERT-Windows-x64**. Extraia o ZIP para acessar o instalador `.exe`, `SHA256SUMS.txt` e `build-info.json`.
+
+O resumo da execução também mostra um link direto para o artefato. O download pelo Actions exige login no GitHub e fica disponível por 30 dias. O workflow testa o aplicativo empacotado antes de disponibilizá-lo; não cria releases nem envia alterações para a `main`. A automação desta etapa prioriza o instalador Windows x64; as configurações locais dos demais sistemas continuam no electron-builder.
+
+### Gerar localmente
+
 ```powershell
 pnpm.cmd nx run electron-backend:make
 ```
