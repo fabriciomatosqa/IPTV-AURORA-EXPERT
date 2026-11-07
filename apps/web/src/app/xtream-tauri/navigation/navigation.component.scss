@@ -1,166 +1,200 @@
 :host {
-    padding: 4px;
+    display: block;
+    height: 100%;
+    min-width: 104px;
+    width: 104px;
+    flex: 0 0 104px;
+    box-sizing: border-box;
+    overflow: hidden;
+    color: #d7dce4;
+    background: #202227;
+}
+
+.aurora-desktop-nav {
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
+    align-items: stretch;
+    width: 100%;
     height: 100%;
+    min-height: 0;
+    padding: 12px 8px 10px;
+    background: linear-gradient(180deg, #24262c 0%, #1b1d22 100%);
+    border-right: 1px solid rgba(255, 255, 255, 0.07);
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: #40444e transparent;
 }
 
-.mdc-list {
-    padding: 2px 0;
-}
-
-.mat-nav-list {
-    padding: 0;
-    margin: 0;
-
-    .mdc-list-item {
-        min-height: 28px;
-        height: 28px;
-        padding: 0 !important;
-        border-radius: 4px;
-        margin: 2px 0;
-        display: flex;
-        justify-content: center;
-
-        .mdc-list-item__start {
-            margin-inline-end: 0 !important;
-            margin-inline-start: 0 !important;
-        }
-
-        .mdc-list-item__content {
-            display: none;
-        }
-    }
-
-    mat-icon.mat-mdc-list-item-icon,
-    mat-icon {
-        font-size: 18px !important;
-        width: 18px !important;
-        height: 18px !important;
-    }
-}
-
-.navigation-bottom {
-    margin-top: auto;
-    padding-bottom: 2px;
-}
-
-.active {
-    transition: all 0.2s ease;
-    background: rgba(63, 81, 181, 0.12);
-    color: #3f51b5;
-
-    mat-icon {
-        color: #3f51b5;
-    }
-}
-
-mat-divider {
-    margin: 1px 0;
-}
-
-mat-icon {
-    margin-right: 0;
-    font-size: 18px !important;
-    width: 18px !important;
-    height: 18px !important;
-}
-
-a.mat-mdc-list-item.mdc-list-item {
-    padding-right: 0;
-}
-
-.portal-status-container {
-    app-region: drag;
-    margin: -4px -4px 0;
-    position: relative;
-    overflow: visible;
-    height: 42px;
+.rail-brand {
+    height: 44px;
+    flex: 0 0 44px;
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
+    gap: 6px;
+    color: #e6fff8;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.085em;
 
-    // Gradient layer that bleeds below the container
-    &::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: -16px;
-        opacity: 0.9;
-        transition: background 0.4s ease;
-        pointer-events: none;
-    }
-
-    // Status-specific gradients
-    &.status-active::before {
-        background: linear-gradient(
-            to bottom,
-            rgba(76, 175, 80, 0.35) 0%,
-            rgba(46, 125, 50, 0.18) 50%,
-            transparent 100%
-        );
-    }
-
-    &.status-active .status-watermark {
-        color: rgba(76, 175, 80, 0.18);
-    }
-
-    &.status-inactive::before,
-    &.status-unavailable::before {
-        background: linear-gradient(
-            to bottom,
-            rgba(244, 67, 54, 0.35) 0%,
-            rgba(183, 28, 28, 0.18) 50%,
-            transparent 100%
-        );
-    }
-
-    &.status-inactive .status-watermark,
-    &.status-unavailable .status-watermark {
-        color: rgba(244, 67, 54, 0.18);
-    }
-
-    &.status-expired::before {
-        background: linear-gradient(
-            to bottom,
-            rgba(255, 152, 0, 0.35) 0%,
-            rgba(230, 81, 0, 0.18) 50%,
-            transparent 100%
-        );
-    }
-
-    &.status-expired .status-watermark {
-        color: rgba(255, 152, 0, 0.18);
-    }
-
-    // The oversized decorative watermark icon
-    .status-watermark {
-        position: absolute;
-        font-size: 48px !important;
-        width: 48px !important;
-        height: 48px !important;
-        transform: rotate(-12deg);
-        pointer-events: none;
-        z-index: 0;
-        transition: color 0.4s ease, transform 0.4s ease;
-        margin: 0;
-    }
-
-    &:hover .status-watermark {
-        transform: rotate(-8deg) scale(1.05);
+    img {
+        width: 28px;
+        height: 28px;
+        object-fit: contain;
     }
 }
 
-.nav-section {
-    .mat-nav-list {
-        padding: 0;
-        margin: 0;
-        background: rgba(255, 255, 255, 0.03);
-        border-radius: 2px;
-        overflow: hidden;
+.rail-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    height: 22px;
+    flex: 0 0 22px;
+    margin: 0 8px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 7px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #a9adb5;
+    background: rgba(255, 255, 255, 0.025);
+
+    mat-icon {
+        height: 12px;
+        width: 12px;
+        font-size: 12px;
     }
+
+    &.status-active mat-icon { color: #5cdbc4; }
+    &.status-expired mat-icon { color: #ffcb6a; }
+    &.status-inactive mat-icon,
+    &.status-unavailable mat-icon { color: #f29c9c; }
+}
+
+.rail-section {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+}
+
+.rail-item {
+    appearance: none;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 55px;
+    padding: 7px 3px 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    background: transparent;
+    color: #bfc4ce;
+    font: 500 10px/1.15 Roboto, 'Helvetica Neue', sans-serif;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.16s ease, color 0.16s ease,
+        border-color 0.16s ease;
+
+    mat-icon {
+        font-size: 22px;
+        width: 22px;
+        height: 22px;
+        margin: 0;
+        flex: none;
+    }
+
+    span {
+        display: block;
+        overflow: hidden;
+        max-width: 100%;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &:hover {
+        color: #f9fbff;
+        background: rgba(255, 255, 255, 0.075);
+    }
+
+    &:focus-visible {
+        outline: 2px solid #79e9d7;
+        outline-offset: 1px;
+    }
+
+    &.active {
+        color: #a6ffea;
+        background: linear-gradient(145deg, rgba(36, 207, 172, 0.18), rgba(118, 85, 244, 0.12));
+        border-color: rgba(79, 224, 195, 0.22);
+
+        mat-icon { color: #72ebd2; }
+    }
+}
+
+.rail-separator {
+    flex: 0 0 1px;
+    height: 1px;
+    margin: 13px 10px;
+    background: rgba(255, 255, 255, 0.10);
+}
+
+.rail-library .rail-item {
+    min-height: 49px;
+    font-size: 9px;
+    color: #aeb4c1;
+}
+
+.rail-spacer {
+    flex: 1 0 12px;
+}
+
+.rail-bottom {
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.rail-bottom .rail-item {
+    min-height: 48px;
+    font-size: 9px;
+}
+
+:host-context(.light-theme) {
+    color: #283139;
+    background: #e9ecef;
+
+    .aurora-desktop-nav {
+        background: linear-gradient(180deg, #f3f4f7, #e8eaf0);
+        border-right-color: rgba(0, 0, 0, 0.10);
+    }
+    .rail-brand { color: #1c5953; }
+    .rail-item { color: #414954; }
+    .rail-item:hover { color: #233029; background: rgba(30, 80, 73, 0.09); }
+    .rail-item.active { color: #0a6a5a; background: #c9f0e4; }
+    .rail-library .rail-item { color: #54606a; }
+    .rail-separator, .rail-bottom { border-color: rgba(0,0,0,0.10); }
+}
+
+@media (max-height: 650px) {
+    .rail-item { min-height: 43px; gap: 2px; }
+    .rail-library .rail-item,
+    .rail-bottom .rail-item { min-height: 38px; }
+    .rail-brand { height: 34px; flex-basis: 34px; }
+    .rail-status { margin-bottom: 8px; }
+    .rail-separator { margin: 7px 10px; }
+}
+
+@media (max-width: 700px) {
+    :host { width: 78px; min-width: 78px; flex-basis: 78px; }
+    .aurora-desktop-nav { padding-inline: 5px; }
+    .rail-brand { font-size: 8px; gap: 2px; }
+    .rail-brand img { width: 24px; height: 24px; }
+    .rail-item { font-size: 9px; }
+    .rail-status { font-size: 8px; }
 }
