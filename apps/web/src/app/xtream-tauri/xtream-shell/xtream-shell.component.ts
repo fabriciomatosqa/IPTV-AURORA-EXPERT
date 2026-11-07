@@ -32,11 +32,6 @@ export class XtreamShellComponent {
 
     readonly mainNavigationItems: NavigationItem[] = [
         {
-            id: 'vod',
-            icon: 'movie',
-            labelKey: 'PORTALS.SIDEBAR.MOVIES',
-        },
-        {
             id: 'live',
             icon: 'live_tv',
             labelKey: 'PORTALS.SIDEBAR.LIVE_TV',
@@ -45,6 +40,11 @@ export class XtreamShellComponent {
             id: 'series',
             icon: 'tv',
             labelKey: 'PORTALS.SIDEBAR.SERIES',
+        },
+        {
+            id: 'vod',
+            icon: 'movie',
+            labelKey: 'PORTALS.SIDEBAR.MOVIES',
         },
     ];
 
