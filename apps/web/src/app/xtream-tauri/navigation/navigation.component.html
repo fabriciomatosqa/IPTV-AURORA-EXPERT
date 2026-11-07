@@ -1,136 +1,147 @@
-<div
-    class="portal-status-container"
-    [class]="getStatusColor()"
-    [matTooltip]="xtreamStore.portalStatus()"
-    matTooltipPosition="right"
->
-    <mat-icon class="status-watermark">{{ getStatusIcon() }}</mat-icon>
-</div>
-<div class="nav-section">
-    <!-- <div class="nav-group-label">{{ 'PORTALS.SIDEBAR.MAIN' | translate }}</div> -->
-    <mat-nav-list>
+<!-- Compact desktop navigation inspired by the Windows IPTV Expert layout.
+     All actions continue to use the existing Xtream/Stalker routes and services. -->
+<nav class="aurora-desktop-nav" aria-label="Navegação IPTV AURORA EXPERT">
+    <div class="rail-brand" title="IPTV AURORA EXPERT">
+        <img src="assets/aurora/aurora.svg" alt="" aria-hidden="true" />
+        <span>AURORA</span>
+    </div>
+
+    <div
+        class="rail-status"
+        [class]="getStatusColor()"
+        [matTooltip]="xtreamStore.portalStatus()"
+        matTooltipPosition="right"
+        aria-label="Estado da conexão"
+    >
+        <mat-icon aria-hidden="true">{{ getStatusIcon() }}</mat-icon>
+        <span>EXPERT</span>
+    </div>
+
+    <div class="rail-section rail-primary">
         <a
-            mat-list-item
+            class="rail-item"
             routerLink="/"
             routerLinkActive="active"
             [routerLinkActiveOptions]="{ exact: true }"
             [matTooltip]="'PORTALS.SIDEBAR.HOME' | translate"
             matTooltipPosition="right"
         >
-            <mat-icon matListItemIcon>home</mat-icon>
+            <mat-icon aria-hidden="true">home</mat-icon>
+            <span>{{ 'PORTALS.SIDEBAR.HOME' | translate }}</span>
         </a>
-    </mat-nav-list>
-</div>
-<mat-divider />
-<div class="nav-section">
-    <!-- <div class="nav-group-label">{{ 'PORTALS.SIDEBAR.MAIN' | translate }}</div> -->
-    <mat-nav-list>
+
         @for (item of navigationItems(); track item.id) {
-            <a
-                mat-list-item
+            <button
+                class="rail-item"
+                type="button"
                 [class.active]="isContentTypeActive(item.id)"
+                [attr.aria-pressed]="isContentTypeActive(item.id)"
                 (click)="categoryClick.emit(item.id)"
                 [matTooltip]="item.labelKey | translate"
                 matTooltipPosition="right"
             >
-                <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
-            </a>
+                <mat-icon aria-hidden="true">{{ item.icon }}</mat-icon>
+                <span>{{ item.labelKey | translate }}</span>
+            </button>
         }
-    </mat-nav-list>
-</div>
-<mat-divider />
 
-<div class="nav-section">
-    <!-- <div class="nav-group-label">
-        {{ 'PORTALS.SIDEBAR.LIBRARY' | translate }}
-    </div> -->
-    <mat-nav-list>
-        @if (!isStalkerPlaylist()) {
-            <a
-                mat-list-item
-                routerLink="./recently-added"
-                routerLinkActive="active"
-                [matTooltip]="'PORTALS.SIDEBAR.RECENTLY_ADDED' | translate"
-                matTooltipPosition="right"
-                (click)="pageSwitch('recently-added')"
-            >
-                <mat-icon matListItemIcon>new_releases</mat-icon>
-            </a>
-        }
-        <a
-            mat-list-item
-            routerLink="./search"
-            routerLinkActive="active"
-            [matTooltip]="'PORTALS.SIDEBAR.SEARCH' | translate"
-            matTooltipPosition="right"
-            (click)="pageSwitch('search')"
-        >
-            <mat-icon matListItemIcon>search</mat-icon>
-        </a>
-        <a
-            mat-list-item
-            routerLink="./recent"
-            routerLinkActive="active"
-            [matTooltip]="'PORTALS.SIDEBAR.RECENT' | translate"
-            matTooltipPosition="right"
-            (click)="pageSwitch('recent')"
-        >
-            <mat-icon matListItemIcon>history</mat-icon>
-        </a>
-        <a
-            mat-list-item
-            routerLink="./favorites"
-            routerLinkActive="active"
-            [matTooltip]="'PORTALS.SIDEBAR.FAVORITES' | translate"
-            matTooltipPosition="right"
-            (click)="pageSwitch('favorites')"
-        >
-            <mat-icon matListItemIcon>favorite</mat-icon>
-        </a>
         @if (isElectron) {
             <a
-                mat-list-item
+                class="rail-item"
                 routerLink="./downloads"
                 routerLinkActive="active"
                 [matTooltip]="'DOWNLOADS.TITLE' | translate"
                 matTooltipPosition="right"
             >
-                <mat-icon matListItemIcon>download</mat-icon>
+                <mat-icon aria-hidden="true">download</mat-icon>
+                <span>{{ 'DOWNLOADS.TITLE' | translate }}</span>
             </a>
         }
-    </mat-nav-list>
-</div>
+    </div>
 
-<div class="navigation-bottom">
-    <mat-divider />
-    <mat-nav-list>
+    <div class="rail-separator" aria-hidden="true"></div>
+    <div class="rail-section rail-library" aria-label="Biblioteca">
+        <a
+            class="rail-item"
+            routerLink="./search"
+            routerLinkActive="active"
+            (click)="pageSwitch('search')"
+            [matTooltip]="'PORTALS.SIDEBAR.SEARCH' | translate"
+            matTooltipPosition="right"
+        >
+            <mat-icon aria-hidden="true">search</mat-icon>
+            <span>{{ 'PORTALS.SIDEBAR.SEARCH' | translate }}</span>
+        </a>
+        <a
+            class="rail-item"
+            routerLink="./favorites"
+            routerLinkActive="active"
+            (click)="pageSwitch('favorites')"
+            [matTooltip]="'PORTALS.SIDEBAR.FAVORITES' | translate"
+            matTooltipPosition="right"
+        >
+            <mat-icon aria-hidden="true">star</mat-icon>
+            <span>{{ 'PORTALS.SIDEBAR.FAVORITES' | translate }}</span>
+        </a>
+        <a
+            class="rail-item"
+            routerLink="./recent"
+            routerLinkActive="active"
+            (click)="pageSwitch('recent')"
+            [matTooltip]="'PORTALS.SIDEBAR.RECENT' | translate"
+            matTooltipPosition="right"
+        >
+            <mat-icon aria-hidden="true">history</mat-icon>
+            <span>{{ 'PORTALS.SIDEBAR.RECENT' | translate }}</span>
+        </a>
         @if (!isStalkerPlaylist()) {
             <a
-                mat-list-item
-                class="action-button"
+                class="rail-item"
+                routerLink="./recently-added"
+                routerLinkActive="active"
+                (click)="pageSwitch('recently-added')"
+                [matTooltip]="'PORTALS.SIDEBAR.RECENTLY_ADDED' | translate"
+                matTooltipPosition="right"
+            >
+                <mat-icon aria-hidden="true">new_releases</mat-icon>
+                <span>{{ 'PORTALS.SIDEBAR.RECENTLY_ADDED' | translate }}</span>
+            </a>
+        }
+    </div>
+
+    <div class="rail-spacer"></div>
+    <div class="rail-section rail-bottom">
+        @if (!isStalkerPlaylist()) {
+            <button
+                class="rail-item"
+                type="button"
                 (click)="openAccountInfo()"
                 [matTooltip]="'PORTALS.SIDEBAR.ACCOUNT_INFO' | translate"
                 matTooltipPosition="right"
             >
-                <mat-icon>person</mat-icon>
-            </a>
+                <mat-icon aria-hidden="true">person</mat-icon>
+                <span>{{ 'PORTALS.SIDEBAR.ACCOUNT_INFO' | translate }}</span>
+            </button>
         }
-        <a
-            mat-list-item
+        <button
+            class="rail-item"
+            type="button"
             (click)="openPlaylistInfo()"
             [matTooltip]="'PORTALS.SIDEBAR.PLAYLIST_INFO' | translate"
             matTooltipPosition="right"
         >
-            <mat-icon matListItemIcon>playlist_play</mat-icon>
-        </a>
-        <mat-divider />
-        <a
-            mat-list-item
+            <mat-icon aria-hidden="true">playlist_play</mat-icon>
+            <span>{{ 'PORTALS.SIDEBAR.PLAYLIST_INFO' | translate }}</span>
+        </button>
+        <button
+            class="rail-item"
+            type="button"
             (click)="openSettings()"
             [matTooltip]="'MENU.SETTINGS' | translate"
             matTooltipPosition="right"
         >
-            <mat-icon matListItemIcon>settings</mat-icon>
-        </a>
-    </mat-nav-list>
-</div>
+            <mat-icon aria-hidden="true">menu</mat-icon>
+            <span>{{ 'MENU.SETTINGS' | translate }}</span>
+        </button>
+    </div>
+</nav>
