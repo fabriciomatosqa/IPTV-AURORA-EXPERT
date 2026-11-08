@@ -1,64 +1,123 @@
-@use '@angular/material' as mat;
-
-.content {
-    overflow: hidden;
-    padding: 10px !important;
-    height: 500px;
+/* The Angular Material overlay now occupies the app viewport, not a
+ * fixed 1200 × 500 dialog. Native OS fullscreen is still optional. */
+.cdk-overlay-pane.aurora-player-dialog {
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: 100vw !important;
+    max-height: 100vh !important;
+    margin: 0 !important;
 }
 
-.align-actions {
-    justify-content: space-between;
-}
-
-mat-dialog-content {
-    .video-js {
-        height: 500px !important;
-    }
-
-    app-html-video-player,
-    app-web-player-view {
-        display: block;
-        height: 100%;
-    }
-}
-
-h2[mat-dialog-title] {
+.aurora-player-dialog .mat-mdc-dialog-container,
+.aurora-player-dialog .mat-mdc-dialog-surface,
+.aurora-player-dialog .mdc-dialog__surface {
     display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    max-width: none !important;
+    max-height: none !important;
+    min-height: 0;
+    border-radius: 0 !important;
+    background: #101318 !important;
+    color: #f4f6fa;
+    overflow: hidden;
+}
+
+.aurora-player-heading {
+    box-sizing: border-box;
+    flex: 0 0 52px;
+    display: flex !important;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
+    gap: 12px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    min-height: 52px;
+    max-height: 52px;
+    margin: 0 !important;
+    padding: 0 12px 0 20px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+    background: #171a21;
+    color: #fafbfc !important;
 }
 
-.dialog-fs-btn {
-    margin-left: auto;
+.aurora-player-title {
+    overflow: hidden;
+    min-width: 0;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 16px;
+    font-weight: 500;
 }
 
-// When the dialog is in fullscreen mode, make it cover the viewport and
-// give the video as much space as possible.
-.player-dialog-fullscreen {
-    .mat-mdc-dialog-surface,
-    .mdc-dialog__surface {
-        width: 100vw !important;
-        height: 100vh !important;
-        max-width: 100vw !important;
-        max-height: 100vh !important;
-        border-radius: 0 !important;
-    }
+.aurora-player-heading-actions {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 4px;
+}
 
-    mat-dialog-content,
-    .mat-mdc-dialog-content {
-        max-height: none !important;
-        height: calc(100vh - 110px);
-        padding: 0 !important;
-    }
+.aurora-player-dialog .content.aurora-player-content,
+.aurora-player-dialog .mat-mdc-dialog-content {
+    box-sizing: border-box;
+    display: block;
+    flex: 1 1 auto;
+    width: 100%;
+    height: auto !important;
+    min-height: 0;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden;
+    background: #050507;
+}
 
-    .video-js,
-    video {
-        width: 100% !important;
-        height: 100% !important;
-    }
+.aurora-player-dialog app-web-player-view,
+.aurora-player-dialog app-html-video-player,
+.aurora-player-dialog app-vjs-player,
+.aurora-player-dialog app-art-player,
+.aurora-player-dialog .player-host,
+.aurora-player-dialog .artplayer-container {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0;
+}
 
-    mat-dialog-content .video-js {
-        height: 100% !important;
+.aurora-player-dialog .video-js,
+.aurora-player-dialog video {
+    width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
+}
+
+.aurora-player-dialog .aurora-player-actions {
+    box-sizing: border-box;
+    display: flex;
+    flex: 0 0 48px;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 48px;
+    max-height: 48px;
+    padding: 0 16px !important;
+    margin: 0 !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.09);
+    background: #171a21;
+}
+
+@media (max-width: 600px) {
+    .aurora-player-heading {
+        padding-inline: 8px !important;
+    }
+    .aurora-player-title {
+        font-size: 13px;
+    }
+    .aurora-player-heading-actions {
+        gap: 0;
+    }
+    .aurora-player-dialog .aurora-player-actions {
+        padding-inline: 6px !important;
     }
 }
