@@ -5,8 +5,12 @@
 
 import axios from 'axios';
 import { dialog, ipcMain } from 'electron';
-import { parse } from 'iptv-playlist-parser';
-import { createPlaylistObject, getFilenameFromUrl } from 'm3u-utils';
+import {
+    createPlaylistObject,
+    getFilenameFromUrl,
+    parsePlaylistContent,
+    playlistImportError,
+} from 'm3u-utils';
 import { readFile, writeFile } from 'node:fs/promises';
 import { basename } from 'node:path';
 import { AUTO_UPDATE_PLAYLISTS, type Playlist } from 'shared-interfaces';
@@ -29,12 +33,18 @@ async function fetchPlaylistFromUrl(
     url: string,
     title?: string
 ): Promise<Playlist> {
-    if (!/^https?:\/\//i.test(url)) {
-        throw new Error('Endereço inválido: informe uma URL HTTP ou HTTPS.');
+    try {
+        const parsedUrl = new URL(url.trim());
+        if (!['http:', 'https:'].includes(parsedUrl.protocol))
+            throw new Error();
+        url = parsedUrl.toString();
+    } catch {
+        throw playlistImportError('INVALID_URL');
     }
 
     const agent = new https.Agent({ rejectUnauthorized: false });
     let body: string;
+    let sourceUrl = url;
     try {
         // IPTV providers can reject the default axios user agent or return
         // an HTML login/error page. Handle these cases before parsing.
@@ -50,41 +60,29 @@ async function fetchPlaylistFromUrl(
             },
         });
         body = response.data;
+        sourceUrl = response.request?.res?.responseUrl || url;
     } catch (error) {
         // Axios errors can include the complete URL (including IPTV account
         // credentials). Only expose a safe status or connection error.
         if (axios.isAxiosError(error)) {
             const status = error.response?.status;
+            if (status === 401 || status === 403)
+                throw playlistImportError('AUTH');
+            if (status === 404) throw playlistImportError('NOT_FOUND');
             if (status) {
-                throw new Error(`O servidor recusou a lista (HTTP ${status}).`);
+                throw playlistImportError('HTTP');
             }
             if (error.code === 'ENOTFOUND' || error.code === 'EAI_AGAIN') {
-                throw new Error('Domínio da lista não encontrado (DNS).');
+                throw playlistImportError('DNS');
             }
             if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
-                throw new Error('Tempo esgotado ao carregar a lista IPTV.');
+                throw playlistImportError('TIMEOUT');
             }
         }
-        throw new Error('Não foi possível conectar ao servidor da lista IPTV.');
+        throw playlistImportError('CONNECTION');
     }
 
-    if (typeof body !== 'string' || !body.replace(/^\uFEFF/, '').trimStart().startsWith('#EXTM3U')) {
-        throw new Error(
-            'O endereço não retornou uma lista M3U válida. Verifique o acesso ao provedor.'
-        );
-    }
-
-    let parsedPlaylist: ReturnType<typeof parse>;
-    try {
-        parsedPlaylist = parse(body.replace(/^\uFEFF/, ''));
-    } catch {
-        throw new Error('Não foi possível interpretar os dados da lista M3U.');
-    }
-    if (!parsedPlaylist.items?.length) {
-        throw new Error(
-            'O servidor respondeu, mas a lista M3U não contém canais ou conteúdos.'
-        );
-    }
+    const parsedPlaylist = parsePlaylistContent(body, sourceUrl);
 
     const extractedName = getFilenameFromUrl(url);
     const playlistName =
@@ -110,8 +108,13 @@ async function fetchPlaylistFromFile(
     filePath: string,
     title: string
 ): Promise<Playlist> {
-    const fileContent = await readFile(filePath, 'utf-8');
-    const parsedPlaylist = parse(fileContent);
+    let fileContent: string;
+    try {
+        fileContent = await readFile(filePath, 'utf-8');
+    } catch {
+        throw playlistImportError('FILE');
+    }
+    const parsedPlaylist = parsePlaylistContent(fileContent);
     const playlistObject = createPlaylistObject(
         title,
         parsedPlaylist,
@@ -125,7 +128,6 @@ ipcMain.handle('fetch-playlist-by-url', async (event, url, title?: string) => {
     try {
         return await fetchPlaylistFromUrl(url, title);
     } catch (error) {
-        console.error('Error fetching playlist:', error);
         throw error;
     }
 });
@@ -136,7 +138,6 @@ ipcMain.handle(
         try {
             return await fetchPlaylistFromFile(filePath, title);
         } catch (error) {
-            console.error('Error reading playlist from file:', error);
             throw error;
         }
     }
@@ -146,7 +147,7 @@ ipcMain.handle('open-playlist-from-file', async () => {
     const { canceled, filePaths } = await dialog.showOpenDialog({
         properties: ['openFile'],
         filters: [
-            { name: 'Playlists', extensions: ['m3u', 'm3u8', 'pls', 'txt'] },
+            { name: 'Playlists M3U', extensions: ['m3u', 'm3u8', 'txt'] },
             { name: 'All Files', extensions: ['*'] },
         ],
     });
@@ -161,11 +162,11 @@ ipcMain.handle('open-playlist-from-file', async () => {
     try {
         // Extract filename from path and remove extension for a clean title
         const filename = basename(filePath);
-        const title = filename.replace(/\.(m3u8?|pls|txt)$/i, '') || 'from file';
+        const title =
+            filename.replace(/\.(m3u8?|pls|txt)$/i, '') || 'from file';
 
         return await fetchPlaylistFromFile(filePath, title);
     } catch (error) {
-        console.error('Error reading or parsing the file:', error);
         throw error;
     }
 });
@@ -194,7 +195,9 @@ ipcMain.handle(AUTO_UPDATE_PLAYLISTS, async (event, playlists) => {
                     playlist.title
                 );
             } else {
-                console.warn('Skipping IPTV playlist: no URL or file path found.');
+                console.warn(
+                    'Skipping IPTV playlist: no URL or file path found.'
+                );
                 continue;
             }
 
@@ -209,7 +212,9 @@ ipcMain.handle(AUTO_UPDATE_PLAYLISTS, async (event, playlists) => {
 
             console.log('IPTV playlist update completed.');
         } catch (error) {
-            console.warn('Unable to refresh an IPTV playlist; credentials omitted.');
+            console.warn(
+                'Unable to refresh an IPTV playlist; credentials omitted.'
+            );
             // Continue with other playlists even if one fails
         }
     }
@@ -222,9 +227,7 @@ ipcMain.handle('save-file-dialog', async (event, defaultPath, filters) => {
     try {
         const { canceled, filePath } = await dialog.showSaveDialog({
             defaultPath,
-            filters: filters || [
-                { name: 'All Files', extensions: ['*'] },
-            ],
+            filters: filters || [{ name: 'All Files', extensions: ['*'] }],
         });
 
         if (canceled || !filePath) {

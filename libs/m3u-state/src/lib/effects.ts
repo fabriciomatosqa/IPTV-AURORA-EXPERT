@@ -7,6 +7,8 @@ import { StorageMap } from '@ngx-pwa/local-storage';
 import { TranslateService } from '@ngx-translate/core';
 import {
     catchError,
+    concatMap,
+    defer,
     combineLatestWith,
     EMPTY,
     filter,
@@ -118,7 +120,8 @@ export class PlaylistEffects {
                                         activeChannel?.url +
                                         (activeChannel?.epgParams ?? ''),
                                     title: activeChannel?.name ?? '',
-                                    'user-agent': activeChannel?.http?.['user-agent'],
+                                    'user-agent':
+                                        activeChannel?.http?.['user-agent'],
                                     referer: activeChannel?.http?.referrer,
                                     origin: activeChannel?.http?.origin,
                                 });
@@ -132,7 +135,8 @@ export class PlaylistEffects {
                                         activeChannel?.url +
                                         (activeChannel?.epgParams ?? ''),
                                     title: activeChannel?.name ?? '',
-                                    'user-agent': activeChannel?.http?.['user-agent'],
+                                    'user-agent':
+                                        activeChannel?.http?.['user-agent'],
                                     referer: activeChannel?.http?.referrer,
                                     origin: activeChannel?.http?.origin,
                                 });
@@ -215,7 +219,10 @@ export class PlaylistEffects {
                         })
                     ),
                     catchError((error: unknown) => {
-                        console.error('[PlaylistEffects] Failed to load playlists', error);
+                        console.error(
+                            '[PlaylistEffects] Failed to load playlists',
+                            error
+                        );
                         return of(
                             PlaylistActions.loadPlaylistsSuccess({
                                 playlists: [],
@@ -240,7 +247,9 @@ export class PlaylistEffects {
                         }
 
                         await firstValueFrom(
-                            this.playlistsService.deletePlaylist(action.playlistId)
+                            this.playlistsService.deletePlaylist(
+                                action.playlistId
+                            )
                         );
 
                         this.snackBar.open(
@@ -279,13 +288,17 @@ export class PlaylistEffects {
     parsePlaylist$ = createEffect(() => {
         return this.actions$.pipe(
             ofType(PlaylistActions.parsePlaylist),
-            map((action) =>
-                this.playlistsService.handlePlaylistParsing(
-                    action.uploadType,
-                    action.playlist,
-                    action.title,
-                    action.path
-                )
+            concatMap((action) =>
+                defer(() =>
+                    of(
+                        this.playlistsService.handlePlaylistParsing(
+                            action.uploadType,
+                            action.playlist,
+                            action.title,
+                            action.path
+                        )
+                    )
+                ).pipe(catchError(() => EMPTY))
             ),
             map((playlist) =>
                 PlaylistActions.addPlaylist({
@@ -330,7 +343,10 @@ export class PlaylistEffects {
                             type: 'xtream',
                         });
                         this.router.navigate(['/xtreams/', playlist._id]);
-                    } else if (playlist.macAddress && this.dataService.isElectron) {
+                    } else if (
+                        playlist.macAddress &&
+                        this.dataService.isElectron
+                    ) {
                         // Create Stalker playlist in SQLite
                         await window.electron.dbCreatePlaylist({
                             id: playlist._id.toString(),

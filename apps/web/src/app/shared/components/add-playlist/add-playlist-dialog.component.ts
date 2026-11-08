@@ -9,7 +9,12 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Store } from '@ngrx/store';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { PlaylistActions } from 'm3u-state';
-import { getFilenameFromUrl } from 'm3u-utils';
+import {
+    createPlaylistObject,
+    getFilenameFromUrl,
+    getPlaylistImportMessage,
+    parsePlaylistContent,
+} from 'm3u-utils';
 import { DataService } from 'services';
 import { PLAYLIST_PARSE_BY_URL } from 'shared-interfaces';
 import { FileUploadComponent } from '../../../home/file-upload/file-upload.component';
@@ -56,15 +61,12 @@ export class AddPlaylistDialogComponent {
         const playlist = (payload.uploadEvent.target as FileReader)
             .result as string;
 
-        this.store.dispatch(
-            PlaylistActions.parsePlaylist({
-                uploadType: 'FILE',
-                playlist,
-                title: payload.file.name,
-                path: (payload.file as File & { path?: string }).path,
-            })
+        this.importContent(
+            playlist,
+            payload.file.name,
+            'FILE',
+            (payload.file as File & { path?: string }).path
         );
-        this.closeDialog();
     }
 
     rejectFile(filename: string): void {
@@ -92,14 +94,33 @@ export class AddPlaylistDialogComponent {
      * @param text playlist as string
      */
     uploadAsText(playlist: string): void {
-        this.store.dispatch(
-            PlaylistActions.parsePlaylist({
-                uploadType: 'TEXT',
-                playlist,
-                title: this.translateService.instant('HOME.IMPORTED_AS_TEXT'),
-            })
+        this.importContent(
+            playlist,
+            this.translateService.instant('HOME.IMPORTED_AS_TEXT'),
+            'TEXT'
         );
-        this.closeDialog();
+    }
+
+    private importContent(
+        content: string,
+        title: string,
+        type: 'FILE' | 'TEXT',
+        path?: string
+    ): void {
+        try {
+            const playlist = createPlaylistObject(
+                title,
+                parsePlaylistContent(content),
+                path,
+                type
+            );
+            this.store.dispatch(PlaylistActions.addPlaylist({ playlist }));
+            this.closeDialog();
+        } catch (error) {
+            this.snackBar.open(getPlaylistImportMessage(error), 'Fechar', {
+                duration: 9000,
+            });
+        }
     }
 
     closeDialog() {

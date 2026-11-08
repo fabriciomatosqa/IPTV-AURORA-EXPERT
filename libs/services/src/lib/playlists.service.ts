@@ -2,11 +2,12 @@
 import { inject, Injectable } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslateService } from '@ngx-translate/core';
-import { parse } from 'iptv-playlist-parser';
 import {
     aggregateFavoriteChannels,
     createFavoritesPlaylist,
     createPlaylistObject,
+    parsePlaylistContent,
+    getPlaylistImportMessage,
 } from 'm3u-utils';
 import { NgxIndexedDBService } from 'ngx-indexed-db';
 import {
@@ -37,28 +38,30 @@ export class PlaylistsService {
     private translateService = inject(TranslateService);
 
     private get electronApi() {
-        return (globalThis as {
-            electron?: {
-                dbGetAllPlaylists?: () => Promise<
-                    Array<{
-                        id: string;
-                        name: string;
-                        serverUrl?: string | null;
-                        username?: string | null;
-                        password?: string | null;
-                        autoRefresh?: boolean | null;
-                        macAddress?: string | null;
-                        url?: string | null;
-                        filePath?: string | null;
-                        dateCreated?: string | null;
-                        lastUpdated?: string | null;
-                    }>
-                >;
-                dbDeletePlaylist?: (
-                    playlistId: string
-                ) => Promise<{ success: boolean }>;
-            };
-        }).electron;
+        return (
+            globalThis as {
+                electron?: {
+                    dbGetAllPlaylists?: () => Promise<
+                        Array<{
+                            id: string;
+                            name: string;
+                            serverUrl?: string | null;
+                            username?: string | null;
+                            password?: string | null;
+                            autoRefresh?: boolean | null;
+                            macAddress?: string | null;
+                            url?: string | null;
+                            filePath?: string | null;
+                            dateCreated?: string | null;
+                            lastUpdated?: string | null;
+                        }>
+                    >;
+                    dbDeletePlaylist?: (
+                        playlistId: string
+                    ) => Promise<{ success: boolean }>;
+                };
+            }
+        ).electron;
     }
 
     getAllPlaylists() {
@@ -83,7 +86,9 @@ export class PlaylistsService {
             return indexedDbPlaylists$;
         }
 
-        const sqlitePlaylists$ = from(this.electronApi.dbGetAllPlaylists()).pipe(
+        const sqlitePlaylists$ = from(
+            this.electronApi.dbGetAllPlaylists()
+        ).pipe(
             map((playlists) =>
                 playlists.map(
                     (playlist): PlaylistMeta => ({
@@ -155,7 +160,9 @@ export class PlaylistsService {
             this.electronApi.dbGetAllPlaylists(),
         ]);
 
-        const indexedDbIds = new Set(indexedDbPlaylists.map((playlist) => playlist._id));
+        const indexedDbIds = new Set(
+            indexedDbPlaylists.map((playlist) => playlist._id)
+        );
         const staleSqlitePlaylists = sqlitePlaylists.filter(
             (playlist) => !indexedDbIds.has(playlist.id)
         );
@@ -167,7 +174,9 @@ export class PlaylistsService {
         );
 
         return {
-            removedPlaylistIds: staleSqlitePlaylists.map((playlist) => playlist.id),
+            removedPlaylistIds: staleSqlitePlaylists.map(
+                (playlist) => playlist.id
+            ),
             indexedDbCount: indexedDbPlaylists.length,
             sqliteCount: sqlitePlaylists.length - staleSqlitePlaylists.length,
         };
@@ -236,7 +245,10 @@ export class PlaylistsService {
                         : {}),
                     // Stalker portal optional fields
                     ...(updatedPlaylist.stalkerSerialNumber !== undefined
-                        ? { stalkerSerialNumber: updatedPlaylist.stalkerSerialNumber }
+                        ? {
+                              stalkerSerialNumber:
+                                  updatedPlaylist.stalkerSerialNumber,
+                          }
                         : {}),
                     ...(updatedPlaylist.stalkerDeviceId1 !== undefined
                         ? { stalkerDeviceId1: updatedPlaylist.stalkerDeviceId1 }
@@ -245,10 +257,16 @@ export class PlaylistsService {
                         ? { stalkerDeviceId2: updatedPlaylist.stalkerDeviceId2 }
                         : {}),
                     ...(updatedPlaylist.stalkerSignature1 !== undefined
-                        ? { stalkerSignature1: updatedPlaylist.stalkerSignature1 }
+                        ? {
+                              stalkerSignature1:
+                                  updatedPlaylist.stalkerSignature1,
+                          }
                         : {}),
                     ...(updatedPlaylist.stalkerSignature2 !== undefined
-                        ? { stalkerSignature2: updatedPlaylist.stalkerSignature2 }
+                        ? {
+                              stalkerSignature2:
+                                  updatedPlaylist.stalkerSignature2,
+                          }
                         : {}),
                 })
             )
@@ -354,29 +372,26 @@ export class PlaylistsService {
             switchMap((portal) =>
                 this.dbService.update(DbStores.Playlists, {
                     ...portal,
-                    favorites: portal.favorites?.filter(
-                        (i) => {
-                            const expectedId = String(favoriteId);
-                            const streamId = String(
-                                (i as Partial<XtreamItem>).stream_id ?? ''
-                            );
-                            const seriesId = String(
-                                (i as Partial<XtreamSerieItem>).series_id ?? ''
-                            );
-                            const movieId = String(
-                                (i as Partial<{ movie_id: string }>).movie_id ??
-                                    ''
-                            );
-                            const itemId = String((i as any).id ?? '');
+                    favorites: portal.favorites?.filter((i) => {
+                        const expectedId = String(favoriteId);
+                        const streamId = String(
+                            (i as Partial<XtreamItem>).stream_id ?? ''
+                        );
+                        const seriesId = String(
+                            (i as Partial<XtreamSerieItem>).series_id ?? ''
+                        );
+                        const movieId = String(
+                            (i as Partial<{ movie_id: string }>).movie_id ?? ''
+                        );
+                        const itemId = String((i as any).id ?? '');
 
-                            return (
-                                streamId !== expectedId &&
-                                seriesId !== expectedId &&
-                                movieId !== expectedId &&
-                                itemId !== expectedId
-                            );
-                        }
-                    ),
+                        return (
+                            streamId !== expectedId &&
+                            seriesId !== expectedId &&
+                            movieId !== expectedId &&
+                            itemId !== expectedId
+                        );
+                    }),
                 })
             )
         );
@@ -411,7 +426,10 @@ export class PlaylistsService {
         path?: string
     ) {
         try {
-            const parsedPlaylist = parse(playlist);
+            const parsedPlaylist = parsePlaylistContent(
+                playlist,
+                uploadType === 'URL' ? path : undefined
+            );
             return createPlaylistObject(
                 title,
                 parsedPlaylist,
@@ -419,12 +437,10 @@ export class PlaylistsService {
                 uploadType
             );
         } catch (error) {
-            this.snackBar.open(
-                this.translateService.instant('HOME.PARSING_ERROR'),
-                undefined,
-                { duration: 2000 }
-            ); // TODO: translate
-            throw new Error(`Parsing failed, not a valid playlist: ${error}`);
+            this.snackBar.open(getPlaylistImportMessage(error), undefined, {
+                duration: 9000,
+            });
+            throw error;
         }
     }
 

@@ -4,6 +4,7 @@ import { Params } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { TranslateService } from '@ngx-translate/core';
 import { PlaylistActions } from 'm3u-state';
+import { getPlaylistImportMessage } from 'm3u-utils';
 import { DataService } from 'services';
 import {
     AUTO_UPDATE_PLAYLISTS,
@@ -201,20 +202,10 @@ export class ElectronService extends DataService {
         } catch (error) {
             // Never show or log the raw IPC/Axios error: it can contain
             // username/password from a credential-bearing playlist URL.
-            const detail = error instanceof Error ? error.message : '';
-            let message = 'Confira o endereço da lista e sua conexão.';
-            if (/HTTP 401|HTTP 403/.test(detail)) {
-                message = 'Acesso recusado pelo servidor (401/403). Confira a conta ou o provedor.';
-            } else if (/HTTP 404/.test(detail)) {
-                message = 'A lista não foi encontrada no servidor (404).';
-            } else if (/DNS|ENOTFOUND|EAI_AGAIN/i.test(detail)) {
-                message = 'Não foi possível localizar o servidor da lista (DNS).';
-            } else if (/Tempo esgotado|timeout|ETIMEDOUT/i.test(detail)) {
-                message = 'O servidor demorou demais para responder.';
-            } else if (/M3U|contém canais/i.test(detail)) {
-                message = 'O endereço não retornou uma lista M3U válida com conteúdos.';
-            }
-            console.warn('[AURORA IPTV] Falha ao importar lista M3U (dados do servidor omitidos).');
+            const message = getPlaylistImportMessage(error);
+            console.warn(
+                '[AURORA IPTV] Falha ao importar lista M3U (dados do servidor omitidos).'
+            );
             this.snackBar.open(`Falha ao importar IPTV. ${message}`, 'Fechar', {
                 duration: 9000,
             });
@@ -247,25 +238,35 @@ export class ElectronService extends DataService {
             return;
         }
 
-        methodToCall.then((playlistObject) => {
-            this.store.dispatch(
-                PlaylistActions.updatePlaylist({
-                    playlist: {
-                        ...playlistObject,
-                        _id: data.id,
-                    },
-                    playlistId: data.id,
-                })
-            );
+        methodToCall
+            .then((playlistObject) => {
+                this.store.dispatch(
+                    PlaylistActions.updatePlaylist({
+                        playlist: {
+                            ...playlistObject,
+                            _id: data.id,
+                        },
+                        playlistId: data.id,
+                    })
+                );
 
-            this.snackBar.open(
-                this.translateService.instant(
-                    'HOME.PLAYLISTS.PLAYLIST_UPDATE_SUCCESS'
-                ),
-                null,
-                { duration: 2000 }
-            );
-        });
+                this.snackBar.open(
+                    this.translateService.instant(
+                        'HOME.PLAYLISTS.PLAYLIST_UPDATE_SUCCESS'
+                    ),
+                    null,
+                    { duration: 2000 }
+                );
+            })
+            .catch((error: unknown) => {
+                this.snackBar.open(
+                    `Falha ao atualizar IPTV. ${getPlaylistImportMessage(error)}`,
+                    'Fechar',
+                    {
+                        duration: 9000,
+                    }
+                );
+            });
     }
 
     /* private getErrorMessageByStatusCode(status: number) {
@@ -356,9 +357,10 @@ export class ElectronService extends DataService {
                 if (
                     maybeError.error &&
                     typeof maybeError.error === 'object' &&
-                    'message' in (maybeError.error as Record<string, unknown>) &&
-                    typeof (maybeError.error as Record<string, unknown>).message ===
-                        'string'
+                    'message' in
+                        (maybeError.error as Record<string, unknown>) &&
+                    typeof (maybeError.error as Record<string, unknown>)
+                        .message === 'string'
                 ) {
                     return (maybeError.error as Record<string, string>).message;
                 }
