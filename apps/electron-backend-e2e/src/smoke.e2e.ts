@@ -953,6 +953,19 @@ test.describe('Electron App Smoke Test', () => {
                         '.poster-grid [data-test-id="channel-item"]'
                     )
                 ).toHaveCount(12);
+                const m3uCategories = mainWindow.locator(
+                    '[data-test-id="m3u-category-sidebar"]'
+                );
+                await expect(m3uCategories).toBeVisible();
+                await m3uCategories.locator('.library-category-list button').nth(1).click();
+                await expect(m3uCategories).toBeVisible();
+                await expect(
+                    mainWindow.locator('.poster-grid [data-test-id="channel-item"]')
+                ).not.toHaveCount(12);
+                await m3uCategories.locator('.library-category-list button').first().click();
+                await expect(
+                    mainWindow.locator('.poster-grid [data-test-id="channel-item"]')
+                ).toHaveCount(12);
                 await mainWindow.screenshot({
                     path: join(
                         screenshotDir,
