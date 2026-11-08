@@ -1,7 +1,9 @@
+import { isAdultContentLabel, moveAdultContentToEnd } from '../../shared/utils/adult-content-order';
 import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
     Component,
+    computed,
     effect,
     ElementRef,
     inject,
@@ -89,6 +91,11 @@ export class StalkerLiveStreamLayoutComponent implements OnDestroy {
 
     /** Channels */
     readonly itvChannels = this.stalkerStore.itvChannels;
+    readonly visibleChannels = computed(() =>
+        moveAdultContentToEnd(this.itvChannels(), (channel) =>
+            isAdultContentLabel(channel.o_name || channel.name)
+        )
+    );
     readonly hasMoreItems = this.stalkerStore.hasMoreChannels;
     readonly isLoadingMore = signal(false);
 
@@ -474,7 +481,7 @@ export class StalkerLiveStreamLayoutComponent implements OnDestroy {
             return;
         }
 
-        const channels = this.itvChannels();
+        const channels = this.visibleChannels();
         const nextItem = getAdjacentChannelItem(
             channels,
             activeItem.id,
@@ -501,7 +508,7 @@ export class StalkerLiveStreamLayoutComponent implements OnDestroy {
             return;
         }
 
-        const channel = getChannelItemByNumber(this.itvChannels(), command.number);
+        const channel = getChannelItemByNumber(this.visibleChannels(), command.number);
         if (!channel) {
             return;
         }

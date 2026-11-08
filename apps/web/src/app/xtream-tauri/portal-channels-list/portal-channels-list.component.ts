@@ -1,3 +1,4 @@
+import { adultCategoryIds, isAdultContentLabel, moveAdultContentToEnd } from '../../shared/utils/adult-content-order';
 import {
     CdkVirtualScrollViewport,
     ScrollingModule,
@@ -80,12 +81,19 @@ export class PortalChannelsListComponent implements AfterViewInit, OnDestroy {
             sensitivity: 'base',
         });
 
-        return [...channels].sort((a: any, b: any) => {
+        const sorted = [...channels].sort((a: any, b: any) => {
             const titleA = a.title ?? a.name ?? '';
             const titleB = b.title ?? b.name ?? '';
             const result = collator.compare(titleA, titleB);
             return mode === 'name-asc' ? result : -result;
         });
+        const markedCategories = adultCategoryIds(
+            this.xtreamStore.getCategoriesBySelectedType()
+        );
+        return moveAdultContentToEnd(sorted, (item: any) =>
+            markedCategories.has(String(item.category_id)) ||
+            isAdultContentLabel(item.title ?? item.name)
+        );
     });
 
     favorites = new Map<number, boolean>();

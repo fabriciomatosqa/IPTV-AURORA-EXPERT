@@ -8,7 +8,9 @@ export function isAdultContentLabel(value: string | null | undefined): boolean {
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .toLocaleLowerCase();
-    return /(?:^|[^a-z0-9])(?:adult(?:os?|as?)?|porn[a-z]*|xxx|onlyfans|only\s+fans|hentai|erotic[a-z]*|xvideos|xhamster|redtube|brazzers|18\+|\+18|🔞)(?=$|[^a-z0-9])/.test(label);
+    // Adult Swim is a general-animation channel, not a pornographic category.
+    const clean = label.replace(/\badult swim\b/g, '');
+    return /(?:^|[^a-z0-9])(?:adult(?:os?|as?)?|porn[a-z]*|xxx|onlyfans|only\s+fans|hentai|erotic[a-z]*|xvideos|xhamster|redtube|brazzers|18\+|\+18|🔞)(?=$|[^a-z0-9])/.test(clean);
 }
 
 /** Stable two-part ordering: leave the original order inside each group. */
