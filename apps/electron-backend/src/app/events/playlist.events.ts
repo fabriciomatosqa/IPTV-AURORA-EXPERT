@@ -29,27 +29,75 @@ async function fetchPlaylistFromUrl(
     url: string,
     title?: string
 ): Promise<Playlist> {
-    const agent = new https.Agent({
-        rejectUnauthorized: false,
-    });
-    const result = await axios.get(url, { httpsAgent: agent });
-    const parsedPlaylist = parse(result.data);
+    if (!/^https?:\/\//i.test(url)) {
+        throw new Error('Endereço inválido: informe uma URL HTTP ou HTTPS.');
+    }
 
-    const extractedName =
-        url && url.length > 1 ? getFilenameFromUrl(url) : '';
+    const agent = new https.Agent({ rejectUnauthorized: false });
+    let body: string;
+    try {
+        // IPTV providers can reject the default axios user agent or return
+        // an HTML login/error page. Handle these cases before parsing.
+        const response = await axios.get<string>(url, {
+            httpsAgent: agent,
+            responseType: 'text',
+            timeout: 90000,
+            maxRedirects: 5,
+            headers: {
+                Accept: '*/*',
+                'User-Agent':
+                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36',
+            },
+        });
+        body = response.data;
+    } catch (error) {
+        // Axios errors can include the complete URL (including IPTV account
+        // credentials). Only expose a safe status or connection error.
+        if (axios.isAxiosError(error)) {
+            const status = error.response?.status;
+            if (status) {
+                throw new Error(`O servidor recusou a lista (HTTP ${status}).`);
+            }
+            if (error.code === 'ENOTFOUND' || error.code === 'EAI_AGAIN') {
+                throw new Error('Domínio da lista não encontrado (DNS).');
+            }
+            if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+                throw new Error('Tempo esgotado ao carregar a lista IPTV.');
+            }
+        }
+        throw new Error('Não foi possível conectar ao servidor da lista IPTV.');
+    }
+
+    if (typeof body !== 'string' || !body.replace(/^\uFEFF/, '').trimStart().startsWith('#EXTM3U')) {
+        throw new Error(
+            'O endereço não retornou uma lista M3U válida. Verifique o acesso ao provedor.'
+        );
+    }
+
+    let parsedPlaylist: ReturnType<typeof parse>;
+    try {
+        parsedPlaylist = parse(body.replace(/^\uFEFF/, ''));
+    } catch {
+        throw new Error('Não foi possível interpretar os dados da lista M3U.');
+    }
+    if (!parsedPlaylist.items?.length) {
+        throw new Error(
+            'O servidor respondeu, mas a lista M3U não contém canais ou conteúdos.'
+        );
+    }
+
+    const extractedName = getFilenameFromUrl(url);
     const playlistName =
         !extractedName || extractedName === 'Untitled playlist'
-            ? 'Imported from URL'
+            ? 'Lista IPTV'
             : extractedName;
 
-    const playlistObject = createPlaylistObject(
+    return createPlaylistObject(
         title ?? playlistName,
         parsedPlaylist,
         url,
         'URL'
     );
-
-    return playlistObject;
 }
 
 /**
