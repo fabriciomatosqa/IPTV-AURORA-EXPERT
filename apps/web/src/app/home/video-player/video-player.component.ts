@@ -32,11 +32,12 @@ import {
     InfoOverlayComponent,
     MultiEpgContainerComponent,
     ResizableDirective,
+    PlaylistSwitcherComponent,
     SidebarComponent,
     ToolbarComponent,
     VjsPlayerComponent,
 } from 'components';
-import { PlaylistActions, ChannelActions, FavoritesActions } from 'm3u-state';
+import { PlaylistActions, ChannelActions, FavoritesActions, selectPlaylistTitle } from 'm3u-state';
 import {
     selectActive,
     selectChannels,
@@ -101,6 +102,7 @@ import { WebPlayerViewComponent } from 'shared-portals';
         MatIcon,
         MatMenuModule,
         ResizableDirective,
+        PlaylistSwitcherComponent,
         RouterLink,
         SidebarComponent,
         ToolbarComponent,
@@ -131,6 +133,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
 
     readonly browsing = signal(true);
     readonly catalogChannels = signal<Channel[]>([]);
+    readonly currentPlaylistTitle = this.store.selectSignal(selectPlaylistTitle);
     readonly catalogSection = signal('live');
     readonly catalogSearch = signal('');
     readonly catalogCategory = signal('');

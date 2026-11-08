@@ -126,7 +126,9 @@
                         >
                             @if (catalogSection() === 'live') {
                                 <div class="library-live-switcher">
-                                    <a routerLink="/listas" title="Escolher outra playlist">Lista IPTV <mat-icon>expand_more</mat-icon></a>
+                                    <app-playlist-switcher class="switcher"
+                                        [currentTitle]="currentPlaylistTitle()"
+                                        [subtitle]="'M3U'" />
                                     <button type="button" aria-label="Pesquisar categorias"
                                         (click)="categorySearchOpen.set(!categorySearchOpen())">
                                         <mat-icon>search</mat-icon>
