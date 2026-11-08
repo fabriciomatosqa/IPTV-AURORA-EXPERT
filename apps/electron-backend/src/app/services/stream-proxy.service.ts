@@ -15,6 +15,16 @@ import { URL } from 'url';
 import { app } from 'electron';
 import { resolveFfmpegBinary } from './ffmpeg-paths';
 
+/** Log only the host: IPTV stream URLs often embed account credentials. */
+function sourceForLog(input: string): string {
+    try {
+        const url = new URL(input);
+        return `${url.protocol}//${url.host}/[redacted]`;
+    } catch {
+        return '[redacted stream]';
+    }
+}
+
 const M3U8_CONTENT_TYPES = [
     'application/x-mpegurl',
     'application/vnd.apple.mpegurl',
@@ -107,7 +117,7 @@ function maybeTranscodeResponse(
     }
 
     console.log(
-        `[StreamProxy] transcoding (${mode}) via ${FFMPEG_SOURCE}: ${sourceUrl}`
+        `[StreamProxy] transcoding (${mode}) via ${FFMPEG_SOURCE}: ${sourceForLog(sourceUrl)}`
     );
 
     const responseHeaders: http.OutgoingHttpHeaders = {
@@ -288,7 +298,7 @@ function spawnUrlAudioTranscode(
     }
 
     console.log(
-        `[StreamProxy] direct-url audio transcode via ${FFMPEG_SOURCE}: ${targetUrl}`
+        `[StreamProxy] direct-url audio transcode via ${FFMPEG_SOURCE}: ${sourceForLog(targetUrl)}`
     );
 
     res.writeHead(200, {
@@ -455,7 +465,7 @@ function handleProxyRequest(req: IncomingMessage, res: ServerResponse) {
     }
 
     console.log(
-        `[StreamProxy] ${req.method ?? 'GET'} -> ${targetUrl} (transcode=${shouldTranscode ? transcodeMode : '0'}, aidx=${audioStreamIndex ?? 'auto'})`
+        `[StreamProxy] ${req.method ?? 'GET'} -> ${sourceForLog(targetUrl)} (transcode=${shouldTranscode ? transcodeMode : '0'}, aidx=${audioStreamIndex ?? 'auto'})`
     );
 
     let target: URL;
@@ -542,7 +552,7 @@ function handleProxyRequest(req: IncomingMessage, res: ServerResponse) {
                 );
                 if (nextUrl) {
                     console.log(
-                        `[StreamProxy] redirect(${redirectCount + 1}/${MAX_REDIRECTS}) -> ${nextUrl}`
+                        `[StreamProxy] redirect(${redirectCount + 1}/${MAX_REDIRECTS}) -> ${sourceForLog(nextUrl)}`
                     );
                     proxyRes.resume();
                     createRequest(new URL(nextUrl), redirectCount + 1).end();
@@ -552,7 +562,7 @@ function handleProxyRequest(req: IncomingMessage, res: ServerResponse) {
 
             if (REDIRECT_STATUS_CODES.has(statusCode) && location) {
                 console.warn(
-                    `[StreamProxy] redirect not followed (count=${redirectCount}, location=${location})`
+                    `[StreamProxy] redirect not followed (count=${redirectCount}, location=${sourceForLog(location)})`
                 );
             }
 
@@ -624,7 +634,7 @@ function handleProxyRequest(req: IncomingMessage, res: ServerResponse) {
 
         proxyReq.on('error', (err: NodeJS.ErrnoException) => {
             console.error(
-                `[StreamProxy] proxy error for ${currentTarget.host}${currentTarget.pathname}: ${err.code} - ${err.message}`
+                `[StreamProxy] proxy error for ${sourceForLog(currentTarget.toString())}: ${err.code} - ${err.message}`
             );
             if (!res.headersSent) {
                 res.writeHead(502);
