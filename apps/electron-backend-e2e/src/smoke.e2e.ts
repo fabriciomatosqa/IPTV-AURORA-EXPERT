@@ -903,9 +903,11 @@ test.describe('Electron App Smoke Test', () => {
     });
 
     test('filters categories, searches, toggles favorites and browses movie and series posters at desktop sizes', async () => {
-        await mainWindow
-            .locator('#aurora-category')
-            .selectOption('TV | Notícias');
+        const liveCategories = mainWindow.locator(
+            '[data-test-id="m3u-category-sidebar"]'
+        );
+        await expect(liveCategories).toBeVisible();
+        await liveCategories.locator('[data-category-id="TV | Notícias"]').click();
         await expect(
             mainWindow.locator('[data-test-id="channel-item"]')
         ).toHaveCount(18);
