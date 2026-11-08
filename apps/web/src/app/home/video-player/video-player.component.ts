@@ -710,8 +710,10 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
 
     openSettings() {
         this.dialog.open(SettingsComponent, {
-            width: '1000px',
-            height: '90%',
+            width: '1100px',
+            maxWidth: '96vw',
+            height: '88dvh',
+            maxHeight: '92dvh',
             data: { isDialog: true },
         });
     }

@@ -338,8 +338,14 @@ test.describe('Electron App Smoke Test', () => {
                 );
             } else if (req.url === '/large.m3u') {
                 const rows = ['#EXTM3U'];
-                for (let i = 0; i < 20000; i++) rows.push(`#EXTINF:-1 group-title="TV",Canal ${i}\n${fixtureUrl}/live/${i}.ts`);
-                for (let i = 0; i < 100; i++) rows.push(`#EXTINF:-1 group-title="♦ Ação ✔",Filme ${i}\n${fixtureUrl}/vod/${i}.ts`);
+                for (let i = 0; i < 20000; i++)
+                    rows.push(
+                        `#EXTINF:-1 group-title="TV",Canal ${i}\n${fixtureUrl}/live/${i}.ts`
+                    );
+                for (let i = 0; i < 100; i++)
+                    rows.push(
+                        `#EXTINF:-1 group-title="♦ Ação ✔",Filme ${i}\n${fixtureUrl}/vod/${i}.ts`
+                    );
                 res.writeHead(200, { 'Content-Type': 'audio/x-mpegurl' });
                 setTimeout(() => res.end(rows.join('\n') + '\n'), 300);
             } else if (req.url?.startsWith('/get.php')) {
@@ -1212,17 +1218,36 @@ test.describe('Electron App Smoke Test', () => {
     });
 
     test('loads a large M3U with progress and bounded catalog rendering', async () => {
-        await mainWindow.evaluate(() => { location.hash = '#/'; });
+        await mainWindow.evaluate(() => {
+            location.hash = '#/';
+        });
         await mainWindow.locator('[data-test-id="add-playlist"]').click();
-        await mainWindow.getByRole('menuitem', { name: 'Adicionar via URL' }).click();
-        await mainWindow.locator('app-url-upload input').fill(fixtureUrl + '/large.m3u');
+        await mainWindow
+            .getByRole('menuitem', { name: 'Adicionar via URL' })
+            .click();
+        await mainWindow
+            .locator('app-url-upload input')
+            .fill(fixtureUrl + '/large.m3u');
         const started = Date.now();
-        await mainWindow.locator('app-url-upload button[type="submit"]').click();
-        await expect(mainWindow.locator('[data-test-id="playlist-loading"]')).toBeVisible();
-        await expect(mainWindow.locator('[data-test-id="channel-item"]')).toHaveCount(200);
-        console.log(`Synthetic 20,100-item import and first render: ${Date.now() - started} ms`);
-        await mainWindow.locator('.library-rail-links').getByRole('button', { name: 'Filmes', exact: true }).click();
-        await expect(mainWindow.locator('.poster-grid [data-test-id="channel-item"]')).toHaveCount(100);
+        await mainWindow
+            .locator('app-url-upload button[type="submit"]')
+            .click();
+        await expect(
+            mainWindow.locator('[data-test-id="playlist-loading"]')
+        ).toBeVisible();
+        await expect(
+            mainWindow.locator('[data-test-id="channel-item"]')
+        ).toHaveCount(200);
+        console.log(
+            `Synthetic 20,100-item import and first render: ${Date.now() - started} ms`
+        );
+        await mainWindow
+            .locator('.library-rail-links')
+            .getByRole('button', { name: 'Filmes', exact: true })
+            .click();
+        await expect(
+            mainWindow.locator('.poster-grid [data-test-id="channel-item"]')
+        ).toHaveCount(100);
     });
 
     test('opens the full movie and series API from a get.php URL that contains only live channels', async () => {
@@ -1256,26 +1281,206 @@ test.describe('Electron App Smoke Test', () => {
 
     test('migrates a previously saved get.php M3U without requiring reimport', async () => {
         await mainWindow.evaluate(async (base) => {
-            const playlist = await window.electron.fetchPlaylistByUrl(base + '/catalog.m3u', 'Lista anterior');
+            const playlist = await window.electron.fetchPlaylistByUrl(
+                base + '/catalog.m3u',
+                'Lista anterior'
+            );
             playlist._id = 'saved-get-php-migration';
-            playlist.url = base + '/get.php?username=synthetic&password=synthetic';
+            playlist.url =
+                base + '/get.php?username=synthetic&password=synthetic';
             await new Promise<void>((resolve, reject) => {
                 const request = indexedDB.open('iptv-aurora-expert');
                 request.onerror = () => reject(request.error);
                 request.onsuccess = () => {
                     const db = request.result;
-                    const transaction = db.transaction('playlists', 'readwrite');
+                    const transaction = db.transaction(
+                        'playlists',
+                        'readwrite'
+                    );
                     transaction.objectStore('playlists').put(playlist);
-                    transaction.oncomplete = () => { db.close(); resolve(); };
+                    transaction.oncomplete = () => {
+                        db.close();
+                        resolve();
+                    };
                     transaction.onerror = () => reject(transaction.error);
                 };
             });
             location.hash = '#/playlists/' + playlist._id;
         }, fixtureUrl);
-        await expect(mainWindow).toHaveURL(/\/xtreams\/saved-get-php-migration/);
-        await expect(mainWindow.locator('app-grid-list mat-card')).toHaveCount(12);
+        await expect(mainWindow).toHaveURL(
+            /\/xtreams\/saved-get-php-migration/
+        );
+        await expect(mainWindow.locator('app-grid-list mat-card')).toHaveCount(
+            12
+        );
         await mainWindow.reload();
-        await expect(mainWindow.locator('app-grid-list mat-card')).toHaveCount(12);
+        await expect(mainWindow.locator('app-grid-list mat-card')).toHaveCount(
+            12
+        );
+    });
+
+    test('organises settings, saves preferences across sections and fits dark and light layouts', async () => {
+        await mainWindow.evaluate(() => {
+            location.hash = '#/settings';
+        });
+        await expect(
+            mainWindow.locator('.settings-sidebar nav button')
+        ).toHaveCount(6);
+        const save = mainWindow.locator('[data-test-id="save-settings"]');
+        await expect(save).toBeDisabled();
+        for (const section of [
+            'playback',
+            'guide',
+            'subtitles',
+            'remote',
+            'data',
+            'general',
+        ]) {
+            await mainWindow
+                .locator(`[data-test-id="settings-nav-${section}"]`)
+                .click();
+            await expect(
+                mainWindow.locator(
+                    `[data-test-id="settings-section-${section}"]`
+                )
+            ).toBeVisible();
+            expect(
+                await mainWindow.locator('.settings-content').innerText()
+            ).not.toMatch(/SETTINGS\.[A-Z_]+/);
+            await expect(save).toBeVisible();
+        }
+        await mainWindow
+            .locator('[data-test-id="settings-nav-remote"]')
+            .click();
+        await mainWindow
+            .getByRole('checkbox', { name: 'Controle remoto', exact: true })
+            .check();
+        await mainWindow.locator('#remoteControlPort').fill('0');
+        await expect(save).toBeDisabled();
+        await mainWindow.locator('#remoteControlPort').fill('8876');
+        await mainWindow
+            .getByRole('checkbox', { name: 'Controle remoto', exact: true })
+            .uncheck();
+        await mainWindow
+            .locator('[data-test-id="settings-nav-subtitles"]')
+            .click();
+        await mainWindow
+            .locator('input[formControlName="subtitleLanguage"]')
+            .fill('pt');
+        await mainWindow
+            .locator('[data-test-id="settings-nav-general"]')
+            .click();
+        await mainWindow.locator('[data-test-id="select-theme"]').click();
+        await mainWindow
+            .getByRole('option', { name: 'Tema claro', exact: true })
+            .click();
+        await save.click();
+        await expect(save).toBeDisabled();
+        await mainWindow.setViewportSize({ width: 1366, height: 768 });
+        await expect(mainWindow.locator('body')).not.toHaveClass(/dark-theme/);
+        await mainWindow
+            .locator('mat-snack-bar-container')
+            .waitFor({ state: 'detached' });
+        await mainWindow.screenshot({
+            path: join(screenshotDir, 'aurora-settings-light-1366.png'),
+        });
+        await mainWindow.reload();
+        await mainWindow
+            .locator('[data-test-id="settings-nav-subtitles"]')
+            .click();
+        await expect(
+            mainWindow.locator('input[formControlName="subtitleLanguage"]')
+        ).toHaveValue('pt');
+        await mainWindow
+            .locator('[data-test-id="settings-nav-general"]')
+            .click();
+        await mainWindow.locator('[data-test-id="select-theme"]').click();
+        await mainWindow
+            .getByRole('option', { name: 'Tema escuro', exact: true })
+            .click();
+        await save.click();
+        await expect(mainWindow.locator('body')).toHaveClass(/dark-theme/);
+        await mainWindow
+            .locator('mat-snack-bar-container')
+            .waitFor({ state: 'detached' });
+        for (const [width, height] of [
+            [1366, 768],
+            [1920, 1080],
+            [980, 720],
+            [620, 800],
+        ]) {
+            await mainWindow.setViewportSize({ width, height });
+            const footer = await mainWindow
+                .locator('.settings-footer')
+                .boundingBox();
+            expect(footer!.y + footer!.height).toBeLessThanOrEqual(height + 1);
+            expect(
+                await mainWindow.evaluate(
+                    () => document.documentElement.scrollWidth <= innerWidth
+                )
+            ).toBe(true);
+            await mainWindow.screenshot({
+                path: join(screenshotDir, `aurora-settings-dark-${width}.png`),
+            });
+        }
+        await mainWindow.setViewportSize({ width: 1366, height: 768 });
+        await mainWindow.locator('[data-test-id="back-to-home"]').click();
+        await mainWindow.locator('[data-test-id="add-playlist"]').click();
+        await mainWindow
+            .getByRole('menuitem', { name: 'Importar do texto' })
+            .click();
+        await mainWindow
+            .locator('app-text-import textarea')
+            .fill(
+                `#EXTM3U\n#EXTINF:-1 group-title="TV",Configuração em diálogo\n${fixtureUrl}/fixture.ts\n`
+            );
+        await mainWindow
+            .locator('app-text-import button[type="submit"]')
+            .click();
+        await mainWindow
+            .locator('.library-rail-links')
+            .getByRole('button', { name: 'Menu', exact: true })
+            .click();
+        await mainWindow
+            .getByRole('menuitem', { name: 'Configurações de reprodução' })
+            .click();
+        const modal = mainWindow.locator(
+            '.mat-mdc-dialog-container [data-test-id="settings-container"]'
+        );
+        await expect(modal).toBeVisible();
+        await expect(mainWindow.locator('.mat-mdc-menu-panel')).toBeHidden();
+        await expect
+            .poll(() =>
+                modal
+                    .locator('..')
+                    .evaluate(
+                        (el) =>
+                            el
+                                .getAnimations({ subtree: true })
+                                .filter(
+                                    (animation) =>
+                                        animation.playState === 'running'
+                                ).length
+                    )
+            )
+            .toBe(0);
+        expect((await modal.boundingBox())!.width).toBeGreaterThan(800);
+        expect(
+            await modal
+                .locator('.settings-content')
+                .evaluate((el) => el.scrollWidth <= el.clientWidth)
+        ).toBe(true);
+        const modalSave = await modal
+            .locator('[data-test-id="save-settings"]')
+            .boundingBox();
+        expect(modalSave!.y + modalSave!.height).toBeLessThanOrEqual(769);
+        await mainWindow.screenshot({
+            path: join(screenshotDir, 'aurora-settings-dialog.png'),
+        });
+        await modal.locator('[data-test-id="back-to-home"]').click();
+        await expect(
+            mainWindow.locator('[data-test-id="add-playlist"]')
+        ).toBeVisible();
     });
 
     test('checks and downloads a verified update through installed settings', async () => {

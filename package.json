@@ -1,6 +1,6 @@
 {
   "name": "iptv-aurora-expert",
-  "version": "2026.1107.1",
+  "version": "2026.1108.1",
   "license": "MIT",
   "description": "IPTV AURORA EXPERT — player independente para M3U, Xtream Codes e Stalker.",
   "homepage": "https://github.com/fabriciomatosqa/IPTV-AURORA-EXPERT",
@@ -191,5 +191,5 @@
   },
   "nx": {},
   "productName": "IPTV AURORA EXPERT",
-  "auroraVersion": "0.0.071126-01"
+  "auroraVersion": "0.0.081126-01"
 }

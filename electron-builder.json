@@ -122,12 +122,12 @@
                 "arch": ["x64"]
             }
         ],
-        "artifactName": "iptv-aurora-expert-0.0.071126-01-windows-x64-setup.exe",
+        "artifactName": "iptv-aurora-expert-0.0.081126-01-windows-x64-setup.exe",
         "icon": "apps/web/src/assets/aurora/aurora.ico",
         "signAndEditExecutable": true
     },
     "nsis": {
-        "artifactName": "iptv-aurora-expert-0.0.071126-01-windows-x64-setup.exe",
+        "artifactName": "iptv-aurora-expert-0.0.081126-01-windows-x64-setup.exe",
         "guid": "a22e1596-7af8-48c0-9c97-dad3e81f3027",
         "oneClick": false,
         "perMachine": false,

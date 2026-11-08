@@ -39,7 +39,6 @@ import {
 } from 'shared-interfaces';
 import { SettingsStore } from '../services/settings-store.service';
 import { AppUpdateService } from '../services/app-update.service';
-import { HeaderComponent } from '../shared/components/header/header.component';
 import { SettingsService } from './../services/settings.service';
 
 @Component({
@@ -48,7 +47,6 @@ import { SettingsService } from './../services/settings.service';
     imports: [
         CommonModule,
         FormsModule,
-        HeaderComponent,
         MatButtonModule,
         MatCheckboxModule,
         MatDividerModule,
@@ -85,6 +83,18 @@ export class SettingsComponent implements OnInit {
 
     /** Flag that indicates whether the app runs in electron environment */
     readonly isDesktop = !!window.electron;
+
+    readonly activeSection = signal('general');
+    readonly sections = [
+        { id: 'general', icon: 'tune' },
+        { id: 'playback', icon: 'play_circle_outline' },
+        ...(this.isDesktop
+            ? [{ id: 'guide', icon: 'calendar_view_week' }]
+            : []),
+        { id: 'subtitles', icon: 'subtitles' },
+        ...(this.isDesktop ? [{ id: 'remote', icon: 'settings_remote' }] : []),
+        { id: 'data', icon: 'playlist_play' },
+    ];
 
     isPwa = this.dataService.getAppEnvironment() === 'pwa';
 
@@ -499,9 +509,8 @@ export class SettingsComponent implements OnInit {
         }
 
         this.dialogService.openConfirmDialog({
-            title: 'Resync playlist databases',
-            message:
-                'This removes stale Electron playlist records that no longer exist in the app playlist list, then reloads playlists. Continue?',
+            title: this.translate.instant('SETTINGS.REDESIGN.RESYNC'),
+            message: this.translate.instant('SETTINGS.REDESIGN.RESYNC_CONFIRM'),
             onConfirm: async (): Promise<void> => {
                 try {
                     const { removedPlaylistIds } =
@@ -511,8 +520,12 @@ export class SettingsComponent implements OnInit {
 
                     this.snackBar.open(
                         removedPlaylistIds.length > 0
-                            ? `Removed ${removedPlaylistIds.length} stale playlist record${removedPlaylistIds.length === 1 ? '' : 's'} and reloaded playlists.`
-                            : 'Playlist databases were already in sync.',
+                            ? this.translate.instant(
+                                  'SETTINGS.REDESIGN.RESYNC_DONE'
+                              )
+                            : this.translate.instant(
+                                  'SETTINGS.REDESIGN.RESYNC_DONE'
+                              ),
                         null,
                         {
                             duration: 3000,
@@ -522,7 +535,9 @@ export class SettingsComponent implements OnInit {
                 } catch (error) {
                     console.error('Error resyncing playlist databases:', error);
                     this.snackBar.open(
-                        'Failed to resync playlist databases.',
+                        this.translate.instant(
+                            'SETTINGS.REDESIGN.RESYNC_ERROR'
+                        ),
                         null,
                         {
                             duration: 3000,
