@@ -379,6 +379,13 @@ button mat-icon {
     font-weight: 600;
     letter-spacing: -0.5px;
 }
+.installed-version .version-stage {
+    display: block;
+    margin-top: 4px;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--settings-muted);
+}
 .version-tag {
     margin-left: auto;
     font-size: 9px;
