@@ -159,10 +159,10 @@ export class PlaylistEffects {
                 }
 
                 // Set user agent if specified on channel
-                if (channel.http['user-agent']) {
+                if (channel.http?.['user-agent']) {
                     window.electron?.setUserAgent(
-                        channel.http['user-agent'],
-                        channel.http.referrer
+                        channel.http?.['user-agent'],
+                        channel.http?.referrer
                     );
                 }
 
@@ -177,9 +177,9 @@ export class PlaylistEffects {
                             this.dataService.sendIpcEvent(OPEN_MPV_PLAYER, {
                                 url: channel.url,
                                 title: channel.name ?? '',
-                                'user-agent': channel.http['user-agent'],
-                                referer: channel.http.referrer,
-                                origin: channel.http.origin,
+                                'user-agent': channel.http?.['user-agent'],
+                                referer: channel.http?.referrer,
+                                origin: channel.http?.origin,
                             });
                         } else if (
                             settings &&
@@ -190,9 +190,9 @@ export class PlaylistEffects {
                             this.dataService.sendIpcEvent(OPEN_VLC_PLAYER, {
                                 url: channel.url,
                                 title: channel.name ?? '',
-                                'user-agent': channel.http['user-agent'],
-                                referer: channel.http.referrer,
-                                origin: channel.http.origin,
+                                'user-agent': channel.http?.['user-agent'],
+                                referer: channel.http?.referrer,
+                                origin: channel.http?.origin,
                             });
                     }
                 );
