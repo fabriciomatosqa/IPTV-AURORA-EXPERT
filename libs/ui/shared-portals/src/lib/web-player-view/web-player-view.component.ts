@@ -373,8 +373,10 @@ export class WebPlayerViewComponent {
         // ArtPlayer is the most sensitive path for VOD audio codec/container
         // combinations. Start movies/series with full transcode to avoid
         // silent playback loops and late retries.
+        const isElectron = !!(globalThis as { electron?: unknown }).electron;
         const forceTranscode =
-            this.player === VideoPlayer.ArtPlayer && isMovieOrSeries;
+            (this.player === VideoPlayer.ArtPlayer && isMovieOrSeries) ||
+            (isElectron && extension === 'ts');
 
         const electronApi = (globalThis as {
             electron?: { getStreamProxyPort?: () => Promise<number> };
