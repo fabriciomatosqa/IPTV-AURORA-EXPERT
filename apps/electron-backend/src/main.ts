@@ -16,6 +16,7 @@ import {
 import ElectronEvents from './app/events/electron.events';
 import UpdateEvents from './app/events/update.events';
 import EpgEvents from './app/events/epg.events';
+import { registerSportsEvents } from './app/events/sports.events';
 import PlayerEvents from './app/events/player.events';
 import PlaylistEvents from './app/events/playlist.events';
 import RemoteControlEvents from './app/events/remote-control.events';
@@ -161,6 +162,7 @@ export default class Main {
         XtreamEvents.bootstrapXtreamEvents();
         DatabaseEvents.bootstrapDatabaseEvents();
         EpgEvents.bootstrapEpgEvents();
+        registerSportsEvents();
         RemoteControlEvents.bootstrapRemoteControlEvents();
 
         // Set main window for downloads and reset stale downloads
