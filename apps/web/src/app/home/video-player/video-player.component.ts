@@ -228,7 +228,13 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
         const items = new Map<string, Channel[]>();
         for (const channel of this.catalogIndex().live) {
             const category = channel.group?.title || '';
-            const match = identifySport(category) || identifySport(channel.name);
+            const categoryMatch = identifySport(category);
+            const nameMatch = identifySport(channel.name);
+            // A generic group like ESPORTES/ESPN must not hide a specific
+            // competition present in a channel title (NBA, F1, Série A...).
+            const match = categoryMatch && categoryMatch.sport !== 'Outros esportes'
+                ? categoryMatch : nameMatch && nameMatch.sport !== 'Outros esportes'
+                    ? nameMatch : categoryMatch || nameMatch;
             if (!match) continue;
             const key = match.sport + ':' + match.competition;
             const found = sources.get(key);
