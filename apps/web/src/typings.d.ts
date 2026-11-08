@@ -7,6 +7,8 @@ interface NodeModule {
 declare global {
     interface Window {
         electron: {
+            toggleFullScreen?: () => Promise<boolean>;
+            isFullScreen?: () => Promise<boolean>;
             openAuroraPiP?: (data: {
                 streamUrl: string;
                 title: string;
