@@ -942,8 +942,9 @@ test.describe('Electron App Smoke Test', () => {
 
     test('filters categories, searches, toggles favorites and browses movie and series posters at desktop sizes', async () => {
         const liveCategories = mainWindow.locator('[data-test-id="m3u-category-sidebar"]');
-        await expect(liveCategories).toBeVisible();
-        await liveCategories.locator('[data-root-key="tv"]').click();
+        await expect(liveCategories.locator('.aurora-category-column')).toBeVisible();
+        await expect(liveCategories.locator('.aurora-subcategory-column')).toBeVisible();
+        await expect(liveCategories.locator('[data-root-key="all-channels"]')).toContainText('Canais');
         await liveCategories.locator('[data-category-id="TV | Notícias"]').click();
         await expect(
             mainWindow.locator('[data-test-id="channel-item"]')
@@ -1300,25 +1301,20 @@ test.describe('Electron App Smoke Test', () => {
             12
         );
 
-        // The same shared navigator must expose category and subcategory
-        // side by side before the channel list (including Xtream imports).
+        // Xtream/Stalker categories are NOT parsed into synthetic subcategories.
+        // Their original provider IDs are selected directly from the first column.
         await mainWindow.locator('app-navigation')
             .getByRole('button', { name: 'TV ao vivo', exact: true }).click();
         const canonicalNav = mainWindow.locator('[data-test-id="xtream-live-categories"]');
         await expect(canonicalNav.locator('.aurora-category-column')).toBeVisible();
-        await expect(canonicalNav.locator('.aurora-subcategory-column')).toBeVisible();
+        await expect(canonicalNav.locator('.aurora-subcategory-column')).toHaveCount(0);
         await expect(mainWindow.locator('.channels-sidebar')).toBeVisible();
         await canonicalNav.locator('.aurora-category-column .aurora-category-row').first().click();
-        await canonicalNav.locator('.aurora-subcategory-column .aurora-category-row').first().click();
         await expect(mainWindow.locator('.channels-sidebar app-portal-channels-list'))
             .toBeVisible();
         const categoriesBounds = await canonicalNav.locator('.aurora-category-column').boundingBox();
-        const subcategoriesBounds = await canonicalNav.locator('.aurora-subcategory-column').boundingBox();
         const channelsBounds = await mainWindow.locator('.channels-sidebar').boundingBox();
         expect(categoriesBounds!.x + categoriesBounds!.width).toBeLessThanOrEqual(
-            subcategoriesBounds!.x + 2
-        );
-        expect(subcategoriesBounds!.x + subcategoriesBounds!.width).toBeLessThanOrEqual(
             channelsBounds!.x + 2
         );
         await mainWindow.screenshot({

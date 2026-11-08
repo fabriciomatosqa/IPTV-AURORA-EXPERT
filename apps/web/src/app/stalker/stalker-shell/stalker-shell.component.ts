@@ -26,11 +26,6 @@ export class StalkerShellComponent implements OnDestroy {
 
     readonly mainNavigationItems: NavigationItem[] = [
         {
-            id: 'vod',
-            icon: 'movie',
-            labelKey: 'PORTALS.SIDEBAR.MOVIES',
-        },
-        {
             id: 'itv',
             icon: 'live_tv',
             labelKey: 'PORTALS.SIDEBAR.LIVE_TV',
@@ -39,6 +34,11 @@ export class StalkerShellComponent implements OnDestroy {
             id: 'series',
             icon: 'tv',
             labelKey: 'PORTALS.SIDEBAR.SERIES',
+        },
+        {
+            id: 'vod',
+            icon: 'movie',
+            labelKey: 'PORTALS.SIDEBAR.MOVIES',
         },
     ];
 
