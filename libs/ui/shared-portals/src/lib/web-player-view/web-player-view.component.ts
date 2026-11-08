@@ -48,6 +48,7 @@ export class WebPlayerViewComponent {
     >(undefined);
     startTime = input<number>(0);
     subtitleUrl = input<string | null>(null);
+    @Output() playbackFailed = new EventEmitter<void>();
     @Output() timeUpdate = new EventEmitter<{
         currentTime: number;
         duration: number;
@@ -160,6 +161,10 @@ export class WebPlayerViewComponent {
             sources.push(this.buildVjsSource(resolvedStreamUrl, streamUrl));
             this.vjsOptions = { sources };
         }
+    }
+
+    onNativePlaybackFailed(): void {
+        this.playbackFailed.emit();
     }
 
     onArtPlayerPlaybackError(): void {
