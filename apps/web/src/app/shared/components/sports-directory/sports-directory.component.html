@@ -1,51 +1,244 @@
-<main class="sports-directory" data-test-id="sports-directory">
+<main class="sports-hub" data-test-id="sports-directory">
     <header class="sports-heading">
-        <div><span class="sports-eyebrow">AURORA EXPERT</span>
-            <h1><mat-icon>sports_soccer</mat-icon> Esportes</h1>
-            <p>Competições e canais esportivos encontrados na playlist selecionada.</p>
+        <div class="sports-heading-title">
+            <span class="sports-eyebrow">AURORA EXPERT · CENTRAL ESPORTIVA</span>
+            <h1><mat-icon>emoji_events</mat-icon> Esportes</h1>
+            <p>Partidas, resultados, eventos e canais da sua playlist em um só lugar.</p>
         </div>
-        <label class="sports-search"><mat-icon>search</mat-icon>
-            <input type="search" placeholder="Pesquisar esporte ou campeonato"
-                aria-label="Pesquisar esportes" [value]="search()"
-                (input)="search.set($any($event.target).value)" />
-        </label>
+        <div class="sports-head-tools">
+            <label class="sports-search">
+                <mat-icon>search</mat-icon>
+                <input type="search" [value]="search()"
+                    (input)="search.set($any($event.target).value)"
+                    placeholder="Pesquisar times, campeonato ou evento"
+                    aria-label="Pesquisar esportes" />
+            </label>
+            <button type="button" class="refresh-score" [disabled]="loadingScores()"
+                (click)="refresh(true)" title="Atualizar resultados"
+                aria-label="Atualizar resultados"><mat-icon>refresh</mat-icon></button>
+        </div>
     </header>
-    <div class="sports-sections">
-        @for (section of sections(); track section.title) {
-            <section class="sports-section">
-                <button type="button" class="sports-section-heading"
-                    [attr.aria-expanded]="isExpanded(section.title)"
-                    (click)="toggle(section.title)">
-                    <mat-icon>sports</mat-icon>
-                    <strong>{{ section.title }}</strong>
-                    <small>{{ section.entries.length }} {{ section.entries.length === 1 ? 'opção' : 'opções' }}</small>
-                    <mat-icon>{{ isExpanded(section.title) ? 'expand_less' : 'expand_more' }}</mat-icon>
-                </button>
-                @if (isExpanded(section.title)) {
-                    <div class="sports-competitions">
-                        @for (item of section.entries; track item.id) {
-                            <button type="button" [title]="item.title"
-                                [attr.data-sports-id]="item.id"
-                                (click)="chosen.emit(item.id)">
-                                <mat-icon>play_circle_outline</mat-icon>
-                                <span>{{ item.competition }}</span>
-                                @if (item.count != null) { <small>({{ item.count }})</small> }
-                                <mat-icon>chevron_right</mat-icon>
-                            </button>
-                        }
-                    </div>
-                }
-            </section>
-        } @empty {
-            <div class="sports-empty" role="status">
-                <mat-icon>sports</mat-icon>
-                @if (loading()) {
-                    <h2>Carregando esportes…</h2>
-                } @else {
-                    <h2>Nenhuma competição identificada</h2>
-                    <p>Esta playlist não informou categorias ou títulos esportivos reconhecíveis.</p>
-                }
-            </div>
+
+    <nav class="sports-kinds" data-test-id="sports-kinds" aria-label="Modalidades">
+        @for (sport of sports(); track sport.name) {
+            <button type="button" class="sports-chip" [class.selected]="selectedSport() === sport.name"
+                [attr.aria-pressed]="selectedSport() === sport.name"
+                (click)="selectSport(sport.name)">
+                <mat-icon>{{ sport.icon }}</mat-icon>{{ sport.name }}
+            </button>
+        }
+    </nav>
+
+    <nav class="sports-tabs" data-test-id="sports-competitions" aria-label="Campeonatos">
+        @for (tab of tabs(); track tab.key) {
+            <button type="button" class="sports-chip" [class.selected]="selectedTab() === tab.key"
+                [attr.aria-pressed]="selectedTab() === tab.key" (click)="selectTab(tab.key)">
+                @if (tab.key === '__live__') { <span class="live-dot"></span> }
+                @else if (tab.key === '__games__') { <mat-icon>event</mat-icon> }
+                @else { <mat-icon>emoji_events</mat-icon> }
+                {{ tab.name }}
+            </button>
+        }
+    </nav>
+
+    <div class="sports-meta">
+        <span><mat-icon>update</mat-icon>
+            @if (loadingScores()) { Atualizando resultados… }
+            @else if (staleScores()) { Fonte indisponível · dados anteriores podem estar desatualizados }
+            @else if (!scoreAvailable()) { Resultados externos indisponíveis nesta execução }
+            @else { Resultados públicos separados da programação IPTV }
+        </span>
+        @if (scoreChecked() && selectedSport() !== 'Automobilismo') {
+            <small>Consulta: {{ displayTime(scoreChecked()) }}</small>
         }
     </div>
+
+    @if (selectedSport() === 'Automobilismo') {
+        @if (selectedTab() === 'f1' && f1Open()) {
+            <section class="championship-page" data-test-id="f1-championship">
+                <div class="championship-header">
+                    <button class="sports-return" type="button" (click)="f1Open.set(false)">
+                        <mat-icon>arrow_back</mat-icon> Voltar aos eventos
+                    </button>
+                    <h2>Fórmula 1 · Campeonato {{ currentYear() }}</h2>
+                </div>
+                <nav class="f1-sections" aria-label="Seções da Fórmula 1">
+                    @for (part of f1Sections; track part.id) {
+                        <button class="sports-chip" [class.selected]="selectedF1Section() === part.id"
+                            type="button" (click)="selectedF1Section.set(part.id)">{{ part.label }}</button>
+                    }
+                </nav>
+                @switch (selectedF1Section()) {
+                    @case ('overview') {
+                        <div class="f1-overview">
+                            <div class="f1-info"><mat-icon>outlined_flag</mat-icon>
+                                <strong>{{ f1Races().length }}</strong><span>Grandes Prêmios no calendário</span></div>
+                            <div class="f1-info"><mat-icon>emoji_events</mat-icon>
+                                <strong>{{ f1Drivers()[0]?.name || 'Indisponível' }}</strong><span>Líder dos pilotos</span></div>
+                            <div class="f1-info"><mat-icon>groups</mat-icon>
+                                <strong>{{ f1Teams()[0]?.name || 'Indisponível' }}</strong><span>Líder das equipes</span></div>
+                        </div>
+                        @if (nextF1Race(); as race) {
+                            <article class="f1-race-card"><small>PRÓXIMO GRANDE PRÊMIO</small>
+                                <h3>{{ race.title }}</h3><p>{{ race.circuit }} · {{ race.country }}</p>
+                                <strong>{{ displayDate(race.date) }} · {{ displayTime(race.date) }}</strong>
+                            </article>
+                        }
+                    }
+                    @case ('drivers') {
+                        <div class="f1-standings" data-test-id="f1-drivers">
+                            @for (row of f1Drivers(); track row.position) {
+                                <div class="f1-standing"><b>{{ row.position }}º</b>
+                                    <span>{{ row.name }}<small>{{ row.team }}</small></span>
+                                    <strong>{{ row.points }} pts</strong></div>
+                            } @empty { <p>Classificação dos pilotos indisponível.</p> }
+                        </div>
+                    }
+                    @case ('teams') {
+                        <div class="f1-standings" data-test-id="f1-teams">
+                            @for (row of f1Teams(); track row.position) {
+                                <div class="f1-standing"><b>{{ row.position }}º</b>
+                                    <span>{{ row.name }}</span><strong>{{ row.points }} pts</strong></div>
+                            } @empty { <p>Classificação das equipes indisponível.</p> }
+                        </div>
+                    }
+                    @case ('next') {
+                        @if (nextF1Race(); as race) {
+                            <article class="f1-race-card">
+                                <h3>{{ race.title }}</h3><p>{{ race.circuit }} · {{ race.country }}</p>
+                                @for (session of race.sessions; track session.title) {
+                                    <div class="f1-session"><span>{{ session.title }}</span>
+                                        <strong>{{ displayDate(session.time) }} · {{ displayTime(session.time) }}</strong>
+                                    </div>
+                                }
+                            </article>
+                        } @else { <p>Nenhuma corrida futura confirmada no calendário consultado.</p> }
+                    }
+                    @case ('calendar') {
+                        <div class="f1-calendar" data-test-id="f1-calendar">
+                            @for (race of f1Races(); track race.round) {
+                                <article class="f1-race-card">
+                                    <small>ETAPA {{ race.round }}</small><h3>{{ race.title }}</h3>
+                                    <p>{{ race.circuit }} · {{ race.country }}</p>
+                                    <strong>{{ displayDate(race.date) }} · {{ displayTime(race.date) }}</strong>
+                                    @for (session of race.sessions; track session.title) {
+                                        <div class="f1-session"><span>{{ session.title }}</span>
+                                            <span>{{ displayDate(session.time) }} · {{ displayTime(session.time) }}</span>
+                                        </div>
+                                    }
+                                </article>
+                            } @empty { <p>Calendário da Fórmula 1 indisponível na fonte.</p> }
+                        </div>
+                    }
+                }
+                <p class="sports-source-note">Fonte: Jolpica / Ergast · classificação e calendário público. O guia IPTV informa apenas transmissões.</p>
+            </section>
+        } @else {
+            <section class="f1-preview">
+                @if (nextF1Race(); as race) {
+                    <article class="f1-race-card" data-test-id="next-f1-race">
+                        <small>PRÓXIMA CORRIDA · FÓRMULA 1</small>
+                        <h2>{{ race.title }}</h2>
+                        <p><mat-icon>place</mat-icon>{{ race.circuit }} · {{ race.country }}</p>
+                        <strong>{{ displayDate(race.date) }} · {{ displayTime(race.date) }}</strong>
+                        <div class="f1-sessions">
+                            @for (session of race.sessions; track session.title) {
+                                <span>{{ session.title }} · {{ displayDate(session.time) }} {{ displayTime(session.time) }}</span>
+                            }
+                        </div>
+                    </article>
+                } @else {
+                    <div class="sports-empty"><mat-icon>sports_motorsports</mat-icon>
+                        <h2>Calendário de corridas indisponível</h2>
+                        <p>Verifique novamente quando a fonte responder.</p>
+                    </div>
+                }
+                <button type="button" class="championship-open" (click)="selectTab('f1'); f1Open.set(true)">
+                    <mat-icon>emoji_events</mat-icon> Página do Campeonato · Fórmula 1
+                    <mat-icon>chevron_right</mat-icon>
+                </button>
+            </section>
+        }
+    } @else {
+        <div class="sports-match-grid" data-test-id="sports-games">
+            @for (match of displayedGames(); track match.id) {
+                <article class="match-card" [class.is-live]="match.state === 'live'" data-test-id="sports-match">
+                    <div class="match-top">
+                        <div class="match-competition">
+                            @if (match.logo) { <img [src]="match.logo" alt="" loading="lazy" /> }
+                            @else { <mat-icon>{{ iconFor(selectedSport()) }}</mat-icon> }
+                            <div><strong>{{ match.competition }}</strong>
+                                <small>{{ selectedSport() }}</small></div>
+                        </div>
+                        <span class="match-state" [class.live]="match.state === 'live'"
+                            [class.finished]="match.state === 'finished'">
+                            @if (match.state === 'live') { <span class="live-dot"></span> }
+                            {{ status(match) }}
+                        </span>
+                    </div>
+                    <div class="match-fixture">
+                        <div class="match-team">
+                            @if (match.home.logo) {
+                                <img [src]="match.home.logo" [alt]="match.home.name" loading="lazy" />
+                            } @else { <div class="team-placeholder"><mat-icon>shield</mat-icon></div> }
+                            <strong>{{ match.home.name }}</strong>
+                        </div>
+                        <div class="match-score">
+                            @if (match.state !== 'scheduled' && match.home.score != null && match.away.score != null) {
+                                <strong>{{ match.home.score }} : {{ match.away.score }}</strong>
+                            } @else { <strong>×</strong> }
+                            <span>{{ displayTime(match.kickoff) }}</span>
+                            @if (match.state === 'live') { <small>{{ match.clock }}</small> }
+                        </div>
+                        <div class="match-team">
+                            @if (match.away.logo) {
+                                <img [src]="match.away.logo" [alt]="match.away.name" loading="lazy" />
+                            } @else { <div class="team-placeholder"><mat-icon>shield</mat-icon></div> }
+                            <strong>{{ match.away.name }}</strong>
+                        </div>
+                    </div>
+                    <footer class="match-footer">
+                        <span><mat-icon>calendar_today</mat-icon>{{ displayDate(match.kickoff) }} · {{ displayTime(match.kickoff) }}</span>
+                        <small>Transmissão IPTV não confirmada</small>
+                    </footer>
+                </article>
+            } @empty {
+                <div class="sports-empty">
+                    <mat-icon>sports</mat-icon>
+                    @if (loadingScores()) { <h2>Consultando jogos…</h2> }
+                    @else if (selectedTab() === '__live__') {
+                        <h2>Sem partidas ao vivo confirmadas</h2>
+                        <p>Somente placares marcados como ao vivo pela fonte aparecem aqui.</p>
+                    } @else {
+                        <h2>Sem partidas confirmadas nesta seleção</h2>
+                        <p>Use outro campeonato ou consulte novamente. Os dados externos podem estar indisponíveis.</p>
+                    }
+                </div>
+            }
+        </div>
+        @if (displayedGames().length < visibleGames().length) {
+            <button type="button" class="sports-load-more" (click)="maxVisible.update(n => n + 50)">
+                Mostrar mais partidas · {{ displayedGames().length }} de {{ visibleGames().length }}
+            </button>
+        }
+    }
+
+    @if (selectedSources().length && !f1Open()) {
+        <section class="sports-channels" data-test-id="sports-channel-shortcuts">
+            <div><h2><mat-icon>live_tv</mat-icon> Canais da playlist</h2>
+                <p>Categorias disponíveis na sua lista. A presença de um canal não confirma que a partida esteja sendo transmitida.</p>
+            </div>
+            <div class="sports-shortcuts">
+                @for (item of selectedSources(); track item.id) {
+                    <button type="button" [title]="item.title"
+                        [attr.data-sports-id]="item.id" (click)="chosen.emit(item.id)">
+                        <mat-icon>live_tv</mat-icon><span>{{ item.title }}</span>
+                        @if (item.count != null) { <small>({{ item.count }})</small> }
+                        <mat-icon>chevron_right</mat-icon>
+                    </button>
+                }
+            </div>
+        </section>
+    }
+    <p class="sports-footer-note">Horários no fuso do computador · placares de fontes públicas podem sofrer atraso. Nenhuma credencial IPTV é enviada aos serviços esportivos.</p>
 </main>

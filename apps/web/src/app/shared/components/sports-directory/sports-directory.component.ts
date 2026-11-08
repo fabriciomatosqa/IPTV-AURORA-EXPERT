@@ -70,6 +70,14 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
     private refreshTimer?: ReturnType<typeof setInterval>;
     private loadVersion = 0;
     readonly sportsLogo = 'assets/aurora/aurora.png';
+    readonly f1Sections = [
+        { id: 'overview', label: 'Visão geral' },
+        { id: 'drivers', label: 'Pilotos' },
+        { id: 'teams', label: 'Equipes' },
+        { id: 'next', label: 'Próxima corrida' },
+        { id: 'calendar', label: 'Calendário' },
+    ];
+    currentYear(): number { return new Date().getFullYear(); }
     readonly sports = computed(() => {
         const available = new Set(organizeSports(this.sources()).map(section => section.title));
         available.add('Futebol'); available.add('Automobilismo'); available.add('Basquete');
