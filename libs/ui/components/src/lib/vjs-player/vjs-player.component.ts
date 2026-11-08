@@ -81,6 +81,11 @@ export class VjsPlayerComponent implements AfterViewInit, OnChanges, OnDestroy {
      * These URLs often have redirect/SSL issues and should use proxy first
      */
     private isRemoteIptvSource(sourceUrl: string): boolean {
+        // Direct MPEG-TS streams also need a desktop proxy/transcode.
+        // They may not contain /live/ in provider-generated URLs.
+        if (/^https?:\/\//i.test(sourceUrl) && /\.ts(?:[?#]|$)/i.test(sourceUrl)) {
+            return true;
+        }
         // Xtream Codes VOD stream URLs
         if (sourceUrl.includes('/movie/') || sourceUrl.includes('/series/')) {
             return true;
@@ -448,7 +453,7 @@ export class VjsPlayerComponent implements AfterViewInit, OnChanges, OnDestroy {
         if (this.lastAppliedSourcesKey === nextSourcesKey) {
             console.log(
                 'Source already applied, skipping duplicate:',
-                nextSourcesKey
+                this.maskUrl(normalizedSources[0].src)
             );
             return;
         }
@@ -460,7 +465,10 @@ export class VjsPlayerComponent implements AfterViewInit, OnChanges, OnDestroy {
 
         console.log(
             'Setting player source:',
-            normalizedSources,
+            normalizedSources.map(({ src, type }) => ({
+                src: this.maskUrl(src),
+                type,
+            })),
             'allowTypeFallback:',
             allowTypeFallback,
             'allowProxyFallback:',
@@ -544,7 +552,10 @@ export class VjsPlayerComponent implements AfterViewInit, OnChanges, OnDestroy {
 
         console.log(
             'Setting player source (direct):',
-            normalizedSources,
+            normalizedSources.map(({ src, type }) => ({
+                src: this.maskUrl(src),
+                type,
+            })),
             'allowTypeFallback:',
             allowTypeFallback,
             'allowProxyFallback:',
@@ -570,7 +581,7 @@ export class VjsPlayerComponent implements AfterViewInit, OnChanges, OnDestroy {
                     );
                     console.warn(
                         '[VjsPlayer] Type fallback: Retrying without explicit type (Code 4 error)',
-                        { src: typedSource.src, type: typedSource.type }
+                        { src: this.maskUrl(typedSource.src), type: typedSource.type }
                     );
                     this.setPlayerSource(
                         { src: typedSource.src },
@@ -793,8 +804,15 @@ export class VjsPlayerComponent implements AfterViewInit, OnChanges, OnDestroy {
             }
 
             const params = new URLSearchParams({ url: sourceUrl });
-            const forceTranscode = options?.forceTranscode === true;
             const forceAudioTranscode = options?.forceAudioTranscode === true;
+            // Chromium/Video.js cannot reliably decode standalone MPEG-TS.
+            // Start those streams as FFmpeg fragmented MP4, instead of showing
+            // a black player and only attempting recovery after a failure.
+            const isMpegTsSource =
+                sourceType?.toLowerCase().includes('mp2t') === true ||
+                /\.ts(?:[?#]|$)/i.test(sourceUrl);
+            const forceTranscode =
+                options?.forceTranscode === true || isMpegTsSource;
             const preferAudioTranscode =
                 forceAudioTranscode ||
                 this.shouldPreferAudioTranscodeProxySource(
