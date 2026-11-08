@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { ContentHeroComponent } from 'components';
 import { XtreamVodDetails } from 'shared-interfaces';
@@ -20,6 +20,11 @@ import { SettingsStore } from '../../services/settings-store.service';
 import { XtreamStore } from '../stores/xtream.store';
 import { SafePipe } from '@iptvmate/pipes';
 import { createLogger } from '../../shared/utils/logger';
+import {
+    ActorFilmographyService,
+    ActorProfile,
+    ActorWork,
+} from '../services/actor-filmography.service';
 
 /**
  * Route-based VOD details container for Xtream.
@@ -45,6 +50,8 @@ import { createLogger } from '../../shared/utils/logger';
 })
 export class VodDetailsRouteComponent implements OnInit, OnDestroy {
     private location = inject(Location);
+    private readonly router = inject(Router);
+    private readonly actorsService = inject(ActorFilmographyService);
     private settingsStore = inject(SettingsStore);
     private route = inject(ActivatedRoute);
     private readonly xtreamStore = inject(XtreamStore);
@@ -61,6 +68,61 @@ export class VodDetailsRouteComponent implements OnInit, OnDestroy {
     readonly isLoadingDetails = this.xtreamStore.isLoadingDetails;
     readonly detailsError = this.xtreamStore.detailsError;
     readonly showTrailer = signal(false);
+    readonly castMembers = computed(() => {
+        const info = this.selectedItem()?.info;
+        const raw = info?.actors || info?.cast || '';
+        return [...new Set(raw.split(',').map((v: string) => v.trim()).filter(Boolean))].slice(0, 40);
+    });
+    readonly actorProfiles = signal<Record<string, ActorProfile>>({});
+    readonly missingPortraits = signal<string[]>([]);
+    readonly selectedActor = signal<string | null>(null);
+    readonly actorFilmography = signal<ActorWork[]>([]);
+    readonly actorFilmographyLoading = signal(false);
+    readonly actorLocalMatches = computed(() => {
+        const actor = this.selectedActor()?.toLocaleLowerCase();
+        if (!actor) return [] as Array<{
+            title: string; kind: 'vod' | 'series';
+            id: number; categoryId: number;
+        }>;
+        const titles = new Set(this.actorFilmography().map((w) =>
+            this.normalizeTitle(w.title)
+        ));
+        const hits: Array<{
+            title: string; kind: 'vod' | 'series';
+            id: number; categoryId: number;
+        }> = [];
+        const current = this.selectedItem();
+        if (current?.info?.name) {
+            hits.push({
+                title: current.info.name,
+                kind: 'vod',
+                id: Number(current.movie_data?.stream_id || this.route.snapshot.params.vodId),
+                categoryId: Number(this.route.snapshot.params.categoryId),
+            });
+        }
+        for (const item of this.xtreamStore.vodStreams()) {
+            const title = item.name ?? '';
+            if (title && titles.has(this.normalizeTitle(title)) &&
+                !hits.some((hit) => hit.kind === 'vod' && hit.id === Number(item.stream_id))) {
+                hits.push({
+                    title, kind: 'vod', id: Number(item.stream_id),
+                    categoryId: Number(item.category_id),
+                });
+            }
+        }
+        for (const item of this.xtreamStore.serialStreams()) {
+            const title = item.name ?? '';
+            const cast = (item.cast || '').toLocaleLowerCase();
+            if (cast.split(',').some((name: string) => name.trim() === actor) ||
+                (title && titles.has(this.normalizeTitle(title)))) {
+                hits.push({
+                    title, kind: 'series', id: Number(item.series_id),
+                    categoryId: Number(item.category_id),
+                });
+            }
+        }
+        return hits.slice(0, 80);
+    });
 
     readonly hasPlaybackPosition = computed(() => {
         const vodId = this.route.snapshot.params.vodId;
@@ -93,6 +155,17 @@ export class VodDetailsRouteComponent implements OnInit, OnDestroy {
     });
 
     constructor() {
+        effect(() => {
+            const members = this.castMembers();
+            // Fetch portrait metadata only for the current film.
+            for (const name of members) {
+                void this.actorsService.profile(name).then((profile) => {
+                    if (!this.castMembers().includes(name)) return;
+                    this.actorProfiles.update((state) => ({ ...state, [name]: profile }));
+                });
+            }
+        });
+
         // Retry initialization when playlist becomes available.
         // This effect runs if ngOnInit deferred initialization due to missing playlist.
         effect(() => {
@@ -232,6 +305,51 @@ export class VodDetailsRouteComponent implements OnInit, OnDestroy {
 
     goBack() {
         this.location.back();
+    }
+
+    actorPhoto(name: string): string | undefined {
+        return this.missingPortraits().includes(name)
+            ? undefined
+            : this.actorProfiles()[name]?.photoUrl;
+    }
+
+    markPortraitUnavailable(name: string): void {
+        this.missingPortraits.update((names) =>
+            names.includes(name) ? names : [...names, name]
+        );
+    }
+
+    async selectActor(name: string): Promise<void> {
+        if (this.selectedActor() === name) {
+            this.selectedActor.set(null);
+            return;
+        }
+        this.selectedActor.set(name);
+        this.actorFilmography.set([]);
+        this.actorFilmographyLoading.set(true);
+        const profile = await this.actorsService.profile(name);
+        const works = await this.actorsService.filmography(profile.wikidataId);
+        if (this.selectedActor() !== name) return;
+        this.actorFilmography.set(works);
+        this.actorFilmographyLoading.set(false);
+    }
+
+    openActorCatalogItem(item: {
+        kind: 'vod' | 'series'; id: number; categoryId: number;
+    }): void {
+        const playlistId = this.xtreamStore.currentPlaylist()?.id;
+        if (!playlistId) return;
+        this.selectedActor.set(null);
+        void this.router.navigate([
+            '/xtreams', playlistId, item.kind,
+            item.categoryId, item.id,
+        ]);
+    }
+
+    private normalizeTitle(title: string): string {
+        return title.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/\s*\(\d{4}\)\s*$/, '')
+            .trim().toLocaleLowerCase();
     }
 
     async downloadVod(vodItem: XtreamVodDetails) {
