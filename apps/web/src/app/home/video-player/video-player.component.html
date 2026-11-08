@@ -117,60 +117,16 @@
             <main class="library-catalog" data-test-id="aurora-catalog">
                 <div class="library-body">
                     @if (catalogSection() === 'live' || catalogSection() === 'movies' || catalogSection() === 'series') {
-                        <aside
-                            class="library-category-sidebar"
-                            [class.live-categories]="catalogSection() === 'live'"
-                            [style.--aurora-category-width.px]="categorySidebarWidth()"
+                        <app-aurora-catalog-navigation
                             data-test-id="m3u-category-sidebar"
-                            aria-label="Categorias do catálogo"
-                        >
-                            @if (catalogSection() === 'live') {
-                                <div class="library-live-switcher">
-                                    <app-playlist-switcher class="switcher"
-                                        [currentTitle]="currentPlaylistTitle()"
-                                        [subtitle]="'M3U'" />
-                                    <button type="button" aria-label="Pesquisar categorias"
-                                        (click)="categorySearchOpen.set(!categorySearchOpen())">
-                                        <mat-icon>search</mat-icon>
-                                    </button>
-                                </div>
-                            } @else {
-                                <div class="library-sidebar-heading">
-                                    <h2>Categorias</h2>
-                                </div>
-                            }
-                            @if (catalogSection() !== 'live' || categorySearchOpen()) {
-                                <label class="library-category-search">
-                                    <mat-icon>search</mat-icon>
-                                    <input type="search" placeholder="Pesquisar categorias"
-                                        aria-label="Pesquisar categorias"
-                                        [value]="categorySidebarQuery()"
-                                        (input)="categorySidebarQuery.set($any($event.target).value)" />
-                                </label>
-                            }
-                            @if (catalogSection() !== 'live') {
-                                <button class="library-all-categories" type="button"
-                                    [class.selected]="!catalogCategory()"
-                                    (click)="selectCatalogCategory('')"
-                                    [attr.aria-pressed]="!catalogCategory()">
-                                    <mat-icon>apps</mat-icon><span>Todas</span>
-                                </button>
-                            }
-                            <div class="library-category-list">
-                                @for (category of filteredCatalogCategories(); track category) {
-                                    <button type="button"
-                                        [attr.data-category-id]="category"
-                                        [class.selected]="catalogCategory() === category"
-                                        [attr.aria-pressed]="catalogCategory() === category"
-                                        [title]="category"
-                                        (click)="selectCatalogCategory(category)">
-                                        <mat-icon>diamond</mat-icon>
-                                        <span>{{ category }}</span>
-                                        <small>({{ catalogCategoryCounts().get(category) || 0 }})</small>
-                                    </button>
-                                }
-                            </div>
-                        </aside>
+                            [mode]="catalogSection() === 'live' ? 'live' : 'library'"
+                            [categories]="auroraCategoryOptions()"
+                            [selectedId]="catalogCategory()"
+                            (categorySelected)="selectCatalogCategory($event)">
+                            <app-playlist-switcher aurora-category-header
+                                [currentTitle]="currentPlaylistTitle()"
+                                [subtitle]="'M3U'" />
+                        </app-aurora-catalog-navigation>
                     }
                     <div class="library-results">
                         <header class="library-header">

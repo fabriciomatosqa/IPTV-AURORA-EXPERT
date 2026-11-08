@@ -56,8 +56,8 @@
             } @else {
                 @for (category of visibleCategories(); track category.id) {
                     <button type="button" class="aurora-category-row"
-                        [class.active]="String(selectedId()) === category.id"
-                        [attr.aria-pressed]="String(selectedId()) === category.id"
+                        [class.active]="isSelected(category.id)"
+                        [attr.aria-pressed]="isSelected(category.id)"
                         [attr.data-category-id]="category.id"
                         [title]="category.title"
                         (click)="chooseChild(category.id)">
@@ -80,8 +80,8 @@
             <div class="aurora-category-scroll">
                 @for (child of currentChildren(); track child.id) {
                     <button type="button" class="aurora-category-row"
-                        [class.active]="String(selectedId()) === child.id"
-                        [attr.aria-pressed]="String(selectedId()) === child.id"
+                        [class.active]="isSelected(child.id)"
+                        [attr.aria-pressed]="isSelected(child.id)"
                         [attr.data-category-id]="child.id"
                         [title]="child.title"
                         (click)="chooseChild(child.id)">

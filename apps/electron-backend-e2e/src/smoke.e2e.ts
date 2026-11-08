@@ -943,6 +943,7 @@ test.describe('Electron App Smoke Test', () => {
     test('filters categories, searches, toggles favorites and browses movie and series posters at desktop sizes', async () => {
         const liveCategories = mainWindow.locator('[data-test-id="m3u-category-sidebar"]');
         await expect(liveCategories).toBeVisible();
+        await liveCategories.locator('[data-root-key="tv"]').click();
         await liveCategories.locator('[data-category-id="TV | Notícias"]').click();
         await expect(
             mainWindow.locator('[data-test-id="channel-item"]')
@@ -994,12 +995,12 @@ test.describe('Electron App Smoke Test', () => {
                     '[data-test-id="m3u-category-sidebar"]'
                 );
                 await expect(m3uCategories).toBeVisible();
-                await m3uCategories.locator('.library-category-list button').first().click();
+                await m3uCategories.locator('.aurora-category-row').first().click();
                 await expect(m3uCategories).toBeVisible();
                 await expect(
                     mainWindow.locator('.poster-grid [data-test-id="channel-item"]')
                 ).not.toHaveCount(12);
-                await m3uCategories.locator('.library-all-categories').click();
+                await m3uCategories.locator('.aurora-all-categories').click();
                 await expect(
                     mainWindow.locator('.poster-grid [data-test-id="channel-item"]')
                 ).toHaveCount(12);

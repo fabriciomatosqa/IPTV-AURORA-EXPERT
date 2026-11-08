@@ -710,3 +710,7 @@
 .aurora-library .library-live-switcher app-playlist-switcher {
     min-width: 0; flex: 1; display: block;
 }
+
+/* The single reusable navigation controls all live/movie/series category panels.
+   Do not style provider-specific legacy category sidebars on this route. */
+.aurora-library app-aurora-catalog-navigation { height: 100%; }

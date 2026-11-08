@@ -74,6 +74,10 @@ export class AuroraCatalogNavigationComponent {
             child.subtitle + ' (' + (child.count ?? '') + ')'
         )), 84
     ));
+    isSelected(id: string): boolean {
+        return String(this.selectedId() ?? '') === id;
+    }
+
     readonly allSelected = computed(() =>
         this.selectedId() == null || this.selectedId() === '' || this.selectedId() === '*'
     );
