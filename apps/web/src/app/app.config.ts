@@ -3,13 +3,14 @@ import {
     provideHttpClient,
     withInterceptorsFromDi,
 } from '@angular/common/http';
+import { APP_BASE_HREF } from '@angular/common';
 import {
     ApplicationConfig,
     importProvidersFrom,
     provideZoneChangeDetection,
 } from '@angular/core';
 import { provideAnimations } from '@angular/platform-browser/animations';
-import { provideRouter } from '@angular/router';
+import { provideRouter, withHashLocation } from '@angular/router';
 import { provideServiceWorker } from '@angular/service-worker';
 import { provideEffects } from '@ngrx/effects';
 import { provideRouterStore, routerReducer } from '@ngrx/router-store';
@@ -41,7 +42,8 @@ export function DataFactory() {
 export const appConfig: ApplicationConfig = {
     providers: [
         provideZoneChangeDetection({ eventCoalescing: true }),
-        provideRouter(routes),
+        provideRouter(routes, ...(window.electron ? [withHashLocation()] : [])),
+        ...(window.electron ? [{ provide: APP_BASE_HREF, useValue: '' }] : []),
         provideAnimations(),
         provideHttpClient(withInterceptorsFromDi()),
         provideStore({
