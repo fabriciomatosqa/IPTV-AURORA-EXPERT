@@ -282,6 +282,19 @@ export class HtmlVideoPlayerComponent implements OnInit, OnChanges, OnDestroy {
             const url = channel.url + (channel.epgParams ?? '');
             const playbackUrl = this.preferInitialAudioTranscode(url);
             this.currentSourceUrl = playbackUrl;
+            // Remember the actual starting mode. Otherwise an audio-transcoded
+            // movie retries the same URL instead of escalating to H.264/AAC.
+            try {
+                const initialMode = new URL(playbackUrl).searchParams.get('transcode');
+                this.transcodeAttempt =
+                    initialMode === '1'
+                        ? 'full'
+                        : initialMode === 'audio'
+                          ? 'audio'
+                          : 'none';
+            } catch {
+                this.transcodeAttempt = 'none';
+            }
             const effectiveSourceUrl = this.getEffectiveSourceUrl(playbackUrl);
             const extension =
                 getExtensionFromUrl(effectiveSourceUrl)?.toLowerCase();
@@ -390,7 +403,7 @@ export class HtmlVideoPlayerComponent implements OnInit, OnChanges, OnDestroy {
             }
 
             const transcodeMode = parsed.searchParams.get('transcode');
-            if (transcodeMode === 'audio') {
+            if (transcodeMode === 'audio' || transcodeMode === '1') {
                 return url;
             }
 
@@ -535,9 +548,10 @@ export class HtmlVideoPlayerComponent implements OnInit, OnChanges, OnDestroy {
             typeof window !== 'undefined' &&
             !(window as unknown as { electron?: unknown }).electron;
 
-        // For decode / unsupported-source errors, try to recover by routing
-        // through the proxy's /transcode endpoint (FFmpeg server-side transcode).
-        if (mediaError.code === 3 || mediaError.code === 4) {
+        // Browser media errors can surface as NETWORK (2) even when the
+        // proxied source is valid but its container/codec couldn't be read.
+        // Escalate once through the seekable FFmpeg VOD path before giving up.
+        if ([2, 3, 4].includes(mediaError.code)) {
             const reason = isAudioCodec
                 ? 'audio'
                 : isVideoCodec

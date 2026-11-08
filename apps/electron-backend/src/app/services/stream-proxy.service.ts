@@ -278,18 +278,20 @@ function maybeTranscodeResponse(
 }
 
 /**
- * Audio-only transcode by giving ffmpeg the source URL directly. This lets
- * ffmpeg use HTTP Range requests to read MP4 `moov` atoms (which often sit at
- * the end of the file), something we cannot do when piping into stdin.
- * Video is copied; audio is re-encoded to AAC inside fragmented MP4 so
- * Chromium can decode it even when the source uses AC-3/E-AC-3/DTS.
+ * FFmpeg reads VOD URLs directly so it can use HTTP Range to access MP4 moov
+ * atoms at the end of a file. A piped HTTP response is not seekable and may
+ * fail even for a perfectly valid movie. Audio mode copies compatible video;
+ * full mode decodes and converts video to H.264 + AAC for Electron/Chromium.
  */
 function spawnUrlAudioTranscode(
     req: IncomingMessage,
     res: ServerResponse,
     targetUrl: string,
     userAgent?: string,
-    audioStreamIndex?: number
+    audioStreamIndex?: number,
+    mode: TranscodeMode = 'audio',
+    referer?: string,
+    origin?: string
 ): void {
     if (!HAS_WORKING_FFMPEG || !FFMPEG_BIN) {
         res.writeHead(502);
@@ -298,17 +300,8 @@ function spawnUrlAudioTranscode(
     }
 
     console.log(
-        `[StreamProxy] direct-url audio transcode via ${FFMPEG_SOURCE}: ${sourceForLog(targetUrl)}`
+        `[StreamProxy] direct-url ${mode} transcode via ${FFMPEG_SOURCE}: ${sourceForLog(targetUrl)}`
     );
-
-    res.writeHead(200, {
-        'access-control-allow-origin': '*',
-        'access-control-allow-methods': 'GET, HEAD, OPTIONS',
-        'access-control-allow-headers': 'Range, Content-Type',
-        'cache-control': 'no-store',
-        'content-type': 'video/mp4',
-        'transfer-encoding': 'chunked',
-    });
 
     const ffmpegArgs: string[] = [
         '-hide_banner',
@@ -318,8 +311,7 @@ function spawnUrlAudioTranscode(
         '1',
         '-reconnect_streamed',
         '1',
-        '-reconnect_at_eof',
-        '1',
+        // Do not reconnect at EOF for VOD; it would replay the movie.
         '-reconnect_delay_max',
         '5',
         '-rw_timeout',
@@ -328,17 +320,28 @@ function spawnUrlAudioTranscode(
     if (userAgent) {
         ffmpegArgs.push('-user_agent', userAgent);
     }
+    if (referer) {
+        ffmpegArgs.push('-referer', referer);
+    }
+    if (origin) {
+        ffmpegArgs.push('-headers', `Origin: ${origin}\r\n`);
+    }
     const audioMapArgs =
         typeof audioStreamIndex === 'number'
             ? ['-map', `0:a:${audioStreamIndex}?`]
-            : [
-                  '-map',
-                  '0:a:m:language:eng?',
-                  '-map',
-                  '0:a:m:language:und?',
-                  '-map',
-                  '0:a:0?',
-              ];
+            : ['-map', '0:a:0?'];
+
+    // Route FFmpeg's seekable requests through our local HTTP proxy. This
+    // retains HTTP Range seeking while preserving the provider TLS/redirect
+    // handling supplied by Node (FFmpeg alone can reject older IPTV TLS).
+    let inputUrl = targetUrl;
+    if (proxyPort !== null) {
+        const passthrough = new URLSearchParams({ url: targetUrl });
+        if (userAgent) passthrough.set('ua', userAgent);
+        if (referer) passthrough.set('ref', referer);
+        if (origin) passthrough.set('org', origin);
+        inputUrl = `http://127.0.0.1:${proxyPort}/stream?${passthrough.toString()}`;
+    }
 
     ffmpegArgs.push(
         '-probesize',
@@ -346,14 +349,23 @@ function spawnUrlAudioTranscode(
         '-analyzeduration',
         '20M',
         '-i',
-        targetUrl,
+        inputUrl,
         '-map',
         '0:v:0?',
         ...audioMapArgs,
         '-sn',
         '-dn',
-        '-c:v',
-        'copy',
+        ...(
+            mode === 'full'
+                ? [
+                      '-c:v', 'libx264',
+                      '-preset', 'veryfast',
+                      '-pix_fmt', 'yuv420p',
+                      '-profile:v', 'main',
+                      '-crf', '24',
+                  ]
+                : ['-c:v', 'copy']
+        ),
         '-c:a',
         'aac',
         '-profile:a',
@@ -399,33 +411,50 @@ function spawnUrlAudioTranscode(
             if (!ffmpeg.killed) ffmpeg.kill('SIGKILL');
         }, 1000);
     };
+    // Do not terminate on req.close: Node can emit it after the request body
+    // has been read but while the media response is still streaming.
     req.on('aborted', terminate);
-    req.on('close', terminate);
+    res.on('close', terminate);
 
-    ffmpeg.on('error', (error) => {
-        console.error('[StreamProxy] ffmpeg spawn failed:', error);
-        if (!res.headersSent) {
-            res.writeHead(502);
-            res.end('Transcoding failed');
-        } else if (!res.writableEnded) {
-            res.end();
-        }
+    let firstMediaByteSent = false;
+    ffmpeg.stdout.once('data', () => {
+        firstMediaByteSent = true;
+        if (res.headersSent || res.destroyed) return;
+        res.writeHead(200, {
+            'access-control-allow-origin': '*',
+            'access-control-allow-methods': 'GET, HEAD, OPTIONS',
+            'access-control-allow-headers': 'Range, Content-Type',
+            'cache-control': 'no-store',
+            'content-type': 'video/mp4',
+        });
+    });
+    ffmpeg.on('error', () => {
+        console.warn('[StreamProxy] FFmpeg could not start.');
+        if (!res.headersSent && !res.destroyed) {
+            res.writeHead(502, { 'access-control-allow-origin': '*' });
+            res.end('Conversao de video indisponivel');
+        } else if (!res.writableEnded) res.end();
     });
     ffmpeg.on('close', (code, signal) => {
         if (signal && (req.aborted || res.writableEnded || res.destroyed)) {
-            console.log(
-                `[StreamProxy] direct-url ffmpeg terminated by ${signal} after client disconnect`
-            );
             return;
         }
         if (code !== 0) {
-            console.error(
-                `[StreamProxy] direct-url ffmpeg exited with code ${code}${
-                    signal ? ` (signal ${signal})` : ''
-                }. ${ffmpegErrorOutput}`
-            );
+            // FFmpeg stderr may contain credential-bearing provider URLs.
+            // Never print its raw contents to the console or release logs.
+            const reason = /403|401|Unauthorized|Forbidden/i.test(ffmpegErrorOutput)
+                ? 'upstream-access-denied'
+                : /moov atom not found|Invalid data found/i.test(ffmpegErrorOutput)
+                  ? 'unreadable-media-container'
+                  : 'ffmpeg-failed';
+            console.warn(`[StreamProxy] direct-url ${mode} failed: ${reason} (code ${code})`);
         }
-        if (!res.writableEnded) res.end();
+        if (!firstMediaByteSent && !res.headersSent && !res.destroyed) {
+            res.writeHead(502, { 'access-control-allow-origin': '*' });
+            res.end('Nao foi possivel converter o video');
+        } else if (!res.writableEnded) {
+            res.end();
+        }
     });
 
     ffmpeg.stdout.pipe(res);
@@ -477,17 +506,31 @@ function handleProxyRequest(req: IncomingMessage, res: ServerResponse) {
         return;
     }
 
-    // Fast path: audio-only transcode reads the URL directly with ffmpeg so it
-    // can seek into MP4 `moov` atoms (impossible when piping into stdin).
-    if (shouldTranscodeRequest && transcodeMode === 'audio') {
-        const uaHeader = req.headers['user-agent'];
-        const userAgent = Array.isArray(uaHeader) ? uaHeader[0] : uaHeader;
+    // Movies and episodes need a seekable upstream. FFmpeg can read MP4
+    // indexes using HTTP Range only when given the source URL directly.
+    // Preserve the streamed-input path for live MPEG-TS and HLS.
+    const isVodUrl =
+        /\/(?:movie|series)\//i.test(target.pathname) ||
+        /\.(?:mp4|m4v|mkv|avi|mov|webm)$/i.test(target.pathname);
+    if (shouldTranscodeRequest && (transcodeMode === 'audio' || isVodUrl)) {
+        const requestHeaderUa = req.headers['user-agent'];
+        const fallbackUa = Array.isArray(requestHeaderUa)
+            ? requestHeaderUa[0]
+            : requestHeaderUa;
+        // Trim provider metadata before passing it to FFmpeg as HTTP headers.
+        const safeHeader = (value: string | null) =>
+            value && !/[\r\n]/.test(value) && value.length < 1024
+                ? value
+                : undefined;
         spawnUrlAudioTranscode(
             req,
             res,
             target.toString(),
-            userAgent,
-            audioStreamIndex
+            safeHeader(params.get('ua')) || fallbackUa,
+            audioStreamIndex,
+            transcodeMode,
+            safeHeader(params.get('ref')),
+            safeHeader(params.get('org'))
         );
         return;
     }
@@ -507,6 +550,18 @@ function handleProxyRequest(req: IncomingMessage, res: ServerResponse) {
             forwardHeaders[k] = v;
         }
     }
+    // Some IPTV providers require their supplied User-Agent / Referer.
+    // The original proxy accidentally dropped these values from the URL.
+    const safeHeaderValue = (value: string | null): string | undefined =>
+        value && !/[\r\n]/.test(value) && value.length < 1024
+            ? value
+            : undefined;
+    const requestedAgent = safeHeaderValue(params.get('ua'));
+    const requestedReferer = safeHeaderValue(params.get('ref'));
+    const requestedOrigin = safeHeaderValue(params.get('org'));
+    if (requestedAgent) forwardHeaders['user-agent'] = requestedAgent;
+    if (requestedReferer) forwardHeaders['referer'] = requestedReferer;
+    if (requestedOrigin) forwardHeaders['origin'] = requestedOrigin;
 
     const createRequest = (
         currentTarget: URL,

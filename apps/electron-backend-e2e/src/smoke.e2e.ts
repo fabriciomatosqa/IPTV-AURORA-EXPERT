@@ -138,6 +138,22 @@ test.describe('Electron App Smoke Test', () => {
             { windowsHide: true }
         );
         expect(generated.status, generated.stderr?.toString()).toBe(0);
+        // A valid but non-faststart movie stores its MP4 index at the end.
+        // This is the format the old piped FFmpeg transcode could not seek.
+        const slowStartGenerated = spawnSync(
+            ffmpeg,
+            [
+                '-hide_banner', '-loglevel', 'error',
+                '-i', videoFile,
+                '-c', 'copy',
+                join(profileRoot, 'fixture-slowstart.mp4'),
+            ],
+            { windowsHide: true }
+        );
+        expect(
+            slowStartGenerated.status,
+            slowStartGenerated.stderr?.toString()
+        ).toBe(0);
         const hlsFile = join(profileRoot, 'fixture.m3u8');
         const hlsGenerated = spawnSync(
             ffmpeg,
@@ -371,6 +387,7 @@ test.describe('Electron App Smoke Test', () => {
                 );
             } else if (
                 /^\/fixture(?:\d+)?\.(mp4|m3u8|ts)$/.test(requestPath) ||
+                requestPath === '/fixture-slowstart.mp4' ||
                 /^\/(movie|series)\/synthetic\/synthetic\/\d+\.mp4$/.test(
                     requestPath
                 )
@@ -544,6 +561,56 @@ test.describe('Electron App Smoke Test', () => {
         await mainWindow.screenshot({
             path: join(screenshotDir, 'window-properties-screenshot.png'),
         });
+    });
+
+    test('seekable FFmpeg VOD conversion plays a slow-start MP4 in Electron', async () => {
+        test.setTimeout(60000);
+        const port = await mainWindow.evaluate(() =>
+            window.electron?.getStreamProxyPort?.()
+        );
+        expect(port).toBeGreaterThan(0);
+        const stream = `http://127.0.0.1:${port}/stream?url=${encodeURIComponent(
+            fixtureUrl + '/fixture-slowstart.mp4'
+        )}&transcode=1`;
+        const result = await mainWindow.evaluate(async (url) => {
+            const video = document.createElement('video');
+            video.muted = true;
+            video.autoplay = true;
+            video.playsInline = true;
+            video.style.width = '100px';
+            video.style.height = '60px';
+            document.body.appendChild(video);
+            return await new Promise<{
+                played: boolean;
+                currentTime: number;
+                errorCode?: number;
+            }>((resolve) => {
+                let finished = false;
+                const done = (played: boolean) => {
+                    if (finished) return;
+                    finished = true;
+                    window.clearTimeout(timeout);
+                    const currentTime = video.currentTime;
+                    const errorCode = video.error?.code;
+                    video.pause();
+                    video.removeAttribute('src');
+                    video.load();
+                    video.remove();
+                    resolve({ played, currentTime, errorCode });
+                };
+                const timeout = window.setTimeout(() => done(false), 35000);
+                video.addEventListener('timeupdate', () => {
+                    if (video.currentTime > 0.15) done(true);
+                });
+                video.addEventListener('error', () => done(false));
+                video.src = url;
+                void video.play().catch(() => done(false));
+            });
+        }, stream);
+        expect(result, 'FFmpeg must play at least 150 ms').toMatchObject({
+            played: true,
+        });
+        expect(result.currentTime).toBeGreaterThan(0.15);
     });
 
     test('native Picture in Picture is resizable, snappable and returns to full-app player', async () => {
@@ -1057,6 +1124,17 @@ test.describe('Electron App Smoke Test', () => {
                     `aurora-xtream-movie-details-${width}.png`
                 ),
             });
+            // Synopsis, tags and playback buttons must stay together in the
+            // top half of the desktop view, not be pushed below the fold.
+            const actions = await mainWindow
+                .locator('app-content-hero .action-buttons')
+                .boundingBox();
+            const poster = await mainWindow
+                .locator('app-content-hero .poster__image')
+                .boundingBox();
+            expect(actions).not.toBeNull();
+            expect(actions!.y + actions!.height).toBeLessThan(height * 0.78);
+            expect(poster!.height).toBeLessThan(height * 0.62);
         }
         await mainWindow.locator('app-content-hero .download-btn').click();
         await expect(
@@ -1082,20 +1160,17 @@ test.describe('Electron App Smoke Test', () => {
         await mainWindow
             .getByRole('button', { name: 'Voltar ao catálogo', exact: true })
             .click();
-        await mainWindow
+        const seriesTab = mainWindow
             .locator('app-navigation')
-            .getByRole('button', { name: 'Séries', exact: true })
-            .click();
-        await expect(mainWindow.locator('app-grid-list mat-card')).toHaveCount(
-            12
-        );
-        const categoryValue = await mainWindow
-            .locator('#xtream-category option')
-            .nth(1)
-            .getAttribute('value');
-        await mainWindow
-            .locator('#xtream-category')
-            .selectOption(categoryValue!);
+            .getByRole('button', { name: 'Séries', exact: true });
+        await seriesTab.click();
+        await expect(seriesTab).toHaveAttribute('aria-pressed', 'true');
+        // Wait for *series* data rather than reusing a movie category ID while
+        // the select is being replaced. Both sections contain 12 cards.
+        await expect(mainWindow.locator('app-grid-list mat-card')).toHaveCount(12);
+        await expect(
+            mainWindow.locator('app-grid-list mat-card').first()
+        ).toContainText('Jornada Aurora');
         await mainWindow.locator('app-grid-list mat-card').first().click();
         await expect(mainWindow.locator('.season-card')).toHaveCount(2);
         await expect(mainWindow.locator('.episode-card')).toHaveCount(18);
