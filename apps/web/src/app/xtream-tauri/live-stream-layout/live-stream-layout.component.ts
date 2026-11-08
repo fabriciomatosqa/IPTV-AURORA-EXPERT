@@ -1,16 +1,12 @@
 import {
-    afterNextRender,
     ChangeDetectionStrategy,
     Component,
     computed,
-    ElementRef,
     effect,
     inject,
-    Injector,
     OnDestroy,
     OnInit,
     signal,
-    viewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButton, MatIconButton } from '@angular/material/button';
@@ -121,11 +117,6 @@ export class LiveStreamLayoutComponent implements OnInit, OnDestroy {
         };
     });
 
-    private readonly injector = inject(Injector);
-    private readonly categoryView = viewChild(CategoryViewComponent, {
-        read: ElementRef,
-    });
-    private categoryScrollTop = 0;
     private unsubscribeRemoteChannelChange?: () => void;
     private unsubscribeRemoteCommand?: () => void;
 
@@ -236,25 +227,9 @@ export class LiveStreamLayoutComponent implements OnInit, OnDestroy {
     }
 
     selectCategory(category: XtreamCategory) {
-        const el = this.categoryView()?.nativeElement;
-        if (el) {
-            this.categoryScrollTop = el.scrollTop;
-        }
         const categoryId = (category as any).category_id ?? category.id;
         this.xtreamStore.setSelectedCategory(categoryId);
-    }
-
-    backToCategories() {
-        this.xtreamStore.setSelectedCategory(null);
-        afterNextRender(
-            () => {
-                const el = this.categoryView()?.nativeElement;
-                if (el) {
-                    el.scrollTop = this.categoryScrollTop;
-                }
-            },
-            { injector: this.injector }
-        );
+        // Keep category list and its scroll position visible for fast switching.
     }
 
     openCategoryManagement(): void {
@@ -288,15 +263,12 @@ export class LiveStreamLayoutComponent implements OnInit, OnDestroy {
     }
 
     toggleChannelSearch(): void {
-        if (this.selectedCategoryId()) {
-            this.showChannelSearch.update((v) => !v);
-            return;
-        }
+        this.showChannelSearch.update((v) => !v);
+    }
 
+    toggleCategorySearch(): void {
         this.showCategorySearch.update((v) => !v);
-        if (!this.showCategorySearch()) {
-            this.categorySearchTerm.set('');
-        }
+        if (!this.showCategorySearch()) this.categorySearchTerm.set('');
     }
 
     onCategorySearchChange(term: string): void {
