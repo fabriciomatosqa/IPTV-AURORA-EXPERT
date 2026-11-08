@@ -104,7 +104,7 @@ export class XtreamShellComponent {
         });
     }
 
-    handlePageClick(page: 'search' | 'recent' | 'favorites' | 'recently-added') {
+    handlePageClick(page: 'search' | 'recent' | 'favorites' | 'sports' | 'recently-added') {
         this.xtreamStore.setSelectedContentType(undefined);
         this.router.navigate([page], {
             relativeTo: this.route,

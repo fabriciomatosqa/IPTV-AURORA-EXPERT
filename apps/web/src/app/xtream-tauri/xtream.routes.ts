@@ -90,6 +90,12 @@ export const xtreamRoutes: Route[] = [
                 ],
             },
             {
+                path: 'sports',
+                data: { provider: 'xtream' },
+                loadComponent: () => import('../shared/components/sports-directory/sports-page.component')
+                    .then(c => c.SportsPageComponent),
+            },
+            {
                 path: 'favorites',
                 loadComponent: () =>
                     import('./favorites/favorites.component').then(

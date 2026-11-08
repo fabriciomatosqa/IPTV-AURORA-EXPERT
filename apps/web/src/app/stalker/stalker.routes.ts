@@ -89,6 +89,12 @@ export const stalkerRoutes: Route[] = [
                 ],
             },
             {
+                path: 'sports',
+                data: { provider: 'stalker' },
+                loadComponent: () => import('../shared/components/sports-directory/sports-page.component')
+                    .then(c => c.SportsPageComponent),
+            },
+            {
                 path: 'favorites',
                 loadComponent: () =>
                     import(
