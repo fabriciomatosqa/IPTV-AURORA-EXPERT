@@ -546,6 +546,61 @@ test.describe('Electron App Smoke Test', () => {
         });
     });
 
+    test('native Picture in Picture is resizable, snappable and returns to full-app player', async () => {
+        const openedWindow = electronApp.waitForEvent('window', {
+            timeout: 30000,
+        });
+        const opened = await mainWindow.evaluate((url) =>
+            window.electron.openAuroraPiP?.({
+                streamUrl: url,
+                title: 'Aurora Teste PiP',
+                startTime: 0,
+            }), fixtureUrl + '/fixture.mp4');
+        expect(opened).toBe(true);
+
+        const pipPage = await openedWindow;
+        await expect(pipPage.locator('app-floating-player')).toBeVisible({
+            timeout: 20000,
+        });
+        const nativeWindow = await electronApp.evaluate(({ BrowserWindow }) => {
+            const floating = BrowserWindow.getAllWindows().find((win) =>
+                win.getTitle().includes('Picture in Picture')
+            );
+            if (!floating) return null;
+            floating.setSize(360, 240);
+            return {
+                width: floating.getBounds().width,
+                height: floating.getBounds().height,
+                resizable: floating.isResizable(),
+                maximizable: floating.isMaximizable(),
+                frame: floating.getTitle(),
+            };
+        });
+        expect(nativeWindow).toBeTruthy();
+        expect(nativeWindow?.resizable).toBe(true);
+        expect(nativeWindow?.maximizable).toBe(true);
+        expect(nativeWindow?.width).toBe(360);
+        expect(nativeWindow?.height).toBe(240);
+        await pipPage.getByTestId('pip-always-on-top').click();
+        const isAlwaysOnTop = await electronApp.evaluate(({ BrowserWindow }) =>
+            BrowserWindow.getAllWindows().some(
+                (win) =>
+                    win.getTitle().includes('Picture in Picture') &&
+                    win.isAlwaysOnTop()
+            )
+        );
+        expect(isAlwaysOnTop).toBe(true);
+        await pipPage.getByTestId('pip-return').click();
+        const dialog = mainWindow.locator('.aurora-player-dialog');
+        await expect(dialog).toBeVisible({ timeout: 20000 });
+        const dialogSize = await dialog.boundingBox();
+        const viewport = mainWindow.viewportSize();
+        expect(dialogSize?.width).toBeGreaterThan((viewport?.width || 900) - 12);
+        expect(dialogSize?.height).toBeGreaterThan((viewport?.height || 600) - 12);
+        await mainWindow.getByRole('button', { name: 'Fechar player' }).click();
+        await expect(dialog).not.toBeVisible();
+    });
+
     test('app should render main content', async () => {
         // Wait for app-root to have actual content
         await mainWindow.waitForFunction(
