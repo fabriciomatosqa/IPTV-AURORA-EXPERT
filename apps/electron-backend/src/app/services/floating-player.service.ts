@@ -101,6 +101,12 @@ export function registerAuroraFloatingPlayer(): void {
                 },
             });
             floatingWindow = win;
+            // The Angular document title would otherwise overwrite our native
+            // PiP title, making this window indistinguishable from the main app.
+            win.webContents.on('page-title-updated', (event) => {
+                event.preventDefault();
+                win.setTitle('IPTV AURORA EXPERT — Picture in Picture');
+            });
             win.setMenuBarVisibility(false);
             win.setMenu(null);
             win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
