@@ -1,0 +1,51 @@
+<main class="sports-directory" data-test-id="sports-directory">
+    <header class="sports-heading">
+        <div><span class="sports-eyebrow">AURORA EXPERT</span>
+            <h1><mat-icon>sports_soccer</mat-icon> Esportes</h1>
+            <p>Competições e canais esportivos encontrados na playlist selecionada.</p>
+        </div>
+        <label class="sports-search"><mat-icon>search</mat-icon>
+            <input type="search" placeholder="Pesquisar esporte ou campeonato"
+                aria-label="Pesquisar esportes" [value]="search()"
+                (input)="search.set($any($event.target).value)" />
+        </label>
+    </header>
+    <div class="sports-sections">
+        @for (section of sections(); track section.title) {
+            <section class="sports-section">
+                <button type="button" class="sports-section-heading"
+                    [attr.aria-expanded]="isExpanded(section.title)"
+                    (click)="toggle(section.title)">
+                    <mat-icon>sports</mat-icon>
+                    <strong>{{ section.title }}</strong>
+                    <small>{{ section.entries.length }} {{ section.entries.length === 1 ? 'opção' : 'opções' }}</small>
+                    <mat-icon>{{ isExpanded(section.title) ? 'expand_less' : 'expand_more' }}</mat-icon>
+                </button>
+                @if (isExpanded(section.title)) {
+                    <div class="sports-competitions">
+                        @for (item of section.entries; track item.id) {
+                            <button type="button" [title]="item.title"
+                                [attr.data-sports-id]="item.id"
+                                (click)="chosen.emit(item.id)">
+                                <mat-icon>play_circle_outline</mat-icon>
+                                <span>{{ item.competition }}</span>
+                                @if (item.count != null) { <small>({{ item.count }})</small> }
+                                <mat-icon>chevron_right</mat-icon>
+                            </button>
+                        }
+                    </div>
+                }
+            </section>
+        } @empty {
+            <div class="sports-empty" role="status">
+                <mat-icon>sports</mat-icon>
+                @if (loading()) {
+                    <h2>Carregando esportes…</h2>
+                } @else {
+                    <h2>Nenhuma competição identificada</h2>
+                    <p>Esta playlist não informou categorias ou títulos esportivos reconhecíveis.</p>
+                }
+            </div>
+        }
+    </div>
+</main>

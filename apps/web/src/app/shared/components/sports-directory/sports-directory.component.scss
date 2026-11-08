@@ -1,0 +1,35 @@
+:host { display: block; min-width: 0; width: 100%; height: 100%; overflow: hidden; }
+.sports-directory { height: 100%; overflow: auto; padding: 30px; box-sizing: border-box;
+    background: #12151b; color: #e4e9ee; font: 14px 'Segoe UI', sans-serif; }
+.sports-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 14px;
+    margin-bottom: 26px; }
+.sports-eyebrow { color: #73dfca; font-size: 11px; letter-spacing: .14em; font-weight: 700; }
+.sports-heading h1 { display: flex; align-items: center; gap: 12px; margin: 7px 0 5px;
+    font-size: 28px; font-weight: 700; }
+.sports-heading h1 mat-icon { color: #75e5d0; }
+.sports-heading p { color: #a8b4c0; margin: 0; }
+.sports-search { display: flex; align-items: center; gap: 8px; padding: 10px 13px;
+    width: min(340px, 100%); box-sizing: border-box; border-radius: 10px; background: #202631; }
+.sports-search input { flex: 1; width: 100%; min-width: 0; border: 0; outline: 0; color: #f2f4f7;
+    background: transparent; font: inherit; }
+.sports-section { margin-bottom: 13px; border: 1px solid #ffffff17; border-radius: 12px;
+    background: #1a2029; overflow: hidden; }
+.sports-section-heading { width: 100%; display: flex; align-items: center; gap: 13px;
+    border: 0; background: none; padding: 15px 18px; color: #f4f7fa; text-align: left;
+    cursor: pointer; font: inherit; }
+.sports-section-heading strong { flex: 1; font-size: 17px; }
+.sports-section-heading small { color: #abb8c5; }
+.sports-section-heading mat-icon:first-child { color: #73dfca; }
+.sports-competitions { padding: 0 12px 13px; display: grid; gap: 6px; }
+.sports-competitions button { background: #202832; border: 1px solid transparent;
+    border-radius: 9px; padding: 12px 13px; color: #e7edf2; font: inherit; cursor: pointer;
+    display: flex; align-items: center; gap: 12px; text-align: left; }
+.sports-competitions button:hover, .sports-competitions button:focus-visible {
+    border-color: #5aded0; background: #23353c; }
+.sports-competitions button span { flex: 1; }
+.sports-competitions button small { color: #aeb9c6; }
+.sports-competitions button mat-icon:first-child { color: #f33185; }
+.sports-empty { text-align: center; color: #aeb9c6; margin: 60px auto; max-width: 450px; }
+.sports-empty mat-icon { font-size: 40px; width: 40px; height: 40px; }
+.sports-empty h2 { color: #e5edf2; }
+@media(max-width:700px) { .sports-directory { padding: 15px; } .sports-heading h1 { font-size: 23px; } }
