@@ -1,3 +1,4 @@
+import { adultsLast } from '../../shared/utils/aurora-category-order';
 import {
     CdkVirtualScrollViewport,
     ScrollingModule,
@@ -72,7 +73,9 @@ export class PortalChannelsListComponent implements AfterViewInit, OnDestroy {
         const mode = this.sortMode();
         const channels = this.channels();
         if (mode === 'server') {
-            return channels;
+            return adultsLast(channels, (item: any) =>
+                String(item.group_name ?? item.category_name ?? item.title ?? item.name ?? '')
+            );
         }
 
         const collator = new Intl.Collator(undefined, {
@@ -80,12 +83,15 @@ export class PortalChannelsListComponent implements AfterViewInit, OnDestroy {
             sensitivity: 'base',
         });
 
-        return [...channels].sort((a: any, b: any) => {
+        const ordered = [...channels].sort((a: any, b: any) => {
             const titleA = a.title ?? a.name ?? '';
             const titleB = b.title ?? b.name ?? '';
             const result = collator.compare(titleA, titleB);
             return mode === 'name-asc' ? result : -result;
         });
+        return adultsLast(ordered, (item: any) =>
+            String(item.group_name ?? item.category_name ?? item.title ?? item.name ?? '')
+        );
     });
 
     favorites = new Map<number, boolean>();

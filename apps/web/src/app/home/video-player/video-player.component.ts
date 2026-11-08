@@ -1,3 +1,4 @@
+import { adultsLast } from '../../shared/utils/aurora-category-order';
 import { Overlay, OverlayRef } from '@angular/cdk/overlay';
 import { ComponentPortal } from '@angular/cdk/portal';
 import { AsyncPipe, CommonModule } from '@angular/common';
@@ -222,11 +223,14 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
         }
         return this.catalogIndex()[section as CatalogKind] || [];
     });
-    readonly catalogCategories = computed(() => [
-        ...new Set(
-            this.sectionChannels().map((c) => c.group?.title || 'Sem categoria')
-        ),
-    ]);
+    readonly catalogCategories = computed(() =>
+        adultsLast(
+            [...new Set(this.sectionChannels().map(
+                (c) => c.group?.title || 'Sem categoria'
+            ))],
+            (name) => name
+        )
+    );
     readonly normalizedCatalogCategories = computed(() =>
         this.catalogCategories().map((name) => ({
             id: name,
@@ -263,9 +267,12 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
                     (c.group?.title || 'Sem categoria') === category) &&
                 (!query || c.name?.toLocaleLowerCase().includes(query))
         );
-        return this.catalogSorted()
+        const ordered = this.catalogSorted()
             ? [...items].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
             : items;
+        return adultsLast(ordered, (channel) =>
+            channel.group?.title || channel.name || ''
+        );
     });
     readonly visibleCatalog = computed(() =>
         this.filteredCatalog().slice(0, this.catalogLimit())

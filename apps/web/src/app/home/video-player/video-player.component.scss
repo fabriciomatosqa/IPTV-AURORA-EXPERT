@@ -605,7 +605,7 @@
  * structure and Aurora category component as Xtream catalogs. */
 .library-catalog.catalog-with-categories {
     display: grid;
-    grid-template-columns: clamp(190px, 20vw, 280px) minmax(0, 1fr);
+    grid-template-columns: max-content minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr);
     column-gap: 0;
     min-height: 0;
@@ -661,14 +661,14 @@
 }
 @media (max-width: 1100px) {
     .library-catalog.catalog-with-categories {
-        grid-template-columns: 195px minmax(0,1fr);
+        grid-template-columns: max-content minmax(0,1fr);
     }
     .catalog-with-categories .library-header { padding: 18px 12px 18px; }
     .catalog-with-categories .library-scroll { margin: 0 12px; }
 }
 @media (max-width: 680px) {
     .library-catalog.catalog-with-categories {
-        grid-template-columns: 154px minmax(0,1fr);
+        grid-template-columns: max-content minmax(0,1fr);
     }
     .catalog-with-categories .library-header { padding: 12px 8px; }
     .catalog-with-categories .library-scroll { margin: 0 8px; padding: 8px; }

@@ -33,8 +33,9 @@
 .vod-category-sidebar {
     display: flex;
     flex-direction: column;
-    flex: 0 0 clamp(190px, 20vw, 280px);
-    width: clamp(190px, 20vw, 280px);
+    flex: 0 0 auto;
+    width: fit-content;
+    max-width: min(47vw, 620px);
     min-width: 0;
     min-height: 0;
     overflow: hidden;
@@ -258,18 +259,12 @@
 }
 
 @media (max-width: 1100px) {
-    .vod-category-sidebar {
-        flex-basis: 195px;
-        width: 195px;
-    }
+    .vod-category-sidebar { max-width: 45vw; }
     .main-content { padding: 18px 12px 0; }
     .category-search { width: clamp(180px, 26vw, 320px); }
 }
 @media (max-width: 680px) {
-    .vod-category-sidebar {
-        flex-basis: 154px;
-        width: 154px;
-    }
+    .vod-category-sidebar { max-width: 43vw; }
     .vod-sidebar-header { padding-left: 10px; }
     .vod-sidebar-header h2 { font-size: 15px; }
     .vod-sidebar-search { margin-inline: 6px; }

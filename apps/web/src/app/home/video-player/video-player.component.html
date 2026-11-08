@@ -112,15 +112,15 @@
         } @else {
             <main class="library-catalog" data-test-id="aurora-catalog"
                 [class.catalog-with-categories]="
-                    catalogSection() === 'movies' || catalogSection() === 'series'
+                    catalogSection() === 'live' || catalogSection() === 'movies' || catalogSection() === 'series'
                 ">
                 <header class="library-header">
                     @if (
-                        catalogSection() === 'movies' ||
+                        catalogSection() === 'live' || catalogSection() === 'movies' ||
                         catalogSection() === 'series'
                     ) {
                         <h2 class="library-section-heading">
-                            {{ catalogCategory() || (catalogSection() === 'movies' ? 'Todos os filmes' : 'Todas as séries') }}
+                            {{ catalogCategory() || (catalogSection() === 'live' ? 'Todos os canais' : catalogSection() === 'movies' ? 'Todos os filmes' : 'Todas as séries') }}
                         </h2>
                     } @else {
                         <div class="library-category">
@@ -153,7 +153,7 @@
                                 catalogLimit.set(200)
                             "
                     /></label>
-                    @if (catalogSection() === 'movies' || catalogSection() === 'series') {
+                    @if (catalogSection() === 'live' || catalogSection() === 'movies' || catalogSection() === 'series') {
                         <button type="button" class="library-sort-action"
                             [attr.aria-pressed]="catalogSorted()"
                             [title]="catalogSorted() ? 'Ordem original' : 'Ordenar por nome'"
@@ -165,6 +165,7 @@
                 </header>
                 <div class="library-body">
                     @if (
+                        catalogSection() !== 'live' &&
                         catalogSection() !== 'movies' &&
                         catalogSection() !== 'series'
                     ) {
@@ -201,7 +202,7 @@
                     </aside>
                     }
                     @if (
-                        catalogSection() === 'movies' ||
+                        catalogSection() === 'live' || catalogSection() === 'movies' ||
                         catalogSection() === 'series'
                     ) {
                         <app-aurora-category-sidebar

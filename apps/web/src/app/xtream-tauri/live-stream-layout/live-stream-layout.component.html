@@ -21,8 +21,7 @@
 </div>
 
 <div class="sidebar channels-sidebar"
-    appResizable [minWidth]="270" [maxWidth]="530"
-    [defaultWidth]="350" storageKey="live-channels-sidebar-width"
+    [style.--aurora-channel-width.px]="channelColumnWidth()"
     aria-label="Canais da categoria selecionada">
     <div class="sidebar-header channel-header">
         <h2 class="category-title">

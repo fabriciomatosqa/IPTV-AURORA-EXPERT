@@ -1,3 +1,4 @@
+import { columnWidthForLabels } from '../../shared/utils/aurora-category-order';
 import {
     ChangeDetectionStrategy,
     Component,
@@ -19,7 +20,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ActivatedRoute } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
-import { PlaylistSwitcherComponent, ResizableDirective } from 'components';
+import { PlaylistSwitcherComponent } from 'components';
 import { XtreamCategory } from 'shared-interfaces';
 import { EpgViewComponent, WebPlayerViewComponent } from 'shared-portals';
 import { SettingsStore } from '../../services/settings-store.service';
@@ -57,7 +58,6 @@ const LIVE_CHANNEL_SORT_STORAGE_KEY = 'xtream-live-channel-sort-mode';
         /* MpvPlayerBarComponent, */
         PlaylistSwitcherComponent,
         PortalChannelsListComponent,
-        ResizableDirective,
         TranslatePipe,
         WebPlayerViewComponent,
     ],
@@ -111,6 +111,12 @@ export class LiveStreamLayoutComponent implements OnInit, OnDestroy {
         if (mode === 'name-desc') return 'Name Z-A';
         return 'Server Order';
     });
+
+    readonly channelColumnWidth = computed(() => columnWidthForLabels(
+        (this.xtreamStore.selectItemsFromSelectedCategory() ?? []).map(
+            (channel: any) => String(channel.title ?? channel.name ?? '')
+        ), 130, 600
+    ));
 
     readonly selectedCategoryInfo = computed(() => {
         const categoryId = this.selectedCategoryId();
