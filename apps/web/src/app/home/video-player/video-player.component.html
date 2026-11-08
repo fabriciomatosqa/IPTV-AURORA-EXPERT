@@ -110,7 +110,10 @@
                 </app-content-hero>
             </main>
         } @else {
-            <main class="library-catalog" data-test-id="aurora-catalog">
+            <main class="library-catalog" data-test-id="aurora-catalog"
+                [class.catalog-with-categories]="
+                    catalogSection() === 'movies' || catalogSection() === 'series'
+                ">
                 <header class="library-header">
                     @if (
                         catalogSection() === 'movies' ||
