@@ -15,6 +15,7 @@ import {
     CategoryManagementDialogData,
 } from './category-management-dialog/category-management-dialog.component';
 import { XtreamStore } from './stores/xtream.store';
+import { CategoryViewComponent } from './category-view/category-view.component';
 import { XtreamCategorySortMode } from './stores/features/with-selection.feature';
 
 const XTREAM_CATEGORY_SORT_STORAGE_KEY = 'xtream-category-sort-mode';
@@ -31,6 +32,7 @@ const XTREAM_CATEGORY_SORT_STORAGE_KEY = 'xtream-category-sort-mode';
         MatInputModule,
         MatMenuModule,
         MatTooltipModule,
+        CategoryViewComponent,
         RouterOutlet,
         TranslateModule,
     ],
@@ -49,14 +51,34 @@ export class XtreamMainContainerComponent implements OnInit {
     readonly contentSortMode = this.xtreamStore.contentSortMode;
     readonly categorySearchTerm = this.xtreamStore.categorySearchTerm;
     readonly isCategorySearchOpen = signal(true);
+    readonly sidebarSearch = signal('');
+    readonly filteredSidebarCategories = computed(() => {
+        const search = this.sidebarSearch().trim().toLocaleLowerCase();
+        if (!search) return this.categories();
+        return this.categories().filter((category) =>
+            String((category as any).category_name ?? (category as any).name ?? '')
+                .toLocaleLowerCase().includes(search)
+        );
+    });
+    readonly selectedCatalogHeading = computed(() => {
+        const selectedId = this.selectedCategoryId();
+        const type = this.xtreamStore.selectedContentType();
+        if (selectedId == null) {
+            return type === 'series' ? 'Todas as séries' : 'Todos os filmes';
+        }
+        const category = this.categories().find((c) =>
+            String((c as any).category_id ?? c.id) === String(selectedId)
+        );
+        return (category as any)?.category_name ?? (category as any)?.name ??
+            (type === 'series' ? 'Séries' : 'Filmes');
+    });
     readonly canShowFilterButton = computed(() => {
         const type = this.xtreamStore.selectedContentType();
         return type === 'vod' || type === 'series';
     });
     readonly canShowSortMenu = computed(() => {
-        const hasCategorySelected = this.selectedCategoryId() != null;
         const type = this.xtreamStore.selectedContentType();
-        return hasCategorySelected && (type === 'vod' || type === 'series');
+        return type === 'vod' || type === 'series';
     });
     readonly contentSortLabel = computed(() => {
         const mode = this.contentSortMode();

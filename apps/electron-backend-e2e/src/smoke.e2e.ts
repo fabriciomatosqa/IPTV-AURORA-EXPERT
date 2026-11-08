@@ -953,6 +953,19 @@ test.describe('Electron App Smoke Test', () => {
                         '.poster-grid [data-test-id="channel-item"]'
                     )
                 ).toHaveCount(12);
+                const m3uCategories = mainWindow.locator(
+                    '[data-test-id="m3u-category-sidebar"]'
+                );
+                await expect(m3uCategories).toBeVisible();
+                await m3uCategories.locator('.library-category-list button').nth(1).click();
+                await expect(m3uCategories).toBeVisible();
+                await expect(
+                    mainWindow.locator('.poster-grid [data-test-id="channel-item"]')
+                ).not.toHaveCount(12);
+                await m3uCategories.locator('.library-category-list button').first().click();
+                await expect(
+                    mainWindow.locator('.poster-grid [data-test-id="channel-item"]')
+                ).toHaveCount(12);
                 await mainWindow.screenshot({
                     path: join(
                         screenshotDir,
@@ -1093,9 +1106,25 @@ test.describe('Electron App Smoke Test', () => {
         await expect(mainWindow.locator('app-grid-list mat-card')).toHaveCount(
             12
         );
-        await expect(mainWindow.locator('#xtream-category option')).toHaveCount(
-            2
+        // Movies have a persistent category sidebar, matching the live TV
+        // layout: categories and their titles remain visible simultaneously.
+        const movieSidebar = mainWindow.locator(
+            '[data-test-id="vod-category-sidebar"]'
         );
+        await expect(movieSidebar).toBeVisible();
+        await expect(movieSidebar.locator('.category-item')).toHaveCount(1);
+        await expect(movieSidebar.locator('.vod-all-categories')).toHaveAttribute(
+            'aria-pressed', 'true'
+        );
+        await movieSidebar.locator('.category-item').first().click();
+        await expect(movieSidebar.locator('.category-item.selected')).toBeVisible();
+        await expect(mainWindow.locator('app-grid-list mat-card')).toHaveCount(12);
+        // The categories column stays mounted when switching back to All.
+        await movieSidebar.locator('.vod-all-categories').click();
+        await expect(movieSidebar.locator('.vod-all-categories')).toHaveAttribute(
+            'aria-pressed', 'true'
+        );
+        await expect(mainWindow.locator('app-grid-list mat-card')).toHaveCount(12);
         await mainWindow
             .getByRole('searchbox', { name: 'Pesquisar no catálogo' })
             .fill('Cinema Aurora 02');
@@ -1174,8 +1203,19 @@ test.describe('Electron App Smoke Test', () => {
             .getByRole('button', { name: 'Séries', exact: true });
         await seriesTab.click();
         await expect(seriesTab).toHaveAttribute('aria-pressed', 'true');
-        // Wait for *series* data rather than reusing a movie category ID while
-        // the select is being replaced. Both sections contain 12 cards.
+        const seriesSidebar = mainWindow.locator(
+            '[data-test-id="vod-category-sidebar"]'
+        );
+        await expect(seriesSidebar).toBeVisible();
+        await expect(seriesSidebar.locator('.category-item')).toHaveCount(1);
+        // Clicking a series category must not replace the category column.
+        await seriesSidebar.locator('.category-item').first().click();
+        await expect(seriesSidebar.locator('.category-item.selected')).toBeVisible();
+        await expect(mainWindow.locator('app-grid-list mat-card')).toHaveCount(12);
+        await expect(seriesSidebar).toBeVisible();
+        await seriesSidebar.locator('.vod-all-categories').click();
+        // Switching between movie and series tabs must not reuse the old
+        // category ID or stale card data.
         await expect(mainWindow.locator('app-grid-list mat-card')).toHaveCount(12);
         await expect(
             mainWindow.locator('app-grid-list mat-card').first()

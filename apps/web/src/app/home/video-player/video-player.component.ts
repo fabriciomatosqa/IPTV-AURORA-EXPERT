@@ -130,6 +130,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
     readonly catalogSection = signal('live');
     readonly catalogSearch = signal('');
     readonly catalogCategory = signal('');
+    readonly categorySidebarQuery = signal('');
     readonly catalogLimit = signal(200);
     readonly catalogSorted = signal(false);
     readonly catalogFavorites = this.store.selectSignal(selectFavorites);
@@ -224,6 +225,26 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
             this.sectionChannels().map((c) => c.group?.title || 'Sem categoria')
         ),
     ]);
+    readonly catalogCategoryCounts = computed(() => {
+        const counts = new Map<string, number>();
+        for (const channel of this.sectionChannels()) {
+            const category = channel.group?.title || 'Sem categoria';
+            counts.set(category, (counts.get(category) ?? 0) + 1);
+        }
+        return counts;
+    });
+    readonly filteredCatalogCategories = computed(() => {
+        const term = this.categorySidebarQuery().trim().toLocaleLowerCase();
+        return term
+            ? this.catalogCategories().filter((category) =>
+                  category.toLocaleLowerCase().includes(term)
+              )
+            : this.catalogCategories();
+    });
+    selectCatalogCategory(category: string): void {
+        this.catalogCategory.set(category);
+        this.catalogLimit.set(200);
+    }
     readonly filteredCatalog = computed(() => {
         const query = this.catalogSearch().trim().toLocaleLowerCase();
         const category = this.catalogCategory();
@@ -245,6 +266,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
         this.catalogDetail.set(null);
         this.catalogSection.set(section);
         this.catalogCategory.set('');
+        this.categorySidebarQuery.set('');
         this.catalogSearch.set('');
         this.catalogLimit.set(200);
         this.browsing.set(true);
