@@ -1,0 +1,42 @@
+<section class="aurora-pip-shell" aria-label="IPTV AURORA EXPERT Picture in Picture">
+    <div class="aurora-pip-toolbar">
+        <span class="aurora-pip-title" [title]="state()?.title || ''">
+            {{ state()?.title || 'IPTV AURORA EXPERT' }}
+        </span>
+        <div class="aurora-pip-actions">
+            <button
+                mat-icon-button
+                type="button"
+                (click)="toggleAlwaysOnTop()"
+                [matTooltip]="alwaysOnTop() ? 'Desativar sempre visível (permite encaixar)' : 'Manter sempre visível'"
+                [attr.aria-pressed]="alwaysOnTop()"
+                aria-label="Alternar sempre visível"
+                data-test-id="pip-always-on-top"
+            >
+                <mat-icon>{{ alwaysOnTop() ? 'push_pin' : 'push_pin' }}</mat-icon>
+            </button>
+            <button
+                mat-icon-button
+                type="button"
+                (click)="returnToApp()"
+                matTooltip="Voltar ao aplicativo"
+                aria-label="Voltar ao aplicativo"
+                data-test-id="pip-return"
+            >
+                <mat-icon>open_in_full</mat-icon>
+            </button>
+        </div>
+    </div>
+    <div class="aurora-pip-video">
+        @if (state(); as player) {
+            <app-web-player-view
+                [streamUrl]="player.streamUrl"
+                [startTime]="player.startTime || 0"
+                [subtitleUrl]="player.subtitleUrl || null"
+                (timeUpdate)="handleTimeUpdate($event)"
+            />
+        } @else {
+            <div class="aurora-pip-loading">Preparando vídeo…</div>
+        }
+    </div>
+</section>
