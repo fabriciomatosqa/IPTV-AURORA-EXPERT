@@ -17,6 +17,7 @@ import {
     Theme,
 } from 'shared-interfaces';
 import { SettingsService } from './services/settings.service';
+import { PlayerService } from './services/player.service';
 import { EpgProgressPanelComponent } from './shared/epg-progress-panel/epg-progress-panel.component';
 import { GlobalRecentlyViewedComponent } from './xtream-tauri/recently-viewed/global-recently-viewed.component';
 import { GlobalSearchResultsComponent } from './xtream-tauri/search-results/global-search-results.component';
@@ -90,6 +91,9 @@ export class AppComponent implements OnInit {
     private readonly DEFAULT_LANG = Language.PORTUGUESE;
 
     constructor() {
+        // Keep the PiP return handler registered even when the original
+        // player route has been closed or the user navigates elsewhere.
+        inject(PlayerService);
         if (
             ((this.dataService.isElectron &&
                 this.dataService?.remote?.process.platform === 'linux') ||
