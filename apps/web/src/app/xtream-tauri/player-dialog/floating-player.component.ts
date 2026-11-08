@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewEncapsulation, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { MatTooltip } from '@angular/material/tooltip';
@@ -19,6 +19,7 @@ type FloatingPlayerState = {
     standalone: true,
     templateUrl: './floating-player.component.html',
     styleUrl: './floating-player.component.scss',
+    encapsulation: ViewEncapsulation.None,
     imports: [MatButtonModule, MatIcon, MatTooltip, WebPlayerViewComponent],
 })
 export class FloatingPlayerComponent implements OnInit, OnDestroy {
