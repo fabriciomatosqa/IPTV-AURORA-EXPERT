@@ -1,43 +1,18 @@
 @let isEmbeddedPlayer =
     player() === 'videojs' || player() === 'html5' || player() === 'artplayer';
 
-<aside class="category-sidebar"
-    [style.--aurora-category-width.px]="categoryColumnWidth()"
+<app-aurora-catalog-navigation
     data-test-id="stalker-live-category-sidebar"
-    aria-label="Categorias da TV ao vivo">
-    <div class="sidebar-header category-header">
-        <app-playlist-switcher
-            class="switcher"
-            [currentTitle]="currentPlaylist()?.title || 'Portal'"
-            [subtitle]="'Stalker Portal'"
-        />
-        <button mat-icon-button type="button" aria-label="Pesquisar categorias"
-            (click)="categorySearchOpen.set(!categorySearchOpen())">
-            <mat-icon>search</mat-icon>
-        </button>
-    </div>
-    @if (categorySearchOpen()) {
-        <label class="portal-category-search">
-            <mat-icon>search</mat-icon>
-            <input type="search" aria-label="Pesquisar categorias"
-                placeholder="Pesquisar categorias"
-                [value]="categoryQuery()"
-                (input)="categoryQuery.set($any($event.target).value)" />
-        </label>
-    }
-    @if (isCategoryLoading()) {
-        <ngx-skeleton-loader count="16" [theme]="{width:'94%',height:'46px',borderRadius:'16px'}" />
-    } @else if (isCategoryFailed()) {
-        <app-playlist-error-view
-            [title]="'PORTALS.ERROR_VIEW.UNKNOWN_ERROR.TITLE' | translate"
-            [description]="'PORTALS.ERROR_VIEW.UNKNOWN_ERROR.DESCRIPTION' | translate" />
-    } @else {
-        <app-category-view
-            [items]="filteredCategories()"
-            [selectedCategoryId]="$any(stalkerStore.selectedCategoryId())"
-            (categoryClicked)="selectCategory($event)" />
-    }
-</aside>
+    mode="live"
+    [categories]="auroraCategories()"
+    [selectedId]="stalkerStore.selectedCategoryId()"
+    [loading]="isCategoryLoading()"
+    [loadFailed]="isCategoryFailed()"
+    (categorySelected)="selectAuroraCategory($event)">
+    <app-playlist-switcher aurora-category-header class="switcher"
+        [currentTitle]="currentPlaylist()?.title || 'Portal'"
+        [subtitle]="'Stalker Portal'" />
+</app-aurora-catalog-navigation>
 
 <div class="sidebar channels-sidebar"
     [style.--aurora-channel-width.px]="channelColumnWidth()"
