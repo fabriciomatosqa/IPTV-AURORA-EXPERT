@@ -72,9 +72,12 @@ export class AuroraCatalogNavigationComponent {
         84
     ));
     readonly secondColumnWidth = computed(() => catalogCategoryWidth(
-        this.groups().flatMap(group => group.children.map(child =>
-            child.subtitle + ' (' + (child.count ?? '') + ')'
-        )), 84
+        this.groups().reduce<string[]>((labels, group) => {
+            for (const child of group.children) {
+                labels.push(child.subtitle + ' (' + (child.count ?? '') + ')');
+            }
+            return labels;
+        }, []), 84
     ));
     isSelected(id: string): boolean {
         return String(this.selectedId() ?? '') === id;
