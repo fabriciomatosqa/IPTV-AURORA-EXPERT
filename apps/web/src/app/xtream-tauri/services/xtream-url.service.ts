@@ -73,6 +73,25 @@ export class XtreamUrlService {
     }
 
     /**
+     * The provider-supplied direct URL can fail while the canonical
+     * Xtream URL works. Retry the canonical URL only as an alternate.
+     */
+    constructVodAlternateUrls(
+        credentials: XtreamCredentials,
+        vodItem: XtreamVodDetails
+    ): string[] {
+        const direct = vodItem.movie_data?.direct_source?.trim() || '';
+        if (!/^https?:\/\//i.test(direct)) return [];
+        const streamId = vodItem.movie_data?.stream_id ?? (vodItem as any).stream_id;
+        const requestedExtension = vodItem.movie_data?.container_extension?.trim();
+        const extension = requestedExtension &&
+            /^[a-z0-9]{2,6}$/i.test(requestedExtension)
+            ? requestedExtension : 'mp4';
+        const server = credentials.serverUrl.replace(/\/+$/, '');
+        return [`${server}/movie/${credentials.username}/${credentials.password}/${streamId}.${extension}`];
+    }
+
+    /**
      * Construct series episode stream URL
      * Format: {serverUrl}/series/{username}/{password}/{episodeId}.{extension}
      */
