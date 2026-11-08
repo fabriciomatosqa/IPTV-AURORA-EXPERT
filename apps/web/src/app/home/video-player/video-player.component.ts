@@ -387,7 +387,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
     ngOnInit(): void {
         // Home shortcuts navigate directly to the selected playlist section.
         // Keep the existing live default for older navigation URLs.
-        const section = this.activatedRoute.snapshot.queryParamMap.get('section');
+        const section = this.activatedRoute.snapshot.queryParamMap?.get('section');
         if (section && ['live', 'movies', 'series', 'favorites'].includes(section)) {
             this.catalogSection.set(section);
         }
