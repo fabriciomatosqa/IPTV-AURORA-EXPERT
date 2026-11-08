@@ -44,6 +44,7 @@ describe('WebPlayerViewComponent playback fallbacks', () => {
     afterEach(() => {
         jest.clearAllMocks();
         delete (globalThis as { fetch?: typeof fetch }).fetch;
+        delete (globalThis as any).electron;
     });
 
     it('forces the html5 fallback for proxied non-live streams', async () => {
@@ -73,6 +74,37 @@ describe('WebPlayerViewComponent playback fallbacks', () => {
         component.onArtPlayerPlaybackError();
 
         expect(component.forceVideoJsFallback).toBe(true);
+    });
+
+    it('proxies extensionless Xtream films and forwards provider headers', async () => {
+        (globalThis as any).electron = {
+            getStreamProxyPort: jest.fn().mockResolvedValue(34567),
+        };
+        fixture.componentRef.setInput('streamKind', 'vod');
+        fixture.componentRef.setInput('streamHeaders', {
+            userAgent: 'Aurora Test/1.0',
+            referrer: 'https://referrer.example/',
+            origin: 'https://origin.example',
+        });
+        fixture.componentRef.setInput(
+            'streamUrl',
+            'https://cdn.example/video?id=42'
+        );
+        fixture.detectChanges();
+        await fixture.whenStable();
+
+        expect(component.forceHtml5Fallback).toBe(true);
+        const proxy = new URL(component.channel.url);
+        expect(proxy.origin).toBe('http://127.0.0.1:34567');
+        expect(proxy.pathname).toBe('/stream');
+        expect(proxy.searchParams.get('url')).toBe(
+            'https://cdn.example/video?id=42'
+        );
+        expect(proxy.searchParams.get('kind')).toBe('vod');
+        expect(proxy.searchParams.get('ua')).toBe('Aurora Test/1.0');
+        expect(proxy.searchParams.get('ref')).toBe('https://referrer.example/');
+        expect(proxy.searchParams.get('org')).toBe('https://origin.example');
+        delete (globalThis as any).electron;
     });
 
     it('builds an alternate m3u8 url for proxied live ts streams', () => {
