@@ -278,3 +278,13 @@
     .catalog-heading { font-size: 16px; }
     .category-search { width: 180px; }
 }
+
+/* Responsive width shared with M3U and Stalker category panels. */
+.catalog-layout .vod-category-sidebar {
+    flex: 0 0 auto;
+    width: clamp(190px, var(--aurora-category-width, 265px), min(43vw, 580px));
+    max-width: min(43vw, 580px);
+}
+@media (max-width: 680px) {
+    .catalog-layout .vod-category-sidebar { min-width: 130px; max-width: 44vw; }
+}
