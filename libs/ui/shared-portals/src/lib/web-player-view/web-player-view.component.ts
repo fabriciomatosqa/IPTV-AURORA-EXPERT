@@ -424,6 +424,12 @@ export class WebPlayerViewComponent {
         forceTranscode = false
     ): string {
         const params = new URLSearchParams({ url: streamUrl });
+        // Providers sometimes use extensionless CDN endpoints for films.
+        // Preserve the VOD classification for seekable full transcode.
+        const kind = this.streamKind();
+        if (kind === 'vod' || kind === 'series') {
+            params.set('kind', kind);
+        }
         if (forceTranscode) {
             params.set('transcode', '1');
         }
