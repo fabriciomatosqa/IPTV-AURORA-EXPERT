@@ -129,6 +129,13 @@ export class SettingsComponent implements OnInit {
     /** Current version of the app */
     version = '';
 
+    /** Human-readable release stage, independent from SemVer used by Windows. */
+    get releaseStageLabel(): string {
+        if (this.version.startsWith('1.0.')) return 'Versão definitiva';
+        if (this.version.startsWith('0.1.')) return 'Beta';
+        return 'Desenvolvimento';
+    }
+
     /** Update message to show */
     updateMessage = '';
 
