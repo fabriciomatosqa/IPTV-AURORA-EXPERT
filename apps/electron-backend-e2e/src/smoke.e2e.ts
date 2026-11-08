@@ -1124,6 +1124,17 @@ test.describe('Electron App Smoke Test', () => {
                     `aurora-xtream-movie-details-${width}.png`
                 ),
             });
+            // Synopsis, tags and playback buttons must stay together in the
+            // top half of the desktop view, not be pushed below the fold.
+            const actions = await mainWindow
+                .locator('app-content-hero .action-buttons')
+                .boundingBox();
+            const poster = await mainWindow
+                .locator('app-content-hero .poster__image')
+                .boundingBox();
+            expect(actions).not.toBeNull();
+            expect(actions!.y + actions!.height).toBeLessThan(height * 0.78);
+            expect(poster!.height).toBeLessThan(height * 0.62);
         }
         await mainWindow.locator('app-content-hero .download-btn').click();
         await expect(
