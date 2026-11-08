@@ -68,6 +68,7 @@ import {
     VideoPlayer,
 } from 'shared-interfaces';
 import { SettingsStore } from '../../services/settings-store.service';
+import { AuroraCategorySidebarComponent } from '../../shared/components/aurora-category-sidebar/aurora-category-sidebar.component';
 import {
     getAdjacentChannelItem,
     getChannelItemByNumber,
@@ -89,6 +90,7 @@ import { WebPlayerViewComponent } from 'shared-portals';
         AsyncPipe,
         AudioPlayerComponent,
         ContentHeroComponent,
+        AuroraCategorySidebarComponent,
         CommonModule,
         EpgListComponent,
         HtmlVideoPlayerComponent,
@@ -225,6 +227,13 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
             this.sectionChannels().map((c) => c.group?.title || 'Sem categoria')
         ),
     ]);
+    readonly normalizedCatalogCategories = computed(() =>
+        this.catalogCategories().map((name) => ({
+            id: name,
+            name,
+            count: this.catalogCategoryCounts().get(name) ?? 0,
+        }))
+    );
     readonly catalogCategoryCounts = computed(() => {
         const counts = new Map<string, number>();
         for (const channel of this.sectionChannels()) {
