@@ -38,6 +38,7 @@
 <mat-dialog-content class="content aurora-player-content">
     <app-web-player-view
         [streamUrl]="streamUrl"
+        [streamHeaders]="data.streamHeaders"
         [startTime]="data.startTime || 0"
         [subtitleUrl]="data.subtitleUrl || null"
         (timeUpdate)="handleTimeUpdate($event)"
