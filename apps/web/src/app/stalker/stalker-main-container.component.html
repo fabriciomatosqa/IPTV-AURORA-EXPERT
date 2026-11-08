@@ -30,11 +30,12 @@
             "
         />
     } @else {
-        <app-category-view
-            [items]="categories()"
-            [selectedCategoryId]="$any(stalkerStore.selectedCategoryId())"
-            (categoryClicked)="categoryClicked($event)"
-        />
+        <app-aurora-category-sidebar
+            class="stalker-category-widget"
+            [categories]="unifiedCategories()"
+            [selectedId]="selectedSidebarId()"
+            (categorySelected)="selectCategoryById($event)"
+        />      />
     }
 </div>
 
