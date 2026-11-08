@@ -562,6 +562,11 @@ test.describe('Electron App Smoke Test', () => {
         await expect(pipPage.locator('app-floating-player')).toBeVisible({
             timeout: 20000,
         });
+        const pipMarkup = await pipPage.locator('app-floating-player').innerHTML();
+        console.log('[PiP E2E] rendered content:', pipMarkup.slice(0, 2500));
+        await expect(pipPage.locator('.aurora-pip-toolbar')).toBeVisible({
+            timeout: 10000,
+        });
         const nativeWindow = await electronApp.evaluate(({ BrowserWindow }) => {
             const floating = BrowserWindow.getAllWindows().find((win) =>
                 win.getTitle().includes('Picture in Picture')
