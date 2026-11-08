@@ -5,7 +5,7 @@ import { MatPaginatorModule } from '@angular/material/paginator';
 import { ActivatedRoute, Router, RouterOutlet } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { NgxSkeletonLoaderModule } from 'ngx-skeleton-loader';
-import { PlaylistSwitcherComponent, ResizableDirective } from 'components';
+import { PlaylistSwitcherComponent } from 'components';
 import { AuroraCategorySidebarComponent } from '../shared/components/aurora-category-sidebar/aurora-category-sidebar.component';
 import { PlaylistErrorViewComponent } from '../xtream/playlist-error-view/playlist-error-view.component';
 import { StalkerStore } from './stalker.store';
@@ -26,7 +26,6 @@ import { StalkerStore } from './stalker.store';
         NgxSkeletonLoaderModule,
         PlaylistErrorViewComponent,
         PlaylistSwitcherComponent,
-        ResizableDirective,
         RouterOutlet,
         TranslatePipe,
     ],
