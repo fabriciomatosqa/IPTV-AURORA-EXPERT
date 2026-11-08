@@ -69,7 +69,7 @@ export class HeaderComponent {
         const url = this.router.url || '';
         // Tune icon (desktop/mobile): Home + M3U playlist pages.
         // Xtream/Portal pages have their own dedicated in-page filters.
-        return this.isHome || /^\/(playlists(?:\/|$)|iptv(?:\/|$))/.test(url);
+        return this.isHome || url.startsWith('/listas') || /^\/(playlists(?:\/|$)|iptv(?:\/|$))/.test(url);
     }
 
     get showFilterRow(): boolean {
