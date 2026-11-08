@@ -21,6 +21,30 @@ export class PlayerService {
     private dataService = inject(DataService);
     private settingsStore = inject(SettingsStore);
 
+    constructor() {
+        // A native PiP can return playback to the main application without
+        // losing the selected content or its current position.
+        window.electron?.onAuroraPiPReturn?.((data) => {
+            this.openEmbeddedPlayer(data);
+        });
+    }
+
+    private openEmbeddedPlayer(data: PlayerDialogData): void {
+        this.dialog.open<PlayerDialogComponent, PlayerDialogData>(
+            PlayerDialogComponent,
+            {
+                data,
+                width: '100vw',
+                height: '100vh',
+                maxWidth: '100vw',
+                maxHeight: '100vh',
+                panelClass: 'aurora-player-dialog',
+                autoFocus: false,
+                restoreFocus: true,
+            }
+        );
+    }
+
     private getPlayableUrlForBrowser(
         streamUrl: string,
         userAgent?: string,
@@ -99,21 +123,13 @@ export class PlayerService {
                 startTime,
             });
         } else {
-            this.dialog.open<PlayerDialogComponent, PlayerDialogData>(
-                PlayerDialogComponent,
-                {
-                    data: {
-                        streamUrl: playableStreamUrl,
-                        title,
-                        contentInfo,
-                        startTime,
-                        subtitleUrl: subtitleUrl ?? undefined,
-                    },
-                    width: '80%',
-                    maxWidth: '1200px',
-                    maxHeight: '90vh',
-                }
-            );
+            this.openEmbeddedPlayer({
+                streamUrl: playableStreamUrl,
+                title,
+                contentInfo,
+                startTime,
+                subtitleUrl: subtitleUrl ?? undefined,
+            });
         }
     }
 }
