@@ -30,38 +30,118 @@
     color: #eef3f5;
 }
 .cast-section h2 {
-    font:
-        600 21px 'Segoe UI',
-        sans-serif;
-    margin: 0 0 20px;
+    font: 600 20px 'Segoe UI', sans-serif;
+    margin: 0 0 16px;
 }
 .cast-strip {
     display: flex;
-    gap: 24px;
+    gap: 14px;
     overflow-x: auto;
-    padding-bottom: 14px;
+    padding: 3px 0 16px;
+    scrollbar-width: thin;
 }
 .cast-member {
     display: flex;
+    flex: 0 0 122px;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
-    flex: 0 0 100px;
-    font:
-        12px/1.4 'Segoe UI',
-        sans-serif;
+    gap: 9px;
+    box-sizing: border-box;
+    padding: 9px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    background: rgba(255,255,255,.045);
+    color: inherit;
+    font: 12px/1.4 'Segoe UI', sans-serif;
     text-align: center;
+    cursor: pointer;
+}
+.cast-member:hover, .cast-member--active {
+    border-color: #73e0c6;
+    background: rgba(115,224,198,.11);
+}
+.cast-member:focus-visible {
+    outline: 2px solid #73e0c6;
+    outline-offset: 2px;
 }
 .cast-avatar {
+    position: relative;
     display: grid;
     place-items: center;
-    border-radius: 50%;
-    background: #ffffff20;
-    width: 44px;
-    height: 44px;
+    overflow: hidden;
+    width: 100px;
+    height: 100px;
+    flex-shrink: 0;
+    border-radius: 9px;
+    background: linear-gradient(145deg, #2e4656, #28313a);
     color: #d2e9e3;
-    font-size: 18px;
+    font-size: 27px;
 }
+.cast-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.cast-name {
+    display: block;
+    width: 100%;
+    min-height: 30px;
+    overflow-wrap: anywhere;
+    font-weight: 500;
+}
+.actor-filmography {
+    margin-top: 14px;
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(115,224,198,.25);
+    background: rgba(5,10,15,.45);
+}
+.actor-filmography__heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.actor-filmography h3 {
+    margin: 0;
+    font-size: 17px;
+}
+.actor-filmography h4 {
+    font-size: 13px;
+    margin: 16px 0 8px;
+    color: #9fe2d2;
+}
+.actor-close {
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: #dce6e8;
+    cursor: pointer;
+}
+.actor-results {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 8px;
+    max-height: 330px;
+    overflow-y: auto;
+}
+.actor-result {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px;
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 8px;
+    text-align: left;
+    text-decoration: none;
+    background: rgba(255,255,255,.035);
+    color: #f2f7fa;
+    font: 13px/1.4 'Segoe UI',sans-serif;
+    cursor: pointer;
+}
+.actor-result:hover { background: rgba(115,224,198,.12); }
+.actor-result span { flex: 1; }
+.actor-result small { color: #a2afbd; }
 
 // Dark theme overrides - cinematic dark mode
 :host-context(.dark-theme) {
