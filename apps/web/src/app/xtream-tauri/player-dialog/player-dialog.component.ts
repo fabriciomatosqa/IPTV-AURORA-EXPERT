@@ -17,6 +17,11 @@ export interface PlayerDialogData {
     contentInfo?: any;
     startTime?: number;
     subtitleUrl?: string;
+    streamHeaders?: {
+        userAgent?: string;
+        referrer?: string;
+        origin?: string;
+    };
 }
 
 @Component({
