@@ -129,6 +129,11 @@ export class PlayerService {
                 contentInfo,
                 startTime,
                 subtitleUrl: subtitleUrl ?? undefined,
+                streamHeaders: {
+                    userAgent,
+                    referrer: referer,
+                    origin,
+                },
             });
         }
     }
