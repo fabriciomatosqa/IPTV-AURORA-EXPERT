@@ -48,6 +48,9 @@ export class PlayerDialogComponent {
     readonly title: string;
     readonly streamUrl: string;
     readonly isFullscreen = signal(false);
+    readonly isOpeningPiP = signal(false);
+    readonly canUseNativePiP = !!window.electron?.openAuroraPiP;
+    private lastPositionSeconds: number;
 
     private lastSaveTime = 0;
     private previousSize: {
@@ -60,55 +63,66 @@ export class PlayerDialogComponent {
     constructor() {
         this.streamUrl = this.data.streamUrl;
         this.title = this.data.title;
+        this.lastPositionSeconds = this.data.startTime ?? 0;
     }
 
-    toggleDialogFullscreen() {
-        const next = !this.isFullscreen();
-        this.isFullscreen.set(next);
-        const containerEl =
-            this.dialogRef
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                ._containerInstance?.['_elementRef']?.nativeElement as
-                | HTMLElement
-                | undefined;
+    async toggleDialogFullscreen(): Promise<void> {
+        // The player already fills the app. This additionally makes the
+        // Electron application occupy the entire monitor when requested.
+        try {
+            const next = await window.electron?.toggleFullScreen?.();
+            if (typeof next === 'boolean') {
+                this.isFullscreen.set(next);
+            } else {
+                const element = document.querySelector('.aurora-player-dialog');
+                if (!document.fullscreenElement) {
+                    await element?.requestFullscreen?.();
+                    this.isFullscreen.set(!!document.fullscreenElement);
+                } else {
+                    await document.exitFullscreen();
+                    this.isFullscreen.set(false);
+                }
+            }
+        } catch {
+            this.snackBar.open('Não foi possível alternar a tela cheia.', 'Fechar', {
+                duration: 3500,
+            });
+        }
+    }
 
-        if (next) {
-            // Remember current size and expand to viewport.
-            this.previousSize = {
-                width: this.dialogRef.componentInstance ? '80%' : undefined,
-            };
-            this.dialogRef.updateSize('100vw', '100vh');
-            this.dialogRef.addPanelClass('player-dialog-fullscreen');
-            if (containerEl) {
-                containerEl.classList.add('player-dialog-fullscreen');
+    async openPictureInPicture(): Promise<void> {
+        if (this.isOpeningPiP() || !this.canUseNativePiP) return;
+        this.isOpeningPiP.set(true);
+        try {
+            const opened = await window.electron.openAuroraPiP?.({
+                streamUrl: this.streamUrl,
+                title: this.title,
+                startTime: this.lastPositionSeconds,
+                subtitleUrl: this.data.subtitleUrl,
+                contentInfo: this.data.contentInfo,
+            });
+            if (opened) {
+                // Destroy the in-app player so the same video does not play
+                // twice. The native PiP owns playback until Return is clicked.
+                this.dialogRef.close();
+                return;
             }
-            // Also push Electron BrowserWindow to fullscreen when available.
-            const api = (window as any).electron;
-            if (api?.toggleFullScreen) {
-                try {
-                    api.toggleFullScreen();
-                } catch {
-                    /* ignore */
-                }
-            }
-        } else {
-            this.dialogRef.updateSize('80%', '');
-            this.dialogRef.removePanelClass('player-dialog-fullscreen');
-            if (containerEl) {
-                containerEl.classList.remove('player-dialog-fullscreen');
-            }
-            const api = (window as any).electron;
-            if (api?.toggleFullScreen) {
-                try {
-                    api.toggleFullScreen();
-                } catch {
-                    /* ignore */
-                }
-            }
+            this.snackBar.open('Não foi possível abrir o Picture in Picture.', 'Fechar', {
+                duration: 4500,
+            });
+        } catch {
+            this.snackBar.open('Não foi possível abrir o Picture in Picture.', 'Fechar', {
+                duration: 4500,
+            });
+        } finally {
+            this.isOpeningPiP.set(false);
         }
     }
 
     handleTimeUpdate(event: { currentTime: number; duration: number }) {
+        if (Number.isFinite(event.currentTime) && event.currentTime >= 0) {
+            this.lastPositionSeconds = event.currentTime;
+        }
         if (!this.data.contentInfo) return;
 
         const now = Date.now();
