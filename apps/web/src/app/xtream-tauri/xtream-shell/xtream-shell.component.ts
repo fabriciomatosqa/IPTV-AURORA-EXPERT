@@ -65,6 +65,14 @@ export class XtreamShellComponent {
             this.xtreamStore.resetStore(newPlaylistId);
             this.currentPlaylistId = newPlaylistId;
 
+            // The Home cards can deep-link straight to Live, Movies, Series,
+            // or Favorites. Initialize the selected type from that URL
+            // before fetching categories; otherwise the store defaults to VOD.
+            const childPath = this.route.snapshot.firstChild?.routeConfig?.path;
+            const initialType = childPath === 'live' || childPath === 'vod' ||
+                childPath === 'series' ? childPath : undefined;
+            this.xtreamStore.setSelectedContentType(initialType);
+
             this.store.dispatch(
                 PlaylistActions.setActivePlaylist({
                     playlistId: newPlaylistId,

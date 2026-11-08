@@ -3,7 +3,7 @@
     [class.details-open]="browsing() && !!catalogDetail()"
 >
     <nav class="library-rail" aria-label="Biblioteca AURORA">
-        <a class="library-brand" routerLink="/" title="Gerenciar listas IPTV"
+        <a class="library-brand" routerLink="/" title="Voltar ao início"
             ><img src="assets/aurora/aurora.png" alt="AURORA"
         /></a>
         <div class="library-rail-links">
@@ -22,7 +22,7 @@
                 <mat-icon>menu</mat-icon><span>Menu</span>
             </button>
             <mat-menu #libraryMenu="matMenu">
-                <a mat-menu-item routerLink="/"
+                <a mat-menu-item routerLink="/listas"
                     ><mat-icon>playlist_play</mat-icon>Gerenciar listas</a
                 >
                 <button mat-menu-item (click)="openSettings()">
@@ -36,7 +36,7 @@
                 }
             </mat-menu>
         </div>
-        <a routerLink="/" class="library-playlists"
+        <a routerLink="/listas" class="library-playlists"
             ><mat-icon>playlist_play</mat-icon><span>Listas</span></a
         >
     </nav>

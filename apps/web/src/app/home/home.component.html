@@ -1,12 +1,95 @@
 <app-header
-    [title]="'HOME.TITLE' | translate"
-    [subtitle]="'HOME.SUBTITLE' | translate"
+    [title]="isPlaylistManager ? ('HOME.TITLE' | translate) : 'Início'"
+    [subtitle]="isPlaylistManager ? ('HOME.SUBTITLE' | translate) : 'Escolha o que assistir'"
     (searchQuery)="onSearchQueryChange($event)"
     (globalSearchClicked)="openGlobalSearch()"
     (globalRecentClicked)="openGlobalRecent()"
 />
-<app-recent-playlists
-    class="recent-playlists"
-    [searchQueryInput]="searchQuery()"
-    (addPlaylistClicked)="onAddPlaylist($event)"
-/>
+
+@if (isPlaylistManager) {
+    <app-recent-playlists
+        class="recent-playlists"
+        [searchQueryInput]="searchQuery()"
+        (addPlaylistClicked)="onAddPlaylist($event)"
+    />
+} @else {
+    <main class="aurora-home" data-test-id="aurora-home-dashboard">
+        <div class="home-content">
+            <div class="home-heading">
+                <p class="home-eyebrow">IPTV AURORA EXPERT <span class="home-eyebrow-dot"></span> SEU ESPAÇO</p>
+                <h1>Bem-vindo ao Aurora</h1>
+                <p class="home-lead">Escolha um destino e aproveite seus conteúdos.</p>
+            </div>
+
+            <div class="home-playlist-control">
+                <div class="home-playlist-labels">
+                    <span class="home-label">LISTA SELECIONADA</span>
+                    <span class="home-sub-label">Os atalhos abrem a playlist escolhida.</span>
+                </div>
+                @if (playlists().length) {
+                    <div class="home-select-wrap">
+                        <mat-icon aria-hidden="true">playlist_play</mat-icon>
+                        <select
+                            data-test-id="home-playlist-selector"
+                            aria-label="Selecionar playlist"
+                            [value]="selectedPlaylist()?._id"
+                            (change)="selectPlaylist($any($event.target).value)"
+                        >
+                            @for (playlist of playlists(); track playlist._id) {
+                                <option [value]="playlist._id">{{ playlist.title }}</option>
+                            }
+                        </select>
+                        <mat-icon class="home-select-chevron" aria-hidden="true">expand_more</mat-icon>
+                    </div>
+                } @else {
+                    <p class="home-empty-message">Você ainda não adicionou uma playlist.</p>
+                }
+            </div>
+
+            <div class="home-card-grid" aria-label="Atalhos principais">
+                <button type="button" class="home-card home-card-live"
+                    data-test-id="home-card-live" [disabled]="!selectedPlaylist()"
+                    (click)="openSection('live')">
+                    <span class="home-card-symbol"><mat-icon aria-hidden="true">live_tv</mat-icon></span>
+                    <span class="home-card-name">AO VIVO</span>
+                    <span class="home-card-description">Canais e programação</span>
+                    <mat-icon class="home-card-arrow" aria-hidden="true">arrow_forward</mat-icon>
+                </button>
+                <button type="button" class="home-card home-card-movies"
+                    data-test-id="home-card-movies" [disabled]="!selectedPlaylist()"
+                    (click)="openSection('movies')">
+                    <span class="home-card-symbol"><mat-icon aria-hidden="true">movie</mat-icon></span>
+                    <span class="home-card-name">FILMES</span>
+                    <span class="home-card-description">Explore seu catálogo</span>
+                    <mat-icon class="home-card-arrow" aria-hidden="true">arrow_forward</mat-icon>
+                </button>
+                <button type="button" class="home-card home-card-series"
+                    data-test-id="home-card-series" [disabled]="!selectedPlaylist()"
+                    (click)="openSection('series')">
+                    <span class="home-card-symbol"><mat-icon aria-hidden="true">tv</mat-icon></span>
+                    <span class="home-card-name">SÉRIES</span>
+                    <span class="home-card-description">Temporadas e episódios</span>
+                    <mat-icon class="home-card-arrow" aria-hidden="true">arrow_forward</mat-icon>
+                </button>
+                <button type="button" class="home-card home-card-favorites"
+                    data-test-id="home-card-favorites" [disabled]="!selectedPlaylist()"
+                    (click)="openSection('favorites')">
+                    <span class="home-card-symbol"><mat-icon aria-hidden="true">star</mat-icon></span>
+                    <span class="home-card-name">FAVORITOS</span>
+                    <span class="home-card-description">Seus conteúdos salvos</span>
+                    <mat-icon class="home-card-arrow" aria-hidden="true">arrow_forward</mat-icon>
+                </button>
+            </div>
+
+            <div class="home-footer">
+                <span>Suas playlists e preferências continuam onde você deixou.</span>
+                <button class="home-manage-button" type="button"
+                    data-test-id="home-open-playlists" (click)="openPlaylists()">
+                    <mat-icon aria-hidden="true">playlist_play</mat-icon>
+                    Gerenciar listas
+                    <mat-icon aria-hidden="true">arrow_forward</mat-icon>
+                </button>
+            </div>
+        </div>
+    </main>
+}
