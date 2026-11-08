@@ -726,3 +726,26 @@
 .aurora-library.details-open > app-navigation.unified-library-rail {
     display: none;
 }
+
+/* Favorites and sports share the catalog content area and preserve its scroll. */
+.aurora-library > app-sports-directory { flex: 1; min-width: 0; min-height: 0; }
+.aurora-library .favorite-type-tabs {
+    display: flex; gap: 8px; padding: 10px 16px;
+    flex: 0 0 auto; border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.aurora-library .favorite-type-tabs button {
+    border: 1px solid transparent; border-radius: 9px;
+    padding: 10px 14px; background: #202631; color: #b9c5d1;
+    display: flex; align-items: center; gap: 7px; cursor: pointer;
+}
+.aurora-library .favorite-type-tabs button.active {
+    border-color: #5ddfce; background: #73e0c61c; color: #7cf0dd;
+}
+.aurora-library .library-back-to-sports {
+    border: 0; background: transparent; color: #e4f4f2;
+    cursor: pointer; display: flex; align-items: center;
+}
+@media(max-width: 690px) {
+    .aurora-library .favorite-type-tabs button { padding: 7px; }
+    .aurora-library .favorite-type-tabs { gap: 4px; flex-wrap: wrap; }
+}
