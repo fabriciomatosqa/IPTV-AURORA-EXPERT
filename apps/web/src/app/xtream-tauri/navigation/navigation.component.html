@@ -15,6 +15,29 @@
                 <span>{{ item.labelKey | translate }}</span>
             </button>
         }
+        @if (mode() === 'm3u') {
+            <button type="button" class="rail-item"
+                [class.active]="isContentTypeActive('favorites')"
+                [attr.aria-pressed]="isContentTypeActive('favorites')"
+                (click)="categoryClick.emit('favorites')">
+                <mat-icon>star_outline</mat-icon><span>Favoritos</span>
+            </button>
+            <button type="button" class="rail-item"
+                [class.active]="isContentTypeActive('sports')"
+                [attr.aria-pressed]="isContentTypeActive('sports')"
+                (click)="categoryClick.emit('sports')">
+                <mat-icon>sports_soccer</mat-icon><span>Esportes</span>
+            </button>
+        } @else {
+            <a class="rail-item" routerLink="./favorites" routerLinkActive="active"
+                (click)="pageSwitch('favorites')">
+                <mat-icon>star_outline</mat-icon><span>Favoritos</span>
+            </a>
+            <a class="rail-item" routerLink="./sports" routerLinkActive="active"
+                (click)="pageSwitch('sports')">
+                <mat-icon>sports_soccer</mat-icon><span>Esportes</span>
+            </a>
+        }
         @if (isElectron) {
             @if (mode() === 'm3u') {
                 <button class="rail-item" type="button"

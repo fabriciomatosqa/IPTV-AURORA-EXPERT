@@ -1,3 +1,5 @@
+import { SportsDirectoryComponent } from '../../shared/components/sports-directory/sports-directory.component';
+import { identifySport } from '../../shared/components/sports-directory/sports-directory.model';
 import { NavigationComponent } from '../../xtream-tauri/navigation/navigation.component';
 import { AuroraCatalogNavigationComponent } from '../../shared/components/aurora-catalog-navigation/aurora-catalog-navigation.component';
 import { DownloadsComponent } from '../../xtream-tauri/downloads/downloads.component';
@@ -99,6 +101,7 @@ import { WebPlayerViewComponent } from 'shared-portals';
         AuroraCatalogNavigationComponent,
         DownloadsComponent,
         NavigationComponent,
+        SportsDirectoryComponent,
         EpgListComponent,
         HtmlVideoPlayerComponent,
         InfoOverlayComponent,
@@ -139,6 +142,8 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
     readonly catalogChannels = signal<Channel[]>([]);
     readonly currentPlaylistTitle = this.store.selectSignal(selectPlaylistTitle);
     readonly catalogSection = signal('live');
+    readonly favoritesKind = signal<'live' | 'movies' | 'series'>('live');
+    readonly sportsSelection = signal('');
     readonly catalogSearch = signal('');
     readonly catalogCategory = signal('');
     readonly categorySidebarQuery = signal('');
@@ -217,11 +222,48 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
             classifyCatalogChannel(channel)
         );
     }
+    /** Sport competitions are indexed from actual live channels (not a fixed list). */
+    readonly sportsIndex = computed(() => {
+        const sources = new Map<string, { id: string; title: string; count: number }>();
+        const items = new Map<string, Channel[]>();
+        for (const channel of this.catalogIndex().live) {
+            const category = channel.group?.title || '';
+            const categoryMatch = identifySport(category);
+            const nameMatch = identifySport(channel.name);
+            // A generic group like ESPORTES/ESPN must not hide a specific
+            // competition present in a channel title (NBA, F1, Série A...).
+            const match = categoryMatch && categoryMatch.sport !== 'Outros esportes'
+                ? categoryMatch : nameMatch && nameMatch.sport !== 'Outros esportes'
+                    ? nameMatch : categoryMatch || nameMatch;
+            if (!match) continue;
+            const key = match.sport + ':' + match.competition;
+            const found = sources.get(key);
+            if (found) found.count++;
+            else sources.set(key, { id: key, title: match.competition, count: 1 });
+            const group = items.get(key) || [];
+            group.push(channel);
+            items.set(key, group);
+        }
+        return { sources: Array.from(sources.values()), items };
+    });
+    readonly sportsSources = computed(() => this.sportsIndex().sources);
+    readonly sportsSelectedTitle = computed(() =>
+        this.sportsSources().find(item => item.id === this.sportsSelection())?.title || 'Esportes'
+    );
+    chooseSportsCompetition(id: string): void {
+        this.sportsSelection.set(id);
+        this.catalogLimit.set(200);
+        this.catalogSearch.set('');
+    }
     readonly sectionChannels = computed(() => {
         const section = this.catalogSection();
         const channels = this.catalogChannels();
         if (section === 'favorites')
-            return channels.filter((c) => this.isCatalogFavorite(c));
+            return channels.filter((c) =>
+                this.isCatalogFavorite(c) && this.contentKind(c) === this.favoritesKind()
+            );
+        if (section === 'sports')
+            return this.sportsIndex().items.get(this.sportsSelection()) || [];
         if (section === 'recent') {
             const byId = new Map(channels.map((c) => [c.id, c]));
             return this.catalogRecent()
@@ -294,6 +336,8 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
     changeCatalogSection(section: string): void {
         this.catalogDetail.set(null);
         this.catalogSection.set(section);
+        if (section === 'favorites') this.favoritesKind.set('live');
+        if (section === 'sports') this.sportsSelection.set('');
         this.catalogCategory.set('');
         this.categorySidebarQuery.set('');
         this.categorySearchOpen.set(false);

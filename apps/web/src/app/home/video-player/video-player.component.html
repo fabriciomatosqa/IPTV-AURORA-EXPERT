@@ -13,6 +13,11 @@
     @if (browsing()) {
         @if (catalogSection() === 'downloads') {
             <app-downloads class="m3u-downloads" />
+        } @else if (catalogSection() === 'sports' && !sportsSelection()) {
+            <app-sports-directory
+                [sources]="sportsSources()"
+                [loading]="catalogLoading()"
+                (chosen)="chooseSportsCompetition($event)" />
         } @else if (catalogDetail(); as item) {
             <main class="library-details">
                 <app-content-hero
@@ -99,12 +104,20 @@
                     }
                     <div class="library-results">
                         <header class="library-header">
+                            @if (catalogSection() === 'sports' && sportsSelection()) {
+                                <button class="library-back-to-sports" type="button"
+                                    (click)="sportsSelection.set('')" aria-label="Voltar aos esportes">
+                                    <mat-icon>arrow_back</mat-icon>
+                                </button>
+                            }
                             <h2 class="library-section-heading">
                                 {{ catalogCategory() || (
                                     catalogSection() === 'live' ? 'Todos os canais'
                                     : catalogSection() === 'movies' ? 'Todos os filmes'
                                     : catalogSection() === 'series' ? 'Todas as séries'
-                                    : catalogSection() === 'favorites' ? 'Favoritos' : 'Histórico'
+                                    : catalogSection() === 'favorites' ? 'Favoritos'
+                                    : catalogSection() === 'sports' ? sportsSelectedTitle()
+                                    : 'Histórico'
                                 ) }}
                                 <small>({{ filteredCatalog().length }})</small>
                             </h2>
@@ -124,16 +137,35 @@
                                 </button>
                             </div>
                         </header>
+                        @if (catalogSection() === 'favorites') {
+                            <nav class="favorite-type-tabs" aria-label="Tipos de favoritos">
+                                <button type="button" [class.active]="favoritesKind() === 'live'"
+                                    (click)="favoritesKind.set('live')" aria-label="Favoritos ao vivo">
+                                    <mat-icon>live_tv</mat-icon> Ao vivo
+                                </button>
+                                <button type="button" [class.active]="favoritesKind() === 'movies'"
+                                    (click)="favoritesKind.set('movies')" aria-label="Filmes favoritos">
+                                    <mat-icon>movie</mat-icon> Filmes
+                                </button>
+                                <button type="button" [class.active]="favoritesKind() === 'series'"
+                                    (click)="favoritesKind.set('series')" aria-label="Séries favoritas">
+                                    <mat-icon>tv</mat-icon> Séries
+                                </button>
+                            </nav>
+                        }
                     <section
                         class="library-scroll"
                         aria-label="Conteúdos da lista"
                     >
                         <div
                             class="library-grid"
-                            [class.live-list]="catalogSection() === 'live'"
+                            [class.live-list]="catalogSection() === 'live' ||
+                                catalogSection() === 'sports' ||
+                                (catalogSection() === 'favorites' && favoritesKind() === 'live')"
                             [class.poster-grid]="
                                 catalogSection() === 'movies' ||
-                                catalogSection() === 'series'
+                                catalogSection() === 'series' ||
+                                (catalogSection() === 'favorites' && favoritesKind() !== 'live')
                             "
                         >
                             @for (

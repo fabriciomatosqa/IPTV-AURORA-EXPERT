@@ -2,7 +2,7 @@ import { Component, computed, inject, input, output } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIcon } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
-import { ActivatedRoute, RouterLink, RouterLinkActive } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { TranslatePipe } from '@ngx-translate/core';
 import { PlaylistInfoComponent } from 'components';
@@ -27,6 +27,7 @@ import { NavigationItem } from './navigation.interface';
 })
 export class NavigationComponent {
     private readonly activatedRoute = inject(ActivatedRoute);
+    private readonly router = inject(Router);
     private readonly dialog = inject(MatDialog);
     private readonly store = inject(Store);
     readonly xtreamStore = inject(XtreamStore, { optional: true });
@@ -39,7 +40,7 @@ export class NavigationComponent {
 
     readonly categoryClick = output<string>();
     readonly pageClicked = output<
-        'search' | 'recent' | 'favorites' | 'recently-added'
+        'search' | 'recent' | 'favorites' | 'sports' | 'recently-added'
     >();
 
     readonly currentPlaylist = this.store.selectSignal(
@@ -111,6 +112,10 @@ export class NavigationComponent {
     }
 
     isContentTypeActive(type: string) {
+        // Sports and Favorites are their own pages, not a second active live tab.
+        if (this.mode() === 'portal' && /\/(sports|favorites)(\/|$)/.test(this.router.url)) {
+            return false;
+        }
         return this.selectedContentType() === type;
     }
 
@@ -120,7 +125,7 @@ export class NavigationComponent {
         });
     }
 
-    pageSwitch(page: 'search' | 'recent' | 'favorites' | 'recently-added') {
+    pageSwitch(page: 'search' | 'recent' | 'favorites' | 'sports' | 'recently-added') {
         this.pageClicked.emit(page);
         this.xtreamStore?.setSelectedContentType(undefined);
     }
