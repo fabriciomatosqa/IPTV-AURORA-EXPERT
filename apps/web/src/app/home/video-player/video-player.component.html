@@ -16,8 +16,10 @@
         } @else if (catalogSection() === 'sports' && !sportsSelection()) {
             <app-sports-directory
                 [sources]="sportsSources()"
+                [broadcasts]="sportsBroadcasts()"
                 [loading]="catalogLoading()"
-                (chosen)="chooseSportsCompetition($event)" />
+                (chosen)="chooseSportsCompetition($event)"
+                (watch)="watchSportsChannel($event)" />
         } @else if (catalogDetail(); as item) {
             <main class="library-details">
                 <app-content-hero
