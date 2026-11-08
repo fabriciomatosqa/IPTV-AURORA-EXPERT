@@ -61,10 +61,26 @@ export function createFavoritesPlaylist(
  * @param value URL as string
  */
 export const getFilenameFromUrl = (value: string): string => {
-    if (value && value.length > 1) {
-        return value.substring(value.lastIndexOf('/') + 1);
+    if (!value?.trim()) {
+        return 'Untitled playlist';
     }
-    return 'Untitled playlist';
+
+    // IPTV /get.php URLs often contain account credentials in their query
+    // string. Never use the query as the visible playlist title.
+    try {
+        const parsed = new URL(value);
+        const filename = decodeURIComponent(
+            parsed.pathname.substring(parsed.pathname.lastIndexOf('/') + 1)
+        ).trim();
+        if (!filename || /^(get|player_api|playlist)\.php$/i.test(filename)) {
+            return `Lista IPTV (${parsed.hostname})`;
+        }
+        return filename;
+    } catch {
+        const pathname = value.split(/[?#]/)[0];
+        return pathname.substring(pathname.lastIndexOf('/') + 1).trim() ||
+            'Untitled playlist';
+    }
 };
 
 /**
