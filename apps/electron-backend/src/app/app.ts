@@ -2,6 +2,7 @@ import { app, BrowserWindow, Menu, screen, session, shell } from 'electron';
 import { join } from 'path';
 import { rendererAppName, rendererAppPort } from './constants';
 import { store, WINDOW_BOUNDS } from './services/store.service';
+import { isAuroraFloatingPlayer } from './services/floating-player-identity';
 
 export default class App {
     // Keep a global reference of the window object, if you don't, the window will
@@ -405,6 +406,7 @@ export default class App {
         App.application.on('ready', App.onReady); // App is ready to load data
         App.application.on('activate', App.onActivate); // App is activated
         App.application.on('browser-window-created', (_event, window) => {
+            if (isAuroraFloatingPlayer(window)) return;
             if (!App.mainWindow || window === App.mainWindow) {
                 return;
             }
