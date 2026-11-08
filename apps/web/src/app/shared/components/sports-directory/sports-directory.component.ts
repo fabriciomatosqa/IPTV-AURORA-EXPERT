@@ -1,3 +1,4 @@
+import { SportsBroadcast, sportsBroadcastStatus } from './sports-broadcast.model';
 import { Component, computed, input, OnDestroy, OnInit, output, signal } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { identifySport, organizeSports, SportName, SportsSource } from './sports-directory.model';
@@ -50,6 +51,8 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
     readonly sources = input<readonly SportsSource[]>([]);
     readonly loading = input(false);
     readonly chosen = output<string>();
+    readonly broadcasts = input<readonly SportsBroadcast[]>([]);
+    readonly watch = output<string>();
     readonly search = signal('');
     readonly selectedSport = signal<SportName>('Futebol');
     readonly selectedTab = signal('__games__');
@@ -88,6 +91,7 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
     );
     readonly tabs = computed<Tab[]>(() => {
         const sport = this.selectedSport();
+        this.scoreEvents(); // register a reactive dependency when the scoreboard finishes loading
         const registered = LEAGUES[sport] || [];
         const actual = this.availableSources().map(source => ({
             key: 'source:' + source.id, name: source.competition,
@@ -125,6 +129,22 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
         return sorted;
     });
     readonly displayedGames = computed(() => this.visibleGames().slice(0, this.maxVisible()));
+    readonly visibleBroadcasts = computed(() => {
+        const sport = this.selectedSport(), tab = this.selectedTab();
+        const now = this.now(), words = this.normalized(this.search()).split(' ').filter(Boolean);
+        const selectedTitle = (LEAGUES[sport] || []).find(t => t.key === tab)?.name ||
+            this.availableSources().find(e => 'source:' + e.id === tab)?.competition || '';
+        const tabCompetition = selectedTitle ? identifySport(selectedTitle)?.competition || selectedTitle : '';
+        return this.broadcasts().filter(item =>
+            item.sport === sport &&
+            item.stop >= now - 2 * 3600000 &&
+            (tab === '__games__' ||
+                tab === '__live__' && sportsBroadcastStatus(item,now) === 'AO VIVO' ||
+                (!!tabCompetition && this.normalized(item.competition) === this.normalized(tabCompetition))) &&
+            words.every(w => this.normalized(item.title + ' ' + item.channel.name).includes(w))
+        ).sort((a,b) => a.start - b.start).slice(0,80);
+    });
+    broadcastStatus(item: SportsBroadcast): string { return sportsBroadcastStatus(item, this.now()); }
     readonly nextF1Race = computed(() =>
         this.f1Races().find(race => race.date >= this.now() - 3 * 3600000) || null
     );

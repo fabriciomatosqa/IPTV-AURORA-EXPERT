@@ -129,3 +129,23 @@
     .match-fixture {gap:6px;}
     .match-card {padding:13px;}
 }
+
+.sports-broadcasts {margin-top:26px; border-radius:17px; border:1px solid #445b60;
+    background:#17242c; padding:21px;}
+.sports-broadcasts h2 {font-size:18px; display:flex; align-items:center; gap:10px;}
+.sports-broadcasts h2 mat-icon {color:#75e5d5;}
+.sports-broadcasts>p {color:#9eafbc; font-size:12px;}
+.sports-broadcast-grid {display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:11px;}
+.sports-broadcast-card {background:#22303a; border:1px solid #ffffff1a; border-radius:13px;
+    padding:15px; display:flex; flex-direction:column; gap:12px; min-width:0;}
+.sports-broadcast-card>div {display:flex; justify-content:space-between; align-items:center; gap:10px;}
+.sports-broadcast-card small {font-size:11px; color:#9de5d8;}
+.sports-broadcast-card h3 {font-size:16px; margin:0; overflow-wrap:anywhere;}
+.sports-broadcast-card p {font-size:12px; color:#afbec9;margin:0;}
+.broadcast-status {font-weight:800;font-size:10px;color:#b2bed2;padding:5px;border-radius:7px;background:#363e49;}
+.broadcast-live {background:#1e5847;color:#9bf5d2;}
+.broadcast-replay {background:#48325f;color:#ddb7ff;}
+.sports-broadcast-card button {display:flex;align-items:center;gap:8px; padding:10px;
+    border:1px solid #5c9e92; border-radius:9px;background:#225149;color:#a3ffec;
+    cursor:pointer;font:600 12px 'Segoe UI',sans-serif; margin-top:auto;}
+.sports-broadcast-card button:hover {background:#2a665a;}

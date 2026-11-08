@@ -223,6 +223,32 @@
         }
     }
 
+    @if (visibleBroadcasts().length && !f1Open()) {
+        <section class="sports-broadcasts" data-test-id="sports-broadcasts">
+            <h2><mat-icon>live_tv</mat-icon> Transmissões identificadas na programação</h2>
+            <p>Somente programas esportivos encontrados no guia (EPG) dos canais desta playlist.</p>
+            <div class="sports-broadcast-grid">
+                @for (broadcast of visibleBroadcasts(); track broadcast.id) {
+                    <article class="sports-broadcast-card">
+                        <div>
+                            <small>{{ broadcast.competition }}</small>
+                            <span class="broadcast-status"
+                                [class.broadcast-live]="broadcastStatus(broadcast) === 'AO VIVO'"
+                                [class.broadcast-replay]="broadcastStatus(broadcast) === 'REPRISE'">
+                                {{ broadcastStatus(broadcast) }}
+                            </span>
+                        </div>
+                        <h3>{{ broadcast.title }}</h3>
+                        <p>{{ displayDate(broadcast.start) }} · {{ displayTime(broadcast.start) }}</p>
+                        <button type="button" (click)="watch.emit(broadcast.channel.id)">
+                            <mat-icon>play_arrow</mat-icon> Assistir {{ broadcast.channel.name }}
+                        </button>
+                    </article>
+                }
+            </div>
+        </section>
+    }
+
     @if (selectedSources().length && !f1Open()) {
         <section class="sports-channels" data-test-id="sports-channel-shortcuts">
             <div><h2><mat-icon>live_tv</mat-icon> Canais da playlist</h2>
