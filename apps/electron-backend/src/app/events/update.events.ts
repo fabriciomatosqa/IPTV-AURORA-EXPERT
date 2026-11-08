@@ -102,7 +102,7 @@ export default class UpdateEvents {
                 percent: 100,
                 availableVersion:
                     selectedDisplayVersion || info.releaseName || info.version,
-                message: 'Atualização pronta. Reinicie para instalar.',
+                message: 'Atualização pronta para instalação silenciosa. Reinicie para aplicar.',
             })
         );
         autoUpdater.on('error', failure);
@@ -111,7 +111,12 @@ export default class UpdateEvents {
         ipcMain.handle('APP_UPDATE_DOWNLOAD', () => this.download());
         ipcMain.handle('APP_UPDATE_INSTALL', () => {
             if (state.phase !== 'ready') return false;
-            setImmediate(() => autoUpdater.quitAndInstall(false, true));
+            // NSIS: /S performs an unattended upgrade in the previously
+            // installed location. electron-updater supplies the installation
+            // directory and preserves the original per-user/per-machine scope.
+            // --force-run restarts the application after the silent upgrade.
+            // Do not launch the first-time setup wizard or remove user data.
+            setImmediate(() => autoUpdater.quitAndInstall(true, true));
             return true;
         });
         if (app.isPackaged && !isTest) {
