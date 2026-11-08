@@ -28,24 +28,24 @@ export class AuroraCatalogNavigationComponent {
         moveAdultContentToEnd(this.categories(), option => isAdultContentLabel(option.title))
     );
     readonly groups = computed(() => buildAuroraLiveGroups(this.orderedCategories()));
-    readonly selectedGroup = computed(() => {
-        const id = this.selectedId();
-        const groups = this.groups();
-        // Respect a real provider selection before remembering manual navigation.
-        const byId = id == null ? undefined : groups.find(group =>
-            group.children.some(child => child.id === String(id))
-        );
-        if (byId) return byId;
-        return groups.find(group => group.key === this.rootOverride()) ?? groups[0] ?? null;
-    });
     readonly visibleGroups = computed(() => {
         const query = this.query().trim().toLocaleLowerCase();
         if (!query) return this.groups();
         return this.groups().filter(group =>
             group.title.toLocaleLowerCase().includes(query) ||
-            group.children.some(child => child.subtitle.toLocaleLowerCase().includes(query) ||
+            group.children.some(child =>
+                child.subtitle.toLocaleLowerCase().includes(query) ||
                 child.title.toLocaleLowerCase().includes(query))
         );
+    });
+    readonly selectedGroup = computed(() => {
+        const groups = this.visibleGroups();
+        const id = this.selectedId();
+        const byId = id == null ? undefined : groups.find(group =>
+            group.children.some(child => child.id === String(id))
+        );
+        if (byId) return byId;
+        return groups.find(group => group.key === this.rootOverride()) ?? groups[0] ?? null;
     });
     readonly visibleCategories = computed(() => {
         const query = this.query().trim().toLocaleLowerCase();

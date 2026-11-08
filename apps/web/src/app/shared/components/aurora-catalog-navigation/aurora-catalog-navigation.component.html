@@ -6,7 +6,6 @@
         <div class="aurora-category-heading">
             @if (mode() === 'library') {
                 <h2>Categorias</h2>
-                <ng-content select="[aurora-category-action]" />
             } @else {
                 <div class="aurora-header-slot">
                     <ng-content select="[aurora-category-header]" />
@@ -15,8 +14,8 @@
                     aria-label="Pesquisar categorias" (click)="searchOpen.set(!searchOpen())">
                     <mat-icon>search</mat-icon>
                 </button>
-                <ng-content select="[aurora-category-action]" />
             }
+            <ng-content select="[aurora-category-action]" />
         </div>
         @if (mode() === 'library' || searchOpen()) {
             <label class="aurora-category-search">
