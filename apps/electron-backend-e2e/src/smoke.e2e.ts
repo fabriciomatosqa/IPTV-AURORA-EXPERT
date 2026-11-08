@@ -790,6 +790,19 @@ test.describe('Electron App Smoke Test', () => {
         }
         await mainWindow.locator('[data-test-id="home-card-live"]').click();
         await expect(mainWindow.locator('[data-test-id="channel-item"]').first()).toBeVisible();
+
+        // M3U shares the same rail and exposes the two new independent hubs.
+        const rail = mainWindow.locator('app-navigation');
+        await expect(rail).toHaveCount(1);
+        await rail.getByRole('button', { name: 'Favoritos', exact: true }).click();
+        await expect(mainWindow.locator('.favorite-type-tabs button')).toHaveCount(3);
+        await expect(mainWindow.locator('.favorite-type-tabs')).toContainText('Ao vivo');
+        await expect(mainWindow.locator('.favorite-type-tabs')).toContainText('Filmes');
+        await expect(mainWindow.locator('.favorite-type-tabs')).toContainText('Séries');
+        await rail.getByRole('button', { name: 'Esportes', exact: true }).click();
+        await expect(mainWindow.locator('[data-test-id="sports-directory"]')).toBeVisible();
+        await rail.getByRole('button', { name: 'TV ao vivo', exact: true }).click();
+        await expect(mainWindow.locator('[data-test-id="channel-item"]').first()).toBeVisible();
     });
 
     test('plays synthetic MP4, HLS and raw MPEG-TS with channel changes', async () => {
@@ -1320,6 +1333,18 @@ test.describe('Electron App Smoke Test', () => {
         await mainWindow.screenshot({
             path: join(screenshotDir, 'aurora-live-category-subcategory-channels.png')
         });
+
+        // Xtream retains real live categories and opens sports as its own page.
+        await mainWindow.locator('app-navigation')
+            .getByRole('link', { name: 'Esportes', exact: true }).click();
+        await expect(mainWindow.locator('[data-test-id="sports-directory"]')).toBeVisible();
+        await expect(mainWindow.locator('.sports-heading')).toContainText('Esportes');
+        await mainWindow.locator('app-navigation')
+            .getByRole('link', { name: 'Favoritos', exact: true }).click();
+        await expect(mainWindow.locator('app-favorites-layout')).toBeVisible();
+        await expect(mainWindow.locator('app-favorites-layout')).toContainText('Ao vivo');
+        await expect(mainWindow.locator('app-favorites-layout')).toContainText('Filmes');
+        await expect(mainWindow.locator('app-favorites-layout')).toContainText('Séries');
     });
 
     test('parses M3U URL and imports XMLTV through the real EPG worker', async () => {
