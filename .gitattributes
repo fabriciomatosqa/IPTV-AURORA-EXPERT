@@ -1,0 +1,2 @@
+# pnpm hashes patch contents; preserve LF across Windows and Linux checkouts.
+patches/*.patch text eol=lf
