@@ -72,8 +72,10 @@ export class VodDetailsRouteComponent implements OnInit, OnDestroy {
     readonly showTrailer = signal(false);
     readonly castMembers = computed(() => {
         const info = this.selectedItem()?.info;
-        const raw = info?.actors || info?.cast || '';
-        return [...new Set(raw.split(',').map((v: string) => v.trim()).filter(Boolean))].slice(0, 40);
+        const raw: string = String(info?.actors || info?.cast || '');
+        return [...new Set<string>(
+            raw.split(',').map((v) => v.trim()).filter(Boolean)
+        )].slice(0, 40);
     });
     readonly actorProfiles = signal<Record<string, ActorProfile>>({});
     readonly missingPortraits = signal<string[]>([]);
