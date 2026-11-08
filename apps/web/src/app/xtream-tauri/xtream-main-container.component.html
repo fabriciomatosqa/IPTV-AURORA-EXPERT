@@ -7,6 +7,7 @@
     @if (!xtreamStore.selectedItem() && !xtreamStore.isLoadingDetails()) {
         <aside
             class="vod-category-sidebar"
+            [style.--aurora-category-width.px]="categoryColumnWidth()"
             data-test-id="vod-category-sidebar"
             aria-label="Categorias de filmes e séries"
         >

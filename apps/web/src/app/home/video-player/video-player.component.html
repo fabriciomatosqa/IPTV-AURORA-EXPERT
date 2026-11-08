@@ -22,6 +22,8 @@
                 <mat-icon>menu</mat-icon><span>Menu</span>
             </button>
             <mat-menu #libraryMenu="matMenu">
+                <button mat-menu-item (click)="changeCatalogSection('favorites')"><mat-icon>star_outline</mat-icon>Favoritos</button>
+                <button mat-menu-item (click)="changeCatalogSection('recent')"><mat-icon>history</mat-icon>Histórico</button>
                 <a mat-menu-item routerLink="/listas"
                     ><mat-icon>playlist_play</mat-icon>Gerenciar listas</a
                 >
@@ -41,7 +43,9 @@
         >
     </nav>
     @if (browsing()) {
-        @if (catalogDetail(); as item) {
+        @if (catalogSection() === 'downloads') {
+            <app-downloads class="m3u-downloads" />
+        } @else if (catalogDetail(); as item) {
             <main class="library-details">
                 <app-content-hero
                     [layout]="
@@ -111,115 +115,55 @@
             </main>
         } @else {
             <main class="library-catalog" data-test-id="aurora-catalog">
-                <header class="library-header">
-                    @if (
-                        catalogSection() === 'movies' ||
-                        catalogSection() === 'series'
-                    ) {
-                        <h2 class="library-section-heading">
-                            {{ catalogCategory() || (catalogSection() === 'movies' ? 'Todos os filmes' : 'Todas as séries') }}
-                        </h2>
-                    } @else {
-                        <div class="library-category">
-                            <label for="aurora-category"
-                                >Categorias
-                                <mat-icon>expand_circle_down</mat-icon></label
-                            >
-                            <select
-                                id="aurora-category"
-                                aria-label="Selecionar categoria"
-                                [value]="catalogCategory()"
-                                (change)="selectCatalogCategory($any($event.target).value)"
-                            >
-                                <option value="">Todas</option>
-                                @for (category of catalogCategories(); track category) {
-                                    <option [value]="category">{{ category }}</option>
-                                }
-                            </select>
-                        </div>
-                    }
-                    <label class="library-search"
-                        ><mat-icon>search</mat-icon
-                        ><input
-                            type="search"
-                            placeholder="Pesquisar"
-                            aria-label="Pesquisar no catálogo"
-                            [value]="catalogSearch()"
-                            (input)="
-                                catalogSearch.set($any($event.target).value);
-                                catalogLimit.set(200)
-                            "
-                    /></label>
-                </header>
                 <div class="library-body">
-                    <aside
-                        class="library-tools"
-                        aria-label="Organização do catálogo"
-                    >
-                        <button
-                            type="button"
-                            title="Ordenar por nome"
-                            aria-label="Ordenar por nome"
-                            [attr.aria-pressed]="catalogSorted()"
-                            (click)="catalogSorted.set(!catalogSorted())"
-                        >
-                            <mat-icon>sort_by_alpha</mat-icon>
-                        </button>
-                        <button
-                            type="button"
-                            title="Favoritos"
-                            aria-label="Mostrar favoritos"
-                            (click)="changeCatalogSection('favorites')"
-                        >
-                            <mat-icon>star</mat-icon>
-                        </button>
-                        <button
-                            type="button"
-                            title="Histórico"
-                            aria-label="Mostrar histórico"
-                            (click)="changeCatalogSection('recent')"
-                        >
-                            <mat-icon>history</mat-icon>
-                        </button>
-                    </aside>
-                    @if (
-                        catalogSection() === 'movies' ||
-                        catalogSection() === 'series'
-                    ) {
+                    @if (catalogSection() === 'live' || catalogSection() === 'movies' || catalogSection() === 'series') {
                         <aside
                             class="library-category-sidebar"
+                            [class.live-categories]="catalogSection() === 'live'"
+                            [style.--aurora-category-width.px]="categorySidebarWidth()"
                             data-test-id="m3u-category-sidebar"
-                            aria-label="Categorias de filmes e séries"
+                            aria-label="Categorias do catálogo"
                         >
-                            <h2>Categorias</h2>
-                            <label class="library-category-search">
-                                <mat-icon>search</mat-icon>
-                                <input
-                                    type="search"
-                                    placeholder="Pesquisar categorias"
-                                    aria-label="Pesquisar categorias de filmes e séries"
-                                    [value]="categorySidebarQuery()"
-                                    (input)="categorySidebarQuery.set($any($event.target).value)"
-                                />
-                            </label>
-                            <div class="library-category-list">
-                                <button
-                                    type="button"
+                            @if (catalogSection() === 'live') {
+                                <div class="library-live-switcher">
+                                    <app-playlist-switcher class="switcher"
+                                        [currentTitle]="currentPlaylistTitle()"
+                                        [subtitle]="'M3U'" />
+                                    <button type="button" aria-label="Pesquisar categorias"
+                                        (click)="categorySearchOpen.set(!categorySearchOpen())">
+                                        <mat-icon>search</mat-icon>
+                                    </button>
+                                </div>
+                            } @else {
+                                <div class="library-sidebar-heading">
+                                    <h2>Categorias</h2>
+                                </div>
+                            }
+                            @if (catalogSection() !== 'live' || categorySearchOpen()) {
+                                <label class="library-category-search">
+                                    <mat-icon>search</mat-icon>
+                                    <input type="search" placeholder="Pesquisar categorias"
+                                        aria-label="Pesquisar categorias"
+                                        [value]="categorySidebarQuery()"
+                                        (input)="categorySidebarQuery.set($any($event.target).value)" />
+                                </label>
+                            }
+                            @if (catalogSection() !== 'live') {
+                                <button class="library-all-categories" type="button"
                                     [class.selected]="!catalogCategory()"
-                                    [attr.aria-pressed]="!catalogCategory()"
                                     (click)="selectCatalogCategory('')"
-                                >
-                                    <mat-icon>apps</mat-icon>
-                                    <span>Todas</span>
+                                    [attr.aria-pressed]="!catalogCategory()">
+                                    <mat-icon>apps</mat-icon><span>Todas</span>
                                 </button>
+                            }
+                            <div class="library-category-list">
                                 @for (category of filteredCatalogCategories(); track category) {
-                                    <button
-                                        type="button"
+                                    <button type="button"
+                                        [attr.data-category-id]="category"
                                         [class.selected]="catalogCategory() === category"
                                         [attr.aria-pressed]="catalogCategory() === category"
-                                        (click)="selectCatalogCategory(category)"
                                         [title]="category"
-                                    >
+                                        (click)="selectCatalogCategory(category)">
                                         <mat-icon>diamond</mat-icon>
                                         <span>{{ category }}</span>
                                         <small>({{ catalogCategoryCounts().get(category) || 0 }})</small>
@@ -228,12 +172,40 @@
                             </div>
                         </aside>
                     }
+                    <div class="library-results">
+                        <header class="library-header">
+                            <h2 class="library-section-heading">
+                                {{ catalogCategory() || (
+                                    catalogSection() === 'live' ? 'Todos os canais'
+                                    : catalogSection() === 'movies' ? 'Todos os filmes'
+                                    : catalogSection() === 'series' ? 'Todas as séries'
+                                    : catalogSection() === 'favorites' ? 'Favoritos' : 'Histórico'
+                                ) }}
+                                <small>({{ filteredCatalog().length }})</small>
+                            </h2>
+                            <div class="library-header-actions">
+                                <label class="library-search">
+                                    <mat-icon>search</mat-icon>
+                                    <input type="search" placeholder="Pesquisar títulos"
+                                        aria-label="Pesquisar no catálogo"
+                                        [value]="catalogSearch()"
+                                        (input)="catalogSearch.set($any($event.target).value); catalogLimit.set(200)" />
+                                </label>
+                                <button type="button" class="library-sort-btn"
+                                    title="Ordenar por nome" aria-label="Ordenar por nome"
+                                    [attr.aria-pressed]="catalogSorted()"
+                                    (click)="catalogSorted.set(!catalogSorted())">
+                                    <mat-icon>sort_by_alpha</mat-icon>
+                                </button>
+                            </div>
+                        </header>
                     <section
                         class="library-scroll"
                         aria-label="Conteúdos da lista"
                     >
                         <div
                             class="library-grid"
+                            [class.live-list]="catalogSection() === 'live'"
                             [class.poster-grid]="
                                 catalogSection() === 'movies' ||
                                 catalogSection() === 'series'
@@ -371,6 +343,7 @@
                             </button>
                         }
                     </section>
+                    </div>
                 </div>
             </main>
         }

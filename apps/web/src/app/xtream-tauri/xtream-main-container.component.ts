@@ -1,3 +1,4 @@
+import { catalogCategoryWidth } from '../shared/utils/catalog-column-width';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatIconButton } from '@angular/material/button';
@@ -46,6 +47,13 @@ export class XtreamMainContainerComponent implements OnInit {
 
     readonly categories = this.xtreamStore.getCategoriesBySelectedType;
     readonly categoryItemCounts = this.xtreamStore.getCategoryItemCounts;
+    readonly categoryColumnWidth = computed(() =>
+        catalogCategoryWidth((this.categories() ?? []).map((category: any) => {
+            const label = String(category.category_name ?? category.name ?? '');
+            const id = Number(category.id ?? category.category_id);
+            return label + ' (' + (this.categoryItemCounts()?.get(id) ?? 0) + ')';
+        }))
+    );
     readonly currentPlaylist = this.xtreamStore.currentPlaylist;
     readonly selectedCategoryId = this.xtreamStore.selectedCategoryId;
     readonly contentSortMode = this.xtreamStore.contentSortMode;

@@ -600,3 +600,113 @@
         transform: scale(1);
     }
 }
+
+/* Consistent first-group Aurora interface on every imported M3U. */
+.aurora-library .library-catalog {
+    padding: 0;
+    background: #12151b;
+}
+.aurora-library .library-body { gap: 0; height: 100%; }
+.aurora-library .library-category-sidebar {
+    flex: 0 0 auto;
+    width: clamp(185px, var(--aurora-category-width, 260px), min(43vw, 580px));
+    max-width: min(43vw, 580px);
+    height: 100%;
+    border: 0;
+    border-right: 1px solid rgba(255,255,255,.08);
+    border-radius: 0;
+    background: #121317;
+}
+.aurora-library .library-sidebar-heading {
+    display: flex; align-items: center;
+    min-height: 64px; padding: 0 12px;
+}
+.aurora-library .library-category-sidebar .library-sidebar-heading h2 {
+    padding: 0; margin: 0; font-size: 18px; font-weight: 600;
+}
+.aurora-library .library-live-switcher {
+    display: flex; align-items: center; gap: 6px;
+    min-height: 62px; padding: 0 10px;
+}
+.aurora-library .library-live-switcher a {
+    display: flex; align-items: center; justify-content: space-between;
+    flex: 1; min-width: 0; padding: 10px 8px;
+    background: #20242a; border-radius: 10px;
+    color: #e4e9ee; font-weight: 600; text-decoration: none;
+}
+.aurora-library .library-live-switcher button {
+    flex: 0 0 34px; height: 36px; border: 0;
+    color: #d5e0e6; background: transparent;
+}
+.aurora-library .library-category-list { padding: 3px 8px 12px; }
+.aurora-library .library-category-list button {
+    border-radius: 18px; min-height: 46px; padding: 9px 12px;
+}
+.aurora-library .library-category-list button span {
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    overflow-wrap: normal;
+}
+.aurora-library .library-all-categories {
+    display: flex; align-items: center; gap: 10px;
+    border: 0; border-radius: 12px;
+    width: calc(100% - 18px); margin: 2px 9px 8px; padding: 10px 12px;
+    color: #dce8e8; background: #1e252d; text-align: left;
+}
+.aurora-library .library-all-categories.selected {
+    color: #79e5d0; background: #73e0c61c;
+}
+.aurora-library .library-results {
+    display: flex; flex: 1; min-width: 0; min-height: 0;
+    flex-direction: column;
+}
+.aurora-library .library-header {
+    display: flex; min-height: 62px; flex: 0 0 auto;
+    align-items: center; padding: 10px 16px; box-sizing: border-box;
+    border-bottom: 1px solid #ffffff15; margin: 0; gap: 10px;
+}
+.aurora-library .library-section-heading {
+    min-width: 0; flex: 1; font: 600 16px/1.4 'Segoe UI', sans-serif;
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+.aurora-library .library-section-heading small {
+    color: #96a1af; font-size: 12px; font-weight: 400;
+}
+.aurora-library .library-header-actions {
+    display: flex; gap: 8px; align-items: center; flex-shrink: 0;
+}
+.aurora-library .library-search {
+    width: clamp(115px, 19vw, 230px); min-width: 0;
+    padding: 7px 9px; border-radius: 8px;
+}
+.aurora-library .library-sort-btn {
+    height: 35px; width: 35px; flex: 0 0 35px;
+    color: #bfcad4; background: transparent; border: 0;
+}
+.aurora-library .library-sort-btn[aria-pressed='true'] { color: #73e0c6; }
+.aurora-library .library-scroll {
+    min-height: 0; border-radius: 0; background: #121317;
+    padding: 8px 10px;
+}
+.aurora-library .library-grid.live-list {
+    display: grid; grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+}
+.aurora-library .live-list .library-item { min-height: 56px; border-radius: 7px; }
+.aurora-library .live-list .library-content { height: 56px; }
+.aurora-library .live-list .library-title { font-weight: 600; }
+@media (max-width: 680px) {
+    .aurora-library .library-category-sidebar { max-width: 44vw; min-width: 130px; }
+    .aurora-library .library-sidebar-heading { min-height: 55px; }
+    .aurora-library .library-live-switcher { padding: 0 5px; }
+    .aurora-library .library-search { width: 110px; }
+    .aurora-library .library-header { padding: 8px; }
+}
+
+.aurora-library .m3u-downloads {
+    flex: 1; min-width: 0; min-height: 0; overflow-y: auto;
+    background: #12151b;
+}
+
+.aurora-library .library-live-switcher app-playlist-switcher {
+    min-width: 0; flex: 1; display: block;
+}

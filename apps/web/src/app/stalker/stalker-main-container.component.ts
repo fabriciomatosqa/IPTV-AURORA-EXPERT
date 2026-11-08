@@ -1,4 +1,5 @@
-import { Component, effect, inject } from '@angular/core';
+import { catalogCategoryWidth } from '../shared/utils/catalog-column-width';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { MatPaginatorModule } from '@angular/material/paginator';
@@ -49,6 +50,19 @@ export class StalkerMainContainerComponent {
 
     /** categories */
     readonly categories = this.stalkerStore.getCategoryResource;
+    readonly categoryQuery = signal('');
+    readonly filteredCategories = computed(() => {
+        const query = this.categoryQuery().trim().toLocaleLowerCase();
+        const items = this.categories() ?? [];
+        return query ? items.filter(item =>
+            item.category_name?.toLocaleLowerCase().includes(query)
+        ) : items;
+    });
+    readonly categoryColumnWidth = computed(() =>
+        catalogCategoryWidth((this.categories() ?? []).map(
+            item => item.category_name || ''
+        ))
+    );
     readonly isCategoryLoading = this.stalkerStore.isCategoryResourceLoading;
     readonly isCategoryFailed = this.stalkerStore.isCategoryResourceFailed;
 
@@ -72,6 +86,14 @@ export class StalkerMainContainerComponent {
         this.router.navigate(['.', item.category_id], {
             relativeTo: this.activatedRoute,
         });
+    }
+
+    selectAllCategories() {
+        this.stalkerStore.setSelectedCategory('*');
+        this.stalkerStore.setPage(0);
+        this.stalkerStore.setSelectedItem(undefined);
+        this.currentLayout = 'category_content';
+        this.router.navigate(['.'], { relativeTo: this.activatedRoute });
     }
 
     historyBack() {

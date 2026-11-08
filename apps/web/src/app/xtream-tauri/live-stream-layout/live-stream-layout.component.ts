@@ -1,3 +1,4 @@
+import { catalogCategoryWidth } from '../../shared/utils/catalog-column-width';
 import {
     ChangeDetectionStrategy,
     Component,
@@ -19,7 +20,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ActivatedRoute } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
-import { PlaylistSwitcherComponent, ResizableDirective } from 'components';
+import { PlaylistSwitcherComponent } from 'components';
 import { XtreamCategory } from 'shared-interfaces';
 import { EpgViewComponent, WebPlayerViewComponent } from 'shared-portals';
 import { SettingsStore } from '../../services/settings-store.service';
@@ -59,7 +60,6 @@ const LIVE_CHANNEL_SORT_STORAGE_KEY = 'xtream-live-channel-sort-mode';
         /* MpvPlayerBarComponent, */
         PlaylistSwitcherComponent,
         PortalChannelsListComponent,
-        ResizableDirective,
         TranslatePipe,
         WebPlayerViewComponent,
     ],
@@ -88,6 +88,20 @@ export class LiveStreamLayoutComponent implements OnInit, OnDestroy {
         });
     });
     readonly categoryItemCounts = this.xtreamStore.getCategoryItemCounts;
+    readonly categoryColumnWidth = computed(() =>
+        catalogCategoryWidth((this.categories() ?? []).map((category: any) => {
+            const id = Number(category.id ?? category.category_id);
+            return String(category.category_name ?? category.name ?? '') +
+                ' (' + (this.categoryItemCounts()?.get(id) ?? 0) + ')';
+        }))
+    );
+    readonly channelColumnWidth = computed(() =>
+        catalogCategoryWidth(
+            (this.xtreamStore.selectItemsFromSelectedCategory() ?? []).map((item: any) =>
+                String(item.title ?? item.name ?? '')
+            ), 112
+        )
+    );
     readonly currentPlaylist = this.xtreamStore.currentPlaylist;
     readonly epgItems = this.xtreamStore.epgItems;
     readonly selectedCategoryId = this.xtreamStore.selectedCategoryId;

@@ -124,3 +124,17 @@
     .channels-sidebar { width: 245px; min-width: 210px; }
     .category-title { font-size: 13px; }
 }
+
+/* Measure complete category/channel titles, then clamp to available viewport. */
+:host .category-sidebar {
+    width: clamp(165px, var(--aurora-category-width, 255px), min(42vw, 580px));
+    min-width: 0; max-width: min(42vw, 580px);
+}
+:host .channels-sidebar {
+    width: clamp(230px, var(--aurora-channel-width, 340px), min(42vw, 580px));
+    min-width: 0; max-width: min(42vw, 580px);
+}
+@media (max-width: 760px) {
+    :host .category-sidebar { max-width: 40vw; min-width: 125px; }
+    :host .channels-sidebar { max-width: 40vw; min-width: 155px; }
+}

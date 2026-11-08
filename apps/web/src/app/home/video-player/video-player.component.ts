@@ -1,3 +1,5 @@
+import { DownloadsComponent } from '../../xtream-tauri/downloads/downloads.component';
+import { catalogCategoryWidth } from '../../shared/utils/catalog-column-width';
 import { isAdultContentLabel, moveAdultContentToEnd } from '../../shared/utils/adult-content-order';
 import { Overlay, OverlayRef } from '@angular/cdk/overlay';
 import { ComponentPortal } from '@angular/cdk/portal';
@@ -30,11 +32,12 @@ import {
     InfoOverlayComponent,
     MultiEpgContainerComponent,
     ResizableDirective,
+    PlaylistSwitcherComponent,
     SidebarComponent,
     ToolbarComponent,
     VjsPlayerComponent,
 } from 'components';
-import { PlaylistActions, ChannelActions, FavoritesActions } from 'm3u-state';
+import { PlaylistActions, ChannelActions, FavoritesActions, selectPlaylistTitle } from 'm3u-state';
 import {
     selectActive,
     selectChannels,
@@ -91,6 +94,7 @@ import { WebPlayerViewComponent } from 'shared-portals';
         AudioPlayerComponent,
         ContentHeroComponent,
         CommonModule,
+        DownloadsComponent,
         EpgListComponent,
         HtmlVideoPlayerComponent,
         InfoOverlayComponent,
@@ -98,6 +102,7 @@ import { WebPlayerViewComponent } from 'shared-portals';
         MatIcon,
         MatMenuModule,
         ResizableDirective,
+        PlaylistSwitcherComponent,
         RouterLink,
         SidebarComponent,
         ToolbarComponent,
@@ -128,10 +133,12 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
 
     readonly browsing = signal(true);
     readonly catalogChannels = signal<Channel[]>([]);
+    readonly currentPlaylistTitle = this.store.selectSignal(selectPlaylistTitle);
     readonly catalogSection = signal('live');
     readonly catalogSearch = signal('');
     readonly catalogCategory = signal('');
     readonly categorySidebarQuery = signal('');
+    readonly categorySearchOpen = signal(false);
     readonly catalogLimit = signal(200);
     readonly catalogSorted = signal(false);
     readonly catalogFavorites = this.store.selectSignal(selectFavorites);
@@ -199,8 +206,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
         { id: 'live', label: 'TV ao vivo', icon: 'tv' },
         { id: 'series', label: 'Séries', icon: 'video_library' },
         { id: 'movies', label: 'Filmes', icon: 'local_movies' },
-        { id: 'favorites', label: 'Favoritos', icon: 'star_outline' },
-        { id: 'recent', label: 'Histórico', icon: 'history' },
+        { id: 'downloads', label: 'Downloads', icon: 'download' },
     ];
     private contentKind(channel: Channel): string {
         return (
@@ -228,6 +234,11 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
             ))],
             isAdultContentLabel
         )
+    );
+    readonly categorySidebarWidth = computed(() =>
+        catalogCategoryWidth(this.catalogCategories().map((category) =>
+            category + ' (' + (this.catalogCategoryCounts().get(category) || 0) + ')'
+        ))
     );
     readonly catalogCategoryCounts = computed(() => {
         const counts = new Map<string, number>();
@@ -275,6 +286,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
         this.catalogSection.set(section);
         this.catalogCategory.set('');
         this.categorySidebarQuery.set('');
+        this.categorySearchOpen.set(false);
         this.catalogSearch.set('');
         this.catalogLimit.set(200);
         this.browsing.set(true);

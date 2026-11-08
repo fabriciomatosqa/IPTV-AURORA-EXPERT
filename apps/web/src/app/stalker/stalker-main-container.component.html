@@ -1,42 +1,37 @@
-<div
-    class="sidebar"
-    appResizable
-    [minWidth]="250"
-    [maxWidth]="600"
-    [defaultWidth]="400"
-    storageKey="sidebar-width"
->
-    <div class="sidebar-header">
-        <app-playlist-switcher
-            class="switcher"
-            [currentTitle]="currentPlaylist()?.title || 'Portal'"
-            [subtitle]="'Stalker Portal'"
-        />
-    </div>
-    @if (isCategoryLoading()) {
-        <ngx-skeleton-loader
-            count="20"
-            [theme]="{
-                width: '95%',
-                height: '48px',
-                borderRadius: '40px',
-            }"
-        />
-    } @else if (isCategoryFailed()) {
-        <app-playlist-error-view
-            [title]="'PORTALS.ERROR_VIEW.UNKNOWN_ERROR.TITLE' | translate"
-            [description]="
-                'PORTALS.ERROR_VIEW.UNKNOWN_ERROR.DESCRIPTION' | translate
-            "
-        />
-    } @else {
-        <app-category-view
-            [items]="categories()"
-            [selectedCategoryId]="$any(stalkerStore.selectedCategoryId())"
-            (categoryClicked)="categoryClicked($event)"
-        />
-    }
-</div>
+<div class="catalog-layout">
+    <aside class="vod-category-sidebar"
+        [style.--aurora-category-width.px]="categoryColumnWidth()"
+        data-test-id="stalker-category-sidebar"
+        aria-label="Categorias de filmes e séries">
+        <div class="vod-sidebar-header">
+            <h2>Categorias</h2>
+        </div>
+        <label class="vod-sidebar-search">
+            <mat-icon>search</mat-icon>
+            <input type="search" aria-label="Pesquisar categorias"
+                placeholder="Pesquisar categorias"
+                [value]="categoryQuery()"
+                (input)="categoryQuery.set($any($event.target).value)" />
+        </label>
+        <button type="button" class="vod-all-categories"
+            [class.selected]="!stalkerStore.selectedCategoryId() || stalkerStore.selectedCategoryId() === '*'"
+            [attr.aria-pressed]="!stalkerStore.selectedCategoryId() || stalkerStore.selectedCategoryId() === '*'"
+            (click)="selectAllCategories()">
+            <mat-icon>apps</mat-icon><span>Todas</span>
+        </button>
+        @if (isCategoryLoading()) {
+            <ngx-skeleton-loader count="12" [theme]="{width:'90%',height:'42px'}" />
+        } @else if (isCategoryFailed()) {
+            <app-playlist-error-view
+                [title]="'PORTALS.ERROR_VIEW.UNKNOWN_ERROR.TITLE' | translate"
+                [description]="'PORTALS.ERROR_VIEW.UNKNOWN_ERROR.DESCRIPTION' | translate" />
+        } @else {
+            <app-category-view
+                [items]="filteredCategories()"
+                [selectedCategoryId]="$any(stalkerStore.selectedCategoryId())"
+                (categoryClicked)="categoryClicked($event)" />
+        }
+    </aside>
 
 <div class="main-content">
     @if (!stalkerStore.selectedItem()) {
@@ -67,4 +62,5 @@
     >
         <router-outlet />
     </div>
+</div>
 </div>

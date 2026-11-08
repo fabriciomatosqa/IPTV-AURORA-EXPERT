@@ -2,7 +2,9 @@
     player() === 'videojs' || player() === 'html5' || player() === 'artplayer';
 
 <!-- Categories remain visible while changing channels: no more back navigation. -->
-<div class="category-sidebar" aria-label="Categorias da TV ao vivo">
+<div class="category-sidebar"
+    [style.--aurora-category-width.px]="categoryColumnWidth()"
+    aria-label="Categorias da TV ao vivo">
     <div class="sidebar-header category-header">
         <app-playlist-switcher
             class="switcher"
@@ -41,8 +43,7 @@
 </div>
 
 <div class="sidebar channels-sidebar"
-    appResizable [minWidth]="270" [maxWidth]="530"
-    [defaultWidth]="350" storageKey="live-channels-sidebar-width"
+    [style.--aurora-channel-width.px]="channelColumnWidth()"
     aria-label="Canais da categoria selecionada">
     <div class="sidebar-header channel-header">
         <h2 class="category-title">

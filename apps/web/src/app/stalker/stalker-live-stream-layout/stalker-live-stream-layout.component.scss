@@ -300,3 +300,61 @@
         width: 100% !important;
     }
 }
+
+/* Persistent category column + channel column, like the first-group Xtream TV. */
+.category-sidebar {
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: column;
+    width: clamp(165px, var(--aurora-category-width, 250px), min(42vw, 580px));
+    max-width: min(42vw, 580px);
+    min-width: 0;
+    min-height: 0;
+    border-right: 1px solid rgba(255,255,255,.09);
+    background: #121317;
+    overflow: hidden;
+}
+.category-sidebar app-category-view {
+    display: block;
+    flex: 1; min-height: 0;
+    overflow-y: auto;
+}
+.category-sidebar .category-header {
+    min-height: 62px; display: flex; align-items: center;
+    padding: 0 8px; gap: 4px;
+}
+.category-sidebar .category-header .switcher { flex: 1; min-width: 0; }
+.category-sidebar .category-header button { flex: 0 0 36px; }
+.portal-category-search {
+    display: flex; align-items: center; gap: 7px;
+    min-height: 38px; box-sizing: border-box;
+    margin: 2px 8px 10px; padding: 6px 8px;
+    background: #1e252d; border-radius: 8px; color: #aebac7;
+}
+.portal-category-search input {
+    flex: 1; min-width: 0; background: transparent;
+    border: 0; outline: none; color: #e4e9ee; font: 12px 'Segoe UI', sans-serif;
+}
+.sidebar.channels-sidebar {
+    width: clamp(230px, var(--aurora-channel-width, 340px), min(42vw, 580px));
+    min-width: 0; max-width: min(42vw, 580px);
+    background: #121317; border-right: 1px solid rgba(255,255,255,.09);
+}
+.channels-sidebar .channel-header {
+    display: flex; align-items: center; min-height: 62px;
+    padding: 0 12px; border-bottom: 1px solid rgba(255,255,255,.10);
+}
+.channels-sidebar .channel-header h2 {
+    margin: 0; font: 600 15px 'Segoe UI', sans-serif;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.channels-sidebar .channels-list { flex: 1; min-height: 0; }
+.channels-sidebar .channel-item { min-height: 58px; }
+.list-placeholder {
+    display: flex; align-items: center; padding: 18px 12px;
+    gap: 10px; color: #a9b4c1; font-size: 13px;
+}
+@media (max-width: 760px) {
+    .category-sidebar { max-width: 40vw; min-width: 125px; }
+    .sidebar.channels-sidebar { max-width: 40vw; min-width: 155px; }
+}
