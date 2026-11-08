@@ -131,6 +131,41 @@ contextBridge.exposeInMainWorld('electron', {
         ipcRenderer.on('PLAYLIST_IMPORT_PROGRESS', handler);
         return () => ipcRenderer.off('PLAYLIST_IMPORT_PROGRESS', handler);
     },
+    // Native Picture-in-Picture: window is owned by the main Electron process.
+    openAuroraPiP: (data: {
+        streamUrl: string;
+        title: string;
+        startTime?: number;
+        subtitleUrl?: string | null;
+        contentInfo?: Record<string, unknown>;
+    }): Promise<boolean> => ipcRenderer.invoke('AURORA_PIP_OPEN', data),
+    getAuroraPiPState: () => ipcRenderer.invoke('AURORA_PIP_GET_STATE'),
+    setAuroraPiPAlwaysOnTop: (enabled: boolean): Promise<boolean> =>
+        ipcRenderer.invoke('AURORA_PIP_SET_ALWAYS_ON_TOP', enabled),
+    returnFromAuroraPiP: (seconds: number): Promise<boolean> =>
+        ipcRenderer.invoke('AURORA_PIP_RETURN', seconds),
+    onAuroraPiPReturn: (callback: (data: {
+        streamUrl: string;
+        title: string;
+        startTime?: number;
+        subtitleUrl?: string | null;
+        contentInfo?: Record<string, unknown>;
+    }) => void) => {
+        const listener = (_event: Electron.IpcRendererEvent, data: {
+            streamUrl: string;
+            title: string;
+            startTime?: number;
+            subtitleUrl?: string | null;
+            contentInfo?: Record<string, unknown>;
+        }) => callback(data);
+        ipcRenderer.on('AURORA_PIP_RETURN_TO_APP', listener);
+        return () => ipcRenderer.off('AURORA_PIP_RETURN_TO_APP', listener);
+    },
+    onAuroraPiPSourceChanged: (callback: () => void) => {
+        const listener = () => callback();
+        ipcRenderer.on('AURORA_PIP_SOURCE_CHANGED', listener);
+        return () => ipcRenderer.off('AURORA_PIP_SOURCE_CHANGED', listener);
+    },
     getStreamProxyPort: () => ipcRenderer.invoke('GET_STREAM_PROXY_PORT'),
     toggleFullScreen: () => ipcRenderer.invoke('TOGGLE_FULLSCREEN'),
     isFullScreen: () => ipcRenderer.invoke('IS_FULLSCREEN'),
