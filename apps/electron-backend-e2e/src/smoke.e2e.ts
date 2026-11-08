@@ -778,7 +778,13 @@ test.describe('Electron App Smoke Test', () => {
         ] as const;
         for (const [section, label] of sections) {
             await mainWindow.locator(`[data-test-id="home-card-${section}"]`).click();
-            await expect(mainWindow.locator('.library-rail-links button.active')).toContainText(label);
+            if (section === 'favorites') {
+                // Favorites remain accessible from Home and Menu but are not
+                // an extra rail item in the unified first-group layout.
+                await expect(mainWindow.locator('.library-section-heading')).toContainText('Favoritos');
+            } else {
+                await expect(mainWindow.locator('.library-rail-links button.active')).toContainText(label);
+            }
             await mainWindow.locator('.library-brand').click();
             await expect(mainWindow.locator('[data-test-id="aurora-home-dashboard"]')).toBeVisible();
         }
