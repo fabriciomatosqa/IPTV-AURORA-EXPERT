@@ -2,7 +2,10 @@ import { BrowserWindow, ipcMain, screen } from 'electron';
 import { join } from 'path';
 import App from '../app';
 import { rendererAppName, rendererAppPort } from '../constants';
-import { FLOATING_PLAYER_MARKER } from './floating-player-identity';
+import {
+    FLOATING_PLAYER_MARKER,
+    FLOATING_PLAYER_TITLE,
+} from './floating-player-identity';
 
 export interface FloatingPlayerData {
     streamUrl: string;
@@ -74,7 +77,7 @@ export function registerAuroraFloatingPlayer(): void {
             const initialWidth = Math.min(660, workArea.width);
             const initialHeight = Math.min(420, workArea.height);
             const win = new BrowserWindow({
-                title: 'IPTV AURORA EXPERT — Picture in Picture',
+                title: FLOATING_PLAYER_TITLE,
                 width: initialWidth,
                 height: initialHeight,
                 minWidth: 200,
@@ -105,7 +108,7 @@ export function registerAuroraFloatingPlayer(): void {
             // PiP title, making this window indistinguishable from the main app.
             win.webContents.on('page-title-updated', (event) => {
                 event.preventDefault();
-                win.setTitle('IPTV AURORA EXPERT — Picture in Picture');
+                win.setTitle(FLOATING_PLAYER_TITLE);
             });
             win.setMenuBarVisibility(false);
             win.setMenu(null);
