@@ -37,23 +37,12 @@
 </h2>
 <mat-dialog-content class="content aurora-player-content">
     <app-web-player-view
-        [streamUrl]="streamUrl"
+        [streamUrl]="activeStreamUrl()"
+        [streamKind]="data.contentInfo?.contentType"
+        [streamHeaders]="data.streamHeaders"
         [startTime]="data.startTime || 0"
         [subtitleUrl]="data.subtitleUrl || null"
+        (playbackFailed)="onPlaybackFailed()"
         (timeUpdate)="handleTimeUpdate($event)"
     />
 </mat-dialog-content>
-<mat-dialog-actions class="align-actions aurora-player-actions">
-    <button
-        mat-button
-        [cdkCopyToClipboard]="streamUrl"
-        (click)="showCopyNotification()"
-        matTooltip="Copiar endereço de reprodução"
-    >
-        <mat-icon>content_copy</mat-icon>
-        {{ 'PORTALS.COPY_STREAM_URL' | translate }}
-    </button>
-    <button mat-button mat-dialog-close color="accent">
-        {{ 'CLOSE' | translate }}
-    </button>
-</mat-dialog-actions>

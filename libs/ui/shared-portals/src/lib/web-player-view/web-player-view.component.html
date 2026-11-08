@@ -4,6 +4,7 @@
         [showCaptions]="showCaptions"
         [startTime]="startTime()"
         [subtitleUrl]="subtitleUrl()"
+        (playbackFailed)="onNativePlaybackFailed()"
         (timeUpdate)="timeUpdate.emit($event)"
     />
 } @else if (player === 'videojs' || forceVideoJsFallback) {
@@ -20,6 +21,7 @@
         [showCaptions]="showCaptions"
         [startTime]="startTime()"
         [subtitleUrl]="subtitleUrl()"
+        (playbackFailed)="onNativePlaybackFailed()"
         (timeUpdate)="timeUpdate.emit($event)"
     />
 } @else if (player === 'artplayer') {

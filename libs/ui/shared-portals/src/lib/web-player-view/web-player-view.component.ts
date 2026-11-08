@@ -41,11 +41,14 @@ export class WebPlayerViewComponent {
     private static pwaProbeInProgress: Promise<string | null> | null = null;
 
     streamUrl = input.required<string>();
+    /** Xtream VOD/series may be served from a CDN without /movie/ in its URL. */
+    streamKind = input<'live' | 'vod' | 'series' | undefined>(undefined);
     streamHeaders = input<
         { userAgent?: string; referrer?: string; origin?: string } | undefined
     >(undefined);
     startTime = input<number>(0);
     subtitleUrl = input<string | null>(null);
+    @Output() playbackFailed = new EventEmitter<void>();
     @Output() timeUpdate = new EventEmitter<{
         currentTime: number;
         duration: number;
@@ -82,6 +85,8 @@ export class WebPlayerViewComponent {
             extension === 'm3u' ||
             extension === 'ts';
         const isMovieOrSeries =
+            this.streamKind() === 'vod' ||
+            this.streamKind() === 'series' ||
             effectiveSource.includes('/movie/') ||
             effectiveSource.includes('/series/');
         const isProxied = streamUrl.includes('/stream?url=');
@@ -156,6 +161,10 @@ export class WebPlayerViewComponent {
             sources.push(this.buildVjsSource(resolvedStreamUrl, streamUrl));
             this.vjsOptions = { sources };
         }
+    }
+
+    onNativePlaybackFailed(): void {
+        this.playbackFailed.emit();
     }
 
     onArtPlayerPlaybackError(): void {
@@ -284,7 +293,8 @@ export class WebPlayerViewComponent {
             const parsed = new URL(url);
             const nestedUrl = parsed.searchParams.get('url');
             if (nestedUrl) {
-                return decodeURIComponent(nestedUrl);
+                // URLSearchParams.get() has already URL-decoded the value.
+                return nestedUrl;
             }
         } catch {
             return url;
@@ -359,6 +369,8 @@ export class WebPlayerViewComponent {
         const sourceHint = streamUrl.toLowerCase();
         const extension = getExtensionFromUrl(streamUrl)?.toLowerCase();
         const isMovieOrSeries =
+            this.streamKind() === 'vod' ||
+            this.streamKind() === 'series' ||
             sourceHint.includes('/movie/') || sourceHint.includes('/series/');
         const shouldProxy =
             sourceHint.includes('/live/') ||
@@ -412,6 +424,12 @@ export class WebPlayerViewComponent {
         forceTranscode = false
     ): string {
         const params = new URLSearchParams({ url: streamUrl });
+        // Providers sometimes use extensionless CDN endpoints for films.
+        // Preserve the VOD classification for seekable full transcode.
+        const kind = this.streamKind();
+        if (kind === 'vod' || kind === 'series') {
+            params.set('kind', kind);
+        }
         if (forceTranscode) {
             params.set('transcode', '1');
         }

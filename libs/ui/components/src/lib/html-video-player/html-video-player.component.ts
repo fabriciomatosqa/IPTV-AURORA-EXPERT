@@ -30,6 +30,8 @@ export class HtmlVideoPlayerComponent implements OnInit, OnChanges, OnDestroy {
     @Input() channel!: Channel;
     @Input() volume = 1;
     @Input() startTime = 0;
+    /** Emitted only after codec/container fallback attempts are exhausted. */
+    @Output() playbackFailed = new EventEmitter<{ code: number; message: string }>();
     @Output() timeUpdate = new EventEmitter<{
         currentTime: number;
         duration: number;
@@ -594,9 +596,13 @@ export class HtmlVideoPlayerComponent implements OnInit, OnChanges, OnDestroy {
                 }
                 break;
             default:
-                this.errorMessage = 'Playback failed.';
+                this.errorMessage = 'Falha na reprodução.';
                 this.errorHint = mediaError.message || null;
         }
+        this.playbackFailed.emit({
+            code: mediaError.code,
+            message: this.errorMessage ?? 'Playback failed',
+        });
     }
 
     /**
@@ -654,9 +660,13 @@ export class HtmlVideoPlayerComponent implements OnInit, OnChanges, OnDestroy {
                 ? 'Some IPTV streams use codecs (AC-3, HEVC) that browsers cannot decode. Try the desktop app.'
                 : data.details || null;
         } else {
-            this.errorMessage = 'Playback failed.';
+            this.errorMessage = 'Falha na reprodução.';
             this.errorHint = data.details || null;
         }
+        this.playbackFailed.emit({
+            code: 4,
+            message: this.errorMessage ?? 'Playback failed',
+        });
     }
 
     /**

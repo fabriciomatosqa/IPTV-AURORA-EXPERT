@@ -61,6 +61,9 @@ jobs:
             - name: Prepare explicit one-time development updater bridge
               if: github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[publish-dev-bridge]')
               run: node scripts/prepare-release.cjs --stage=development
+            - name: Prepare requested 0.0 development release
+              if: github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[publish-development]')
+              run: node scripts/prepare-release.cjs --stage=development
             - name: Run unit tests
               run: pnpm nx run-many -t test --parallel=2 --runInBand --outputStyle=static
             - name: Build verified Windows installer
@@ -148,6 +151,22 @@ jobs:
                   # A one-time normal/latest release allows legacy clients
                   # to install the new channel-aware updater without a manual EXE.
                   gh release create $tag @assets --target $env:GITHUB_SHA --title "IPTV AURORA EXPERT $($metadata.auroraVersion) — Desenvolvimento" --generate-notes --latest
+                  if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            - name: Publish verified 0.0 development release
+              if: github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[publish-development]')
+              shell: pwsh
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: |
+                  $metadata = Get-Content package.json -Raw | ConvertFrom-Json
+                  if ($metadata.auroraStage -ne 'development') { throw 'Development release required.' }
+                  $tag = "v$($metadata.auroraVersion)"
+                  $installer = Get-ChildItem -LiteralPath 'dist/executables' -Filter '*-windows-x64-setup.exe'
+                  if ($installer.Count -ne 1) { throw 'Exactly one Windows installer is required.' }
+                  $files = @($installer[0].FullName, 'dist/executables/latest.yml', 'dist/executables/SHA256SUMS.txt', 'dist/executables/build-info.json')
+                  if (Test-Path "$($installer[0].FullName).blockmap") { $files += "$($installer[0].FullName).blockmap" }
+                  foreach ($file in $files) { if (-not (Test-Path $file)) { throw "Missing release asset: $file" } }
+                  gh release create $tag @files --target $env:GITHUB_SHA --title "IPTV AURORA EXPERT $($metadata.auroraVersion) - Desenvolvimento" --generate-notes --prerelease
                   if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
             - name: Upload diagnostics on failure
               if: failure()

@@ -510,6 +510,8 @@ function handleProxyRequest(req: IncomingMessage, res: ServerResponse) {
     // indexes using HTTP Range only when given the source URL directly.
     // Preserve the streamed-input path for live MPEG-TS and HLS.
     const isVodUrl =
+        params.get('kind') === 'vod' ||
+        params.get('kind') === 'series' ||
         /\/(?:movie|series)\//i.test(target.pathname) ||
         /\.(?:mp4|m4v|mkv|avi|mov|webm)$/i.test(target.pathname);
     if (shouldTranscodeRequest && (transcodeMode === 'audio' || isVodUrl)) {
