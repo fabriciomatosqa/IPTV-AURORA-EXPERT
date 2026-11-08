@@ -1,3 +1,4 @@
+import { adultCategoryIds, isAdultContentLabel, moveAdultContentToEnd } from '../../../shared/utils/adult-content-order';
 import { computed } from '@angular/core';
 import {
     patchState,
@@ -78,7 +79,7 @@ export function withSelection() {
                     sensitivity: 'base',
                 });
 
-                return [...items].sort((a: any, b: any) => {
+                const sorted = [...items].sort((a: any, b: any) => {
                     if (sortMode === 'date-desc') {
                         return (
                             getItemDate(b, categoryType) -
@@ -97,6 +98,18 @@ export function withSelection() {
                     const byName = collator.compare(titleA, titleB);
                     return sortMode === 'name-asc' ? byName : -byName;
                 });
+                const storeAny = store as any;
+                const categories = categoryType === 'live'
+                    ? storeAny.liveCategories?.() ?? []
+                    : categoryType === 'vod'
+                      ? storeAny.vodCategories?.() ?? []
+                      : storeAny.serialCategories?.() ?? [];
+                const markedCategories = adultCategoryIds(categories);
+                // Partition AFTER the chosen sort and BEFORE pagination.
+                return moveAdultContentToEnd(sorted, (item: any) =>
+                    markedCategories.has(String(item.category_id)) ||
+                    isAdultContentLabel(item.title ?? item.name)
+                );
             };
 
             const filterBySearchTerm = (
@@ -237,6 +250,14 @@ export function withSelection() {
                         }
                     }
 
+                    // Live streams in a selected category retain provider order;
+                    // explicit adult titles still go to that category's end.
+                    if (categoryType === 'live' && categoryId) {
+                        filteredContent = moveAdultContentToEnd(
+                            filteredContent, (item: any) =>
+                                isAdultContentLabel(item.title ?? item.name)
+                        );
+                    }
                     return filteredContent.slice(startIndex, endIndex);
                 }),
 
@@ -283,7 +304,10 @@ export function withSelection() {
                         );
                     }
 
-                    return filteredContent;
+                    return moveAdultContentToEnd(
+                        filteredContent, (item: any) =>
+                            isAdultContentLabel(item.title ?? item.name)
+                    );
                 }),
 
                 /**

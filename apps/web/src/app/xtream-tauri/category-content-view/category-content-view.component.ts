@@ -1,3 +1,4 @@
+import { adultCategoryIds, isAdultContentLabel, moveAdultContentToEnd } from '../../shared/utils/adult-content-order';
 import {
     Component,
     computed,
@@ -140,8 +141,20 @@ export class CategoryContentViewComponent implements OnInit, OnDestroy {
     }
 
     readonly contentWithProgress = computed(() => {
-        const items = this.store.getPaginatedContent();
-        if (!items) return [];
+        const pageItems = this.store.getPaginatedContent();
+        if (!pageItems) return [];
+
+        // Stalker requests content in provider-defined pages: sort the items
+        // currently available without changing the provider's pagination.
+        const items = this.isStalker
+            ? moveAdultContentToEnd(pageItems, (item: any) => {
+                const categories = (this.store as InstanceType<typeof StalkerStore>)
+                    .getCategoryResource() ?? [];
+                const marked = adultCategoryIds(categories);
+                return marked.has(String(item.category_id)) ||
+                    isAdultContentLabel(item.title ?? item.name ?? item.o_name);
+            })
+            : pageItems;
 
         if (this.isStalker) {
             // Enrich Stalker items with progress data

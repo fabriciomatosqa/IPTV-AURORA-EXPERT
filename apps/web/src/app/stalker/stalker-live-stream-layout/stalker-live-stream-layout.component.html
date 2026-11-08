@@ -42,7 +42,7 @@
             </mat-form-field>
         </div> -->
         <div #scrollContainer class="channels-list">
-            @for (item of itvChannels(); track item.id ?? $index) {
+            @for (item of visibleChannels(); track item.id ?? $index) {
                 <div
                     class="channel-item"
                     [class.active]="stalkerStore.selectedItem()?.id === item.id"

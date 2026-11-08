@@ -102,7 +102,7 @@ export default class UpdateEvents {
                 percent: 100,
                 availableVersion:
                     selectedDisplayVersion || info.releaseName || info.version,
-                message: 'Atualização pronta. Reinicie para instalar.',
+                message: 'Atualização pronta. Clique em Instalar para aplicar silenciosamente.',
             })
         );
         autoUpdater.on('error', failure);
@@ -110,8 +110,17 @@ export default class UpdateEvents {
         ipcMain.handle('APP_UPDATE_CHECK', () => this.checkForUpdates());
         ipcMain.handle('APP_UPDATE_DOWNLOAD', () => this.download());
         ipcMain.handle('APP_UPDATE_INSTALL', () => {
+            // Explicit consent remains mandatory. After the user clicks
+            // Install, NSIS must run unattended (/S): never show the setup
+            // wizard or ask for a second confirmation.
             if (state.phase !== 'ready') return false;
-            setImmediate(() => autoUpdater.quitAndInstall(false, true));
+            publish({
+                phase: 'ready',
+                message: 'Fechando para instalar a atualização em modo oculto…',
+            });
+            // Keep the existing appId, NSIS installation scope/path and
+            // per-user data. Force a relaunch only after the upgrade.
+            setImmediate(() => autoUpdater.quitAndInstall(true, true));
             return true;
         });
         if (app.isPackaged && !isTest) {
