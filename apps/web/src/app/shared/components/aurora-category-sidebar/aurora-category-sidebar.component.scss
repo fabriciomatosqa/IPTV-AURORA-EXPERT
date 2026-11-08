@@ -1,8 +1,9 @@
 :host {
     display: flex;
     flex-direction: column;
-    flex: 0 0 clamp(190px, 20vw, 280px);
-    width: clamp(190px, 20vw, 280px);
+    flex: 0 1 auto;
+    width: clamp(180px, var(--aurora-sidebar-width, 260px), min(47vw, 620px));
+    max-width: min(47vw, 620px);
     min-width: 0;
     min-height: 0;
     overflow: hidden;
@@ -109,10 +110,10 @@
 }
 .aurora-sidebar-empty { color: #98a9b9; padding: 8px 12px; }
 @media (max-width: 1100px) {
-    :host { flex-basis: 195px; width: 195px; }
+    :host { max-width: 45vw; }
 }
 @media (max-width: 680px) {
-    :host { flex-basis: 154px; width: 154px; }
+    :host { min-width: 130px; max-width: 43vw; }
     .aurora-sidebar-heading h2 { font-size: 16px; }
     .aurora-sidebar-list button { font-size: 12px; gap: 6px; padding: 8px 6px; }
     .aurora-sidebar-list { padding: 0 5px 10px; }

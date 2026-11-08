@@ -1,3 +1,4 @@
+import { adultsLast, columnWidthForLabels } from '../../utils/aurora-category-order';
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 
@@ -17,6 +18,7 @@ export interface AuroraSidebarCategory {
     selector: 'app-aurora-category-sidebar',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { '[style.--aurora-sidebar-width.px]': 'columnWidth()' },
     imports: [MatIcon],
     templateUrl: './aurora-category-sidebar.component.html',
     styleUrl: './aurora-category-sidebar.component.scss',
@@ -30,10 +32,18 @@ export class AuroraCategorySidebarComponent {
     readonly manageClicked = output<void>();
 
     readonly search = signal('');
+    readonly orderedCategories = computed(() =>
+        adultsLast(this.categories(), (category) => category.name)
+    );
+    readonly columnWidth = computed(() =>
+        columnWidthForLabels(this.categories().map((category) =>
+            category.name + (category.count === undefined ? '' : ` (${category.count})`)
+        ))
+    );
     readonly filtered = computed(() => {
         const query = this.search().trim().toLocaleLowerCase();
-        if (!query) return this.categories();
-        return this.categories().filter((category) =>
+        if (!query) return this.orderedCategories();
+        return this.orderedCategories().filter((category) =>
             category.name.toLocaleLowerCase().includes(query)
         );
     });
