@@ -21,7 +21,8 @@ export interface F1Race {
     circuit: string;
     country: string;
     date: number;
-    sessions: { title: string; time: number }[];
+    hasTime: boolean;
+    sessions: { title: string; time: number; hasTime: boolean }[];
 }
 export interface F1Standing {
     position: number;
@@ -102,7 +103,9 @@ export function parseF1Calendar(raw: unknown, year: number): F1Race[] {
     return flatten(array(object(data.RaceTable).Races),(row): F1Race[] => {
         const race = object(row);
         const round = Number(race.round);
-        const time = stamp(String(race.date ?? '') + 'T' + String(race.time || '12:00:00Z'));
+        const confirmedTime = /^\d{2}:\d{2}(?::\d{2})?Z$/.test(String(race.time || ''));
+        const time = stamp(String(race.date ?? '') + 'T' +
+            (confirmedTime ? String(race.time) : '00:00:00Z'));
         if (!Number.isInteger(round) || round < 1 || !time) return [];
         const circuit = object(race.Circuit);
         const sessions = flatten([
@@ -112,18 +115,20 @@ export function parseF1Calendar(raw: unknown, year: number): F1Race[] {
             ['Qualifying', 'Classificação'],
             ['Sprint', 'Sprint'],
             ['SprintQualifying', 'Classificação Sprint'],
-        ], ([key, title]): { title: string; time: number }[] => {
+        ], ([key, title]): { title: string; time: number; hasTime: boolean }[] => {
             const session = object(race[key]);
-            const t = stamp(String(session.date || '') + 'T' + String(session.time || '12:00:00Z'));
-            return t ? [{ title, time: t }] : [];
+            const hasTime = /^\d{2}:\d{2}(?::\d{2})?Z$/.test(String(session.time || ''));
+            const t = stamp(String(session.date || '') + 'T' +
+                (hasTime ? String(session.time) : '00:00:00Z'));
+            return t ? [{ title, time: t, hasTime }] : [];
         });
-        sessions.push({ title: 'Corrida', time });
+        sessions.push({ title: 'Corrida', time, hasTime: confirmedTime });
         sessions.sort((a,b) => a.time - b.time);
         return [{
             round, title: String(race.raceName || 'Grande Prêmio ' + round),
             country: String(object(circuit.Location).country || ''),
             circuit: String(circuit.circuitName || ''),
-            date: time, sessions,
+            date: time, hasTime: confirmedTime, sessions,
         }];
     }).sort((a,b) => a.date - b.date);
 }

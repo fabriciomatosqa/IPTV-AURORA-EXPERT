@@ -81,7 +81,7 @@
                         @if (nextF1Race(); as race) {
                             <article class="f1-race-card"><small>PRÓXIMO GRANDE PRÊMIO</small>
                                 <h3>{{ race.title }}</h3><p>{{ race.circuit }} · {{ race.country }}</p>
-                                <strong>{{ displayDate(race.date) }} · {{ displayTime(race.date) }}</strong>
+                                <strong>{{ displayDate(race.date) }} · {{ race.hasTime ? displayTime(race.date) : 'Horário a confirmar' }}</strong>
                             </article>
                         }
                     }
@@ -108,7 +108,7 @@
                                 <h3>{{ race.title }}</h3><p>{{ race.circuit }} · {{ race.country }}</p>
                                 @for (session of race.sessions; track session.title) {
                                     <div class="f1-session"><span>{{ session.title }}</span>
-                                        <strong>{{ displayDate(session.time) }} · {{ displayTime(session.time) }}</strong>
+                                        <strong>{{ displayDate(session.time) }} · {{ session.hasTime ? displayTime(session.time) : 'A confirmar' }}</strong>
                                     </div>
                                 }
                             </article>
@@ -120,10 +120,10 @@
                                 <article class="f1-race-card">
                                     <small>ETAPA {{ race.round }}</small><h3>{{ race.title }}</h3>
                                     <p>{{ race.circuit }} · {{ race.country }}</p>
-                                    <strong>{{ displayDate(race.date) }} · {{ displayTime(race.date) }}</strong>
+                                    <strong>{{ displayDate(race.date) }} · {{ race.hasTime ? displayTime(race.date) : 'Horário a confirmar' }}</strong>
                                     @for (session of race.sessions; track session.title) {
                                         <div class="f1-session"><span>{{ session.title }}</span>
-                                            <span>{{ displayDate(session.time) }} · {{ displayTime(session.time) }}</span>
+                                            <span>{{ displayDate(session.time) }} · {{ session.hasTime ? displayTime(session.time) : 'A confirmar' }}</span>
                                         </div>
                                     }
                                 </article>
@@ -140,10 +140,10 @@
                         <small>PRÓXIMA CORRIDA · FÓRMULA 1</small>
                         <h2>{{ race.title }}</h2>
                         <p><mat-icon>place</mat-icon>{{ race.circuit }} · {{ race.country }}</p>
-                        <strong>{{ displayDate(race.date) }} · {{ displayTime(race.date) }}</strong>
+                        <strong>{{ displayDate(race.date) }} · {{ race.hasTime ? displayTime(race.date) : 'Horário a confirmar' }}</strong>
                         <div class="f1-sessions">
                             @for (session of race.sessions; track session.title) {
-                                <span>{{ session.title }} · {{ displayDate(session.time) }} {{ displayTime(session.time) }}</span>
+                                <span>{{ session.title }} · {{ displayDate(session.time) }} {{ session.hasTime ? displayTime(session.time) : 'A confirmar' }}</span>
                             }
                         </div>
                     </article>

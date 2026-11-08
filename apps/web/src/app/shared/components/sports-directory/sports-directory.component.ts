@@ -146,7 +146,8 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
     });
     broadcastStatus(item: SportsBroadcast): string { return sportsBroadcastStatus(item, this.now()); }
     readonly nextF1Race = computed(() =>
-        this.f1Races().find(race => race.date >= this.now() - 3 * 3600000) || null
+        this.f1Races().find(race => (race.hasTime ? race.date :
+            race.date + 86400000) >= this.now() - 3 * 3600000) || null
     );
     readonly selectedSources = computed(() => {
         const tab = this.selectedTab();
