@@ -1,6 +1,5 @@
-import { ClipboardModule } from '@angular/cdk/clipboard';
 import { Component, inject, signal, ViewEncapsulation } from '@angular/core';
-import { MatButton, MatIconButton } from '@angular/material/button';
+import { MatIconButton } from '@angular/material/button';
 import {
     MAT_DIALOG_DATA,
     MatDialogModule,
@@ -9,7 +8,6 @@ import {
 import { MatIcon } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltip } from '@angular/material/tooltip';
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { WebPlayerViewComponent } from 'shared-portals';
 import { XtreamStore } from '../stores/xtream.store';
 
@@ -24,13 +22,10 @@ export interface PlayerDialogData {
 @Component({
     templateUrl: './player-dialog.component.html',
     imports: [
-        ClipboardModule,
-        MatButton,
         MatIconButton,
         MatDialogModule,
         MatIcon,
         MatTooltip,
-        TranslatePipe,
         WebPlayerViewComponent,
     ],
     styleUrl: './player-dialog.component.scss',
@@ -39,7 +34,6 @@ export interface PlayerDialogData {
 export class PlayerDialogComponent {
     readonly data = inject<PlayerDialogData>(MAT_DIALOG_DATA);
     private snackBar = inject(MatSnackBar);
-    private translateService = inject(TranslateService);
     private readonly xtreamStore = inject(XtreamStore);
     private readonly dialogRef = inject(
         MatDialogRef<PlayerDialogComponent>
@@ -137,13 +131,4 @@ export class PlayerDialogComponent {
         }
     }
 
-    showCopyNotification() {
-        this.snackBar.open(
-            this.translateService.instant('PORTALS.STREAM_URL_COPIED'),
-            null,
-            {
-                duration: 2000,
-            }
-        );
-    }
 }
