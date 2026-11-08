@@ -1,10 +1,9 @@
-import { Component, OnDestroy, OnInit, ViewEncapsulation, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewEncapsulation, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { MatTooltip } from '@angular/material/tooltip';
 import { WebPlayerViewComponent } from 'shared-portals';
 import type { PlaybackPositionData } from '../data-sources/xtream-data-source.interface';
-import { XtreamStore } from '../stores/xtream.store';
 
 type FloatingPlayerState = {
     streamUrl: string;
@@ -23,7 +22,6 @@ type FloatingPlayerState = {
     imports: [MatButtonModule, MatIcon, MatTooltip, WebPlayerViewComponent],
 })
 export class FloatingPlayerComponent implements OnInit, OnDestroy {
-    private readonly xtreamStore = inject(XtreamStore);
     readonly state = signal<FloatingPlayerState | null>(null);
     readonly alwaysOnTop = signal(false);
     private unsubscribeSource?: () => void;
@@ -77,7 +75,7 @@ export class FloatingPlayerComponent implements OnInit, OnDestroy {
         const now = Date.now();
         if (now - this.lastSaveTime < 15000) return;
         this.lastSaveTime = now;
-        void this.xtreamStore.savePosition(data['playlistId'], {
+        void window.electron?.dbSavePlaybackPosition?.(data['playlistId'], {
             ...(data as unknown as PlaybackPositionData),
             positionSeconds: Math.floor(this.lastPositionSeconds),
             durationSeconds: Number.isFinite(event.duration)
