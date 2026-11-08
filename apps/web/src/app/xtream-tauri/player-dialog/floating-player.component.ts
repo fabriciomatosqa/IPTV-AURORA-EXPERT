@@ -3,6 +3,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { MatTooltip } from '@angular/material/tooltip';
 import { WebPlayerViewComponent } from 'shared-portals';
+import type { PlaybackPositionData } from '../data-sources/xtream-data-source.interface';
 import { XtreamStore } from '../stores/xtream.store';
 
 type FloatingPlayerState = {
@@ -66,12 +67,17 @@ export class FloatingPlayerComponent implements OnInit, OnDestroy {
             this.lastPositionSeconds = event.currentTime;
         }
         const data = this.state()?.contentInfo;
-        if (!data || typeof data['playlistId'] !== 'string') return;
+        if (
+            !data ||
+            typeof data['playlistId'] !== 'string' ||
+            typeof data['contentXtreamId'] !== 'number' ||
+            (data['contentType'] !== 'vod' && data['contentType'] !== 'episode')
+        ) return;
         const now = Date.now();
         if (now - this.lastSaveTime < 15000) return;
         this.lastSaveTime = now;
         void this.xtreamStore.savePosition(data['playlistId'], {
-            ...data,
+            ...(data as PlaybackPositionData),
             positionSeconds: Math.floor(this.lastPositionSeconds),
             durationSeconds: Number.isFinite(event.duration)
                 ? Math.floor(event.duration)
