@@ -49,17 +49,9 @@ export const routes: Routes = [
                 (c) => c.SettingsComponent
             ),
     },
-    ...(window.electron
-        ? xtreamRoutes
-        : [
-              {
-                  path: 'xtreams/:id',
-                  loadComponent: () =>
-                      import('./xtream/xtream-main-container.component').then(
-                          (c) => c.XtreamMainContainerComponent
-                      ),
-              },
-          ]),
+    // One canonical Xtream experience, independent of browser/Electron routing.
+    // Do not register the old alternate category-only screen.
+    ...xtreamRoutes,
     {
         path: 'portals/:id',
         loadComponent: () =>
