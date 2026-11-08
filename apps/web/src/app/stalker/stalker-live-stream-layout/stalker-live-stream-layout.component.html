@@ -1,29 +1,37 @@
 @let isEmbeddedPlayer =
     player() === 'videojs' || player() === 'html5' || player() === 'artplayer';
 
-<div
-    class="sidebar"
-    appResizable
-    [minWidth]="250"
-    [maxWidth]="600"
-    [defaultWidth]="400"
-    storageKey="sidebar-width"
->
+<div class="category-sidebar" aria-label="Categorias da TV ao vivo">
     <div class="sidebar-header">
-        @if (stalkerStore.selectedCategoryId()) {
-            <button mat-icon-button (click)="backToCategories()">
-                <mat-icon>chevron_left</mat-icon>
-            </button>
-            <h2>{{ selectedCategoryTitle() }}</h2>
-        } @else {
-            <app-playlist-switcher
-                class="switcher"
-                [currentTitle]="currentPlaylist()?.title || 'Portal'"
-                [subtitle]="'Stalker Portal'"
-            />
-        }
+        <app-playlist-switcher
+            class="switcher"
+            [currentTitle]="currentPlaylist()?.title || 'Portal'"
+            [subtitle]="'Stalker Portal'"
+        />
     </div>
+    @if (isCategoryLoading()) {
+        <ngx-skeleton-loader count="20" [theme]="{ width: '95%', height: '48px', borderRadius: '40px' }" />
+    } @else if (isCategoryFailed()) {
+        <app-playlist-error-view
+            [title]="'PORTALS.ERROR_VIEW.UNKNOWN_ERROR.TITLE' | translate"
+            [description]="'PORTALS.ERROR_VIEW.UNKNOWN_ERROR.DESCRIPTION' | translate"
+        />
+    } @else {
+        <app-aurora-category-sidebar
+            class="stalker-live-category-widget"
+            [categories]="unifiedCategories()"
+            [selectedId]="selectedSidebarId()"
+            (categorySelected)="selectCategoryById($event)"
+        />
+    }
+</div>
 
+<div class="sidebar channels-sidebar"
+    [style.--aurora-channel-width.px]="channelColumnWidth()"
+    aria-label="Canais da categoria selecionada">
+    <div class="sidebar-header">
+        <h2>{{ selectedCategoryTitle() || 'Canais' }}</h2>
+    </div>
     @if (stalkerStore.selectedCategoryId()) {
         <!-- <div class="search-panel">
             <mat-form-field class="search-bar" subscriptSizing="dynamic">
@@ -42,7 +50,7 @@
             </mat-form-field>
         </div> -->
         <div #scrollContainer class="channels-list">
-            @for (item of itvChannels(); track item.id ?? $index) {
+            @for (item of orderedItvChannels(); track item.id ?? $index) {
                 <div
                     class="channel-item"
                     [class.active]="stalkerStore.selectedItem()?.id === item.id"
@@ -116,29 +124,10 @@
             }
         </div>
     } @else {
-        @if (isCategoryLoading()) {
-            <ngx-skeleton-loader
-                count="20"
-                [theme]="{
-                    width: '95%',
-                    height: '48px',
-                    borderRadius: '40px',
-                }"
-            />
-        } @else if (isCategoryFailed()) {
-            <app-playlist-error-view
-                [title]="'PORTALS.ERROR_VIEW.UNKNOWN_ERROR.TITLE' | translate"
-                [description]="
-                    'PORTALS.ERROR_VIEW.UNKNOWN_ERROR.DESCRIPTION' | translate
-                "
-            />
-        } @else {
-            <app-category-view
-                [items]="categories()"
-                [selectedCategoryId]="$any(stalkerStore.selectedCategoryId())"
-                (categoryClicked)="selectCategory($event)"
-            />
-        }
+        <div class="no-channel-selected">
+            <mat-icon>arrow_back</mat-icon>
+            Escolha uma categoria na coluna à esquerda.
+        </div>
     }
 </div>
 

@@ -1,7 +1,9 @@
+import { adultsLast, columnWidthForLabels } from '../../shared/utils/aurora-category-order';
 import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
     Component,
+    computed,
     effect,
     ElementRef,
     inject,
@@ -20,7 +22,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { PlaylistSwitcherComponent, ResizableDirective } from 'components';
+import { PlaylistSwitcherComponent } from 'components';
 import { PlaylistsService } from 'services';
 import { EpgItem } from 'shared-interfaces';
 import { EpgViewComponent, WebPlayerViewComponent } from 'shared-portals';
@@ -30,7 +32,7 @@ import {
     getAdjacentChannelItem,
     getChannelItemByNumber,
 } from '../../shared/services/remote-channel-navigation.util';
-import { CategoryViewComponent } from '../../xtream-tauri/category-view/category-view.component';
+import { AuroraCategorySidebarComponent } from '../../shared/components/aurora-category-sidebar/aurora-category-sidebar.component';
 import { PlaylistErrorViewComponent } from '../../xtream/playlist-error-view/playlist-error-view.component';
 import { StalkerStore } from '../stalker.store';
 import { NgxSkeletonLoaderModule } from 'ngx-skeleton-loader';
@@ -52,7 +54,7 @@ import {
         '../../xtream-tauri/sidebar.scss',
     ],
     imports: [
-        CategoryViewComponent,
+        AuroraCategorySidebarComponent,
         DatePipe,
         EpgViewComponent,
         FormsModule,
@@ -65,7 +67,6 @@ import {
         NgxSkeletonLoaderModule,
         PlaylistErrorViewComponent,
         PlaylistSwitcherComponent,
-        ResizableDirective,
         TranslatePipe,
         WebPlayerViewComponent,
     ],
@@ -86,9 +87,30 @@ export class StalkerLiveStreamLayoutComponent implements OnDestroy {
     readonly isCategoryFailed = this.stalkerStore.isCategoryResourceFailed;
     readonly selectedCategoryTitle = this.stalkerStore.getSelectedCategoryName;
     readonly currentPlaylist = this.stalkerStore.currentPlaylist;
+    readonly unifiedCategories = computed(() =>
+        (this.categories() ?? [])
+            .map((category: any) => ({
+                id: String(category.category_id ?? category.id),
+                name: String(category.category_name ?? category.name ?? 'Sem nome'),
+            }))
+            .filter((category) => category.id !== '*')
+    );
+    readonly selectedSidebarId = computed(() => {
+        const id = this.stalkerStore.selectedCategoryId();
+        return !id || id === '*' ? null : String(id);
+    });
 
     /** Channels */
     readonly itvChannels = this.stalkerStore.itvChannels;
+    readonly orderedItvChannels = computed(() =>
+        adultsLast(this.itvChannels(), (channel) =>
+            String(channel.o_name ?? channel.name ?? '')
+        )
+    );
+    readonly channelColumnWidth = computed(() => columnWidthForLabels(
+        this.itvChannels().map((channel) => String(channel.o_name ?? channel.name ?? '')),
+        135, 600
+    ));
     readonly hasMoreItems = this.stalkerStore.hasMoreChannels;
     readonly isLoadingMore = signal(false);
 
@@ -243,6 +265,18 @@ export class StalkerLiveStreamLayoutComponent implements OnDestroy {
     selectCategory(item: StalkerCategoryItem) {
         this.stalkerStore.setSelectedCategory(item.category_id || '*');
         this.stalkerStore.setPage(0);
+    }
+
+    selectCategoryById(id: string | null): void {
+        if (id == null) {
+            this.stalkerStore.setSelectedCategory('*');
+            this.stalkerStore.setPage(0);
+            return;
+        }
+        const category = (this.categories() ?? []).find(
+            (item: any) => String(item.category_id ?? item.id) === id
+        );
+        if (category) this.selectCategory(category);
     }
 
     backToCategories() {

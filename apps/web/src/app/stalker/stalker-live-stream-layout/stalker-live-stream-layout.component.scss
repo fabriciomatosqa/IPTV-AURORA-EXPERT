@@ -300,3 +300,35 @@
         width: 100% !important;
     }
 }
+
+/* Persistent categories + channel list match M3U and Xtream on every playlist. */
+.category-sidebar {
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: column;
+    width: fit-content;
+    max-width: min(42vw, 620px);
+    min-width: 155px;
+    min-height: 0;
+    overflow: hidden;
+    background: #121317;
+    border-right: 1px solid rgba(255,255,255,.09);
+}
+.category-sidebar .stalker-live-category-widget {
+    flex: 1 1 auto;
+    width: var(--aurora-sidebar-width, 260px);
+    max-width: 100%;
+    min-width: 0;
+    min-height: 0;
+    border-right: 0;
+}
+.sidebar.channels-sidebar {
+    width: clamp(235px, var(--aurora-channel-width, 350px), min(42vw, 600px));
+    min-width: 175px;
+    max-width: min(42vw, 600px);
+}
+.category-sidebar .sidebar-header { min-height: 62px; }
+@media (max-width: 750px) {
+    .category-sidebar { max-width: 39vw; min-width: 125px; }
+    .sidebar.channels-sidebar { max-width: 39vw; min-width: 150px; }
+}

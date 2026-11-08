@@ -49,9 +49,9 @@
 /* Stalker uses the same Aurora category column as Xtream and M3U. */
 .sidebar {
     display: flex;
-    flex: 0 0 clamp(190px, 20vw, 280px);
-    width: clamp(190px, 20vw, 280px);
-    max-width: none;
+    flex: 0 0 auto;
+    width: fit-content;
+    max-width: min(47vw, 620px);
     min-width: 0;
     min-height: 0;
     overflow: hidden;
@@ -59,7 +59,8 @@
 }
 .sidebar .stalker-category-widget {
     flex: 1 1 auto;
-    width: 100%;
+    width: var(--aurora-sidebar-width, 260px);
+    max-width: 100%;
     min-width: 0;
     border-right: 0;
 }
@@ -70,8 +71,8 @@
 }
 .main-content { min-width: 0; flex: 1; }
 @media (max-width: 1100px) {
-    .sidebar { flex-basis: 195px; width: 195px; }
+    .sidebar { max-width: 45vw; }
 }
 @media (max-width: 680px) {
-    .sidebar { flex-basis: 154px; width: 154px; }
+    .sidebar { max-width: 43vw; }
 }
