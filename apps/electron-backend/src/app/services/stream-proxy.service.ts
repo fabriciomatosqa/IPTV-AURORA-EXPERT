@@ -311,8 +311,7 @@ function spawnUrlAudioTranscode(
         '1',
         '-reconnect_streamed',
         '1',
-        '-reconnect_at_eof',
-        '1',
+        // Do not reconnect at EOF for VOD; it would replay the movie.
         '-reconnect_delay_max',
         '5',
         '-rw_timeout',
@@ -330,14 +329,7 @@ function spawnUrlAudioTranscode(
     const audioMapArgs =
         typeof audioStreamIndex === 'number'
             ? ['-map', `0:a:${audioStreamIndex}?`]
-            : [
-                  '-map',
-                  '0:a:m:language:eng?',
-                  '-map',
-                  '0:a:m:language:und?',
-                  '-map',
-                  '0:a:0?',
-              ];
+            : ['-map', '0:a:0?'];
 
     ffmpegArgs.push(
         '-probesize',
@@ -546,6 +538,18 @@ function handleProxyRequest(req: IncomingMessage, res: ServerResponse) {
             forwardHeaders[k] = v;
         }
     }
+    // Some IPTV providers require their supplied User-Agent / Referer.
+    // The original proxy accidentally dropped these values from the URL.
+    const safeHeaderValue = (value: string | null): string | undefined =>
+        value && !/[\r\n]/.test(value) && value.length < 1024
+            ? value
+            : undefined;
+    const requestedAgent = safeHeaderValue(params.get('ua'));
+    const requestedReferer = safeHeaderValue(params.get('ref'));
+    const requestedOrigin = safeHeaderValue(params.get('org'));
+    if (requestedAgent) forwardHeaders['user-agent'] = requestedAgent;
+    if (requestedReferer) forwardHeaders['referer'] = requestedReferer;
+    if (requestedOrigin) forwardHeaders['origin'] = requestedOrigin;
 
     const createRequest = (
         currentTarget: URL,
