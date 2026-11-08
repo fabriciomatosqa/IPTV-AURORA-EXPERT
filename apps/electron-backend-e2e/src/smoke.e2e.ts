@@ -1113,6 +1113,16 @@ test.describe('Electron App Smoke Test', () => {
             'Horizonte Aurora'
         );
         await expect(mainWindow.locator('.cast-member')).toHaveCount(2);
+        const portrait = await mainWindow.locator('.cast-avatar').first().boundingBox();
+        expect(portrait!.width).toBeGreaterThanOrEqual(90);
+        expect(portrait!.height).toBeGreaterThanOrEqual(90);
+        await mainWindow.locator('.cast-member').first().click();
+        await expect(mainWindow.locator('.actor-filmography')).toBeVisible();
+        await expect(mainWindow.locator('.actor-filmography h3')).toContainText(
+            'Artista Aurora A'
+        );
+        await mainWindow.getByRole('button', { name: 'Fechar filmografia' }).click();
+        await expect(mainWindow.locator('.actor-filmography')).toHaveCount(0);
         for (const [width, height] of [
             [1366, 768],
             [1920, 1080],
@@ -1154,9 +1164,8 @@ test.describe('Electron App Smoke Test', () => {
                 { timeout: 30000 }
             )
             .toBe(true);
-        await mainWindow
-            .getByRole('button', { name: 'Fechar', exact: true })
-            .click();
+        await expect(mainWindow.locator('.aurora-player-actions')).toHaveCount(0);
+        await mainWindow.getByRole('button', { name: 'Fechar player' }).click();
         await mainWindow
             .getByRole('button', { name: 'Voltar ao catálogo', exact: true })
             .click();
@@ -1205,9 +1214,8 @@ test.describe('Electron App Smoke Test', () => {
                 { timeout: 30000 }
             )
             .toBe(true);
-        await mainWindow
-            .getByRole('button', { name: 'Fechar', exact: true })
-            .click();
+        await expect(mainWindow.locator('.aurora-player-actions')).toHaveCount(0);
+        await mainWindow.getByRole('button', { name: 'Fechar player' }).click();
         await expect(mainWindow.locator('.season-card')).toHaveCount(2);
         await mainWindow
             .getByRole('button', { name: 'Voltar ao catálogo', exact: true })
@@ -1215,6 +1223,25 @@ test.describe('Electron App Smoke Test', () => {
         await expect(mainWindow.locator('app-grid-list mat-card')).toHaveCount(
             12
         );
+
+        // Live categories and channels must stay mounted side by side.
+        await mainWindow.locator('app-navigation')
+            .getByRole('button', { name: 'TV ao vivo', exact: true }).click();
+        await expect(mainWindow.locator('.category-sidebar app-category-view')).toBeVisible();
+        await expect(mainWindow.locator('.channels-sidebar')).toBeVisible();
+        await mainWindow.locator('.category-sidebar .category-item').first().click();
+        await expect(mainWindow.locator('.channels-sidebar app-portal-channels-list'))
+            .toBeVisible();
+        const categoriesBounds = await mainWindow.locator('.category-sidebar').boundingBox();
+        const channelsBounds = await mainWindow.locator('.channels-sidebar').boundingBox();
+        expect(categoriesBounds!.x + categoriesBounds!.width).toBeLessThanOrEqual(
+            channelsBounds!.x + 2
+        );
+        await expect(mainWindow.locator('.category-sidebar .category-item').first())
+            .toBeVisible();
+        await mainWindow.screenshot({
+            path: join(screenshotDir, 'aurora-live-three-columns.png')
+        });
     });
 
     test('parses M3U URL and imports XMLTV through the real EPG worker', async () => {
