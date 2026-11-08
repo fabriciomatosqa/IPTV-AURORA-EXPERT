@@ -159,20 +159,14 @@ jobs:
                   GH_TOKEN: ${{ github.token }}
               run: |
                   $metadata = Get-Content package.json -Raw | ConvertFrom-Json
-                  if ($metadata.auroraStage -ne 'development') { throw 'This release must be development stage 0.0.' }
+                  if ($metadata.auroraStage -ne 'development') { throw 'Development release required.' }
                   $tag = "v$($metadata.auroraVersion)"
-                  $assets = @(Get-ChildItem -LiteralPath 'dist/executables' -File | Where-Object { $_.Name -match 'windows-x64-setup\.exe(\.blockmap)?$|^latest\.yml$|^SHA256SUMS\.txt$|^build-info\.json
-              if: failure()
-              uses: actions/upload-artifact@v4.6.2
-              with:
-                  name: windows-build-diagnostics
-                  path: |
-                      dist/playwright-report/electron-backend-e2e/
-                      dist/test-results/electron-backend-e2e/
-                  retention-days: 7
- } | ForEach-Object { $_.FullName })
-                  if ($assets.Count -lt 4) { throw 'Required updater assets are missing.' }
-                  gh release create $tag @assets --target $env:GITHUB_SHA --title "IPTV AURORA EXPERT $($metadata.auroraVersion) — Desenvolvimento" --generate-notes --prerelease
+                  $installer = Get-ChildItem -LiteralPath 'dist/executables' -Filter '*-windows-x64-setup.exe'
+                  if ($installer.Count -ne 1) { throw 'Exactly one Windows installer is required.' }
+                  $files = @($installer[0].FullName, 'dist/executables/latest.yml', 'dist/executables/SHA256SUMS.txt', 'dist/executables/build-info.json')
+                  if (Test-Path "$($installer[0].FullName).blockmap") { $files += "$($installer[0].FullName).blockmap" }
+                  foreach ($file in $files) { if (-not (Test-Path $file)) { throw "Missing release asset: $file" } }
+                  gh release create $tag @files --target $env:GITHUB_SHA --title "IPTV AURORA EXPERT $($metadata.auroraVersion) - Desenvolvimento" --generate-notes --prerelease
                   if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
             - name: Upload diagnostics on failure
               if: failure()
