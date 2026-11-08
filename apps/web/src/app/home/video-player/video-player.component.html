@@ -150,8 +150,21 @@
                                 catalogLimit.set(200)
                             "
                     /></label>
+                    @if (catalogSection() === 'movies' || catalogSection() === 'series') {
+                        <button type="button" class="library-sort-action"
+                            [attr.aria-pressed]="catalogSorted()"
+                            [title]="catalogSorted() ? 'Ordem original' : 'Ordenar por nome'"
+                            aria-label="Ordenar títulos"
+                            (click)="catalogSorted.set(!catalogSorted())">
+                            <mat-icon>sort_by_alpha</mat-icon>
+                        </button>
+                    }
                 </header>
                 <div class="library-body">
+                    @if (
+                        catalogSection() !== 'movies' &&
+                        catalogSection() !== 'series'
+                    ) {
                     <aside
                         class="library-tools"
                         aria-label="Organização do catálogo"
@@ -181,52 +194,20 @@
                         >
                             <mat-icon>history</mat-icon>
                         </button>
-                    </aside>
+        
+                    }
+            </aside>
                     @if (
                         catalogSection() === 'movies' ||
                         catalogSection() === 'series'
                     ) {
-                        <aside
+                        <app-aurora-category-sidebar
                             class="library-category-sidebar"
                             data-test-id="m3u-category-sidebar"
-                            aria-label="Categorias de filmes e séries"
-                        >
-                            <h2>Categorias</h2>
-                            <label class="library-category-search">
-                                <mat-icon>search</mat-icon>
-                                <input
-                                    type="search"
-                                    placeholder="Pesquisar categorias"
-                                    aria-label="Pesquisar categorias de filmes e séries"
-                                    [value]="categorySidebarQuery()"
-                                    (input)="categorySidebarQuery.set($any($event.target).value)"
-                                />
-                            </label>
-                            <div class="library-category-list">
-                                <button
-                                    type="button"
-                                    [class.selected]="!catalogCategory()"
-                                    [attr.aria-pressed]="!catalogCategory()"
-                                    (click)="selectCatalogCategory('')"
-                                >
-                                    <mat-icon>apps</mat-icon>
-                                    <span>Todas</span>
-                                </button>
-                                @for (category of filteredCatalogCategories(); track category) {
-                                    <button
-                                        type="button"
-                                        [class.selected]="catalogCategory() === category"
-                                        [attr.aria-pressed]="catalogCategory() === category"
-                                        (click)="selectCatalogCategory(category)"
-                                        [title]="category"
-                                    >
-                                        <mat-icon>diamond</mat-icon>
-                                        <span>{{ category }}</span>
-                                        <small>({{ catalogCategoryCounts().get(category) || 0 }})</small>
-                                    </button>
-                                }
-                            </div>
-                        </aside>
+                            [categories]="normalizedCatalogCategories()"
+                            [selectedId]="catalogCategory() || null"
+                            (categorySelected)="selectCatalogCategory($event ?? '')"
+                        />                </aside>
                     }
                     <section
                         class="library-scroll"
