@@ -12,6 +12,30 @@ declare module 'video.js' {
 declare global {
     interface Window {
         electron: {
+            openAuroraPiP?: (data: {
+                streamUrl: string;
+                title: string;
+                startTime?: number;
+                subtitleUrl?: string | null;
+                contentInfo?: Record<string, unknown>;
+            }) => Promise<boolean>;
+            getAuroraPiPState?: () => Promise<{
+                streamUrl: string;
+                title: string;
+                startTime?: number;
+                subtitleUrl?: string | null;
+                contentInfo?: Record<string, unknown>;
+            } | null>;
+            setAuroraPiPAlwaysOnTop?: (enabled: boolean) => Promise<boolean>;
+            returnFromAuroraPiP?: (seconds: number) => Promise<boolean>;
+            onAuroraPiPReturn?: (callback: (data: {
+                streamUrl: string;
+                title: string;
+                startTime?: number;
+                subtitleUrl?: string | null;
+                contentInfo?: Record<string, unknown>;
+            }) => void) => () => void;
+            onAuroraPiPSourceChanged?: (callback: () => void) => () => void;
             getAppVersion: () => Promise<string>;
             getAppUpdateState?: () => Promise<
                 import('./libs/shared/interfaces/src/lib/app-update.interface').AppUpdateState
