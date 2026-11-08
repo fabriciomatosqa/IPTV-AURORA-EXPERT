@@ -136,6 +136,94 @@
     border: 0;
     outline: 0;
 }
+.library-section-heading {
+    margin: 0;
+    color: #e4e9ee;
+    font: 600 19px/1.3 'Segoe UI', sans-serif;
+    overflow-wrap: anywhere;
+}
+.library-category-sidebar {
+    display: flex;
+    flex: 0 0 clamp(190px, 20vw, 280px);
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    background: #121317;
+    border-radius: 14px 14px 0 0;
+    border: 1px solid rgba(255, 255, 255, .07);
+    box-sizing: border-box;
+    h2 {
+        margin: 0;
+        padding: 15px 14px 11px;
+        color: #e4e9ee;
+        font: 600 18px 'Segoe UI', sans-serif;
+    }
+}
+.library-category-search {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin: 0 10px 10px;
+    padding: 7px 8px;
+    min-width: 0;
+    color: #aebac7;
+    border-radius: 8px;
+    background: #1e252d;
+    mat-icon { font-size: 18px; width: 18px; height: 18px; }
+    input {
+        min-width: 0;
+        flex: 1;
+        outline: 0;
+        border: 0;
+        background: transparent;
+        color: #e4e9ee;
+        font: 12px 'Segoe UI', sans-serif;
+    }
+}
+.library-category-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    overscroll-behavior: contain;
+    padding: 0 8px 12px;
+    button {
+        display: flex;
+        width: 100%;
+        min-height: 42px;
+        align-items: center;
+        gap: 9px;
+        border: 0;
+        border-radius: 12px;
+        background: transparent;
+        color: #d9e2eb;
+        text-align: left;
+        padding: 7px 9px;
+        cursor: pointer;
+    }
+    button:hover { background: rgba(255,255,255,.07); }
+    button.selected {
+        background: rgba(115,224,198,.12);
+        color: #79e5d0;
+    }
+    button mat-icon { flex-shrink: 0; width: 18px; height: 18px; font-size: 18px; color: #e93a86; }
+    button span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+    button small { color: #99a5b1; }
+}
+@media (max-width: 1100px) {
+    .library-category-sidebar { flex-basis: 195px; }
+    .library-body { gap: 8px; }
+}
+@media (max-width: 680px) {
+    .library-category-sidebar { flex-basis: 154px; }
+    .library-category-sidebar h2 { font-size: 15px; }
+    .library-category-list button { font-size: 12px; }
+    .library-scroll { padding: 8px; }
+    .library-header { gap: 8px; flex-wrap: wrap; }
+    .library-search { width: 100%; }
+}
+
 .library-body {
     display: flex;
     gap: 14px;
