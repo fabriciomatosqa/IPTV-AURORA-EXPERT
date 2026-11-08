@@ -1,6 +1,6 @@
 @if (items()?.length > 0) {
     <mat-nav-list>
-        @for (item of items(); track $index) {
+        @for (item of orderedItems(); track $index) {
             <mat-list-item
                 class="category-item"
                 [attr.data-category-id]="$any(item).category_id ?? item.id"

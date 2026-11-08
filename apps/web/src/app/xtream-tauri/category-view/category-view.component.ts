@@ -1,3 +1,4 @@
+import { isAdultContentLabel, moveAdultContentToEnd } from '../../shared/utils/adult-content-order';
 import {
     ChangeDetectionStrategy,
     Component,
@@ -5,6 +6,7 @@ import {
     ElementRef,
     inject,
     input,
+    computed,
     output,
 } from '@angular/core';
 import { MatListModule } from '@angular/material/list';
@@ -21,6 +23,11 @@ import { PlaylistErrorViewComponent } from '../playlist-error-view/playlist-erro
 })
 export class CategoryViewComponent {
     readonly items = input([]);
+    readonly orderedItems = computed(() =>
+        moveAdultContentToEnd(this.items(), (item: any) =>
+            isAdultContentLabel(item.category_name ?? item.name)
+        )
+    );
     readonly selectedCategoryId = input<string | number | null | undefined>();
     readonly itemCounts = input<Map<number, number>>(new Map());
     readonly showCounts = input<boolean>(false);

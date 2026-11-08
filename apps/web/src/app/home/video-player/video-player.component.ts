@@ -1,3 +1,4 @@
+import { isAdultContentLabel, moveAdultContentToEnd } from '../../shared/utils/adult-content-order';
 import { Overlay, OverlayRef } from '@angular/cdk/overlay';
 import { ComponentPortal } from '@angular/cdk/portal';
 import { AsyncPipe, CommonModule } from '@angular/common';
@@ -220,11 +221,14 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
         }
         return this.catalogIndex()[section as CatalogKind] || [];
     });
-    readonly catalogCategories = computed(() => [
-        ...new Set(
-            this.sectionChannels().map((c) => c.group?.title || 'Sem categoria')
-        ),
-    ]);
+    readonly catalogCategories = computed(() =>
+        moveAdultContentToEnd(
+            [...new Set(this.sectionChannels().map(
+                (c) => c.group?.title || 'Sem categoria'
+            ))],
+            isAdultContentLabel
+        )
+    );
     readonly catalogCategoryCounts = computed(() => {
         const counts = new Map<string, number>();
         for (const channel of this.sectionChannels()) {
@@ -254,9 +258,13 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
                     (c.group?.title || 'Sem categoria') === category) &&
                 (!query || c.name?.toLocaleLowerCase().includes(query))
         );
-        return this.catalogSorted()
+        const ordered = this.catalogSorted()
             ? [...items].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
             : items;
+        return moveAdultContentToEnd(ordered, channel =>
+            isAdultContentLabel(channel.group?.title) ||
+            isAdultContentLabel(channel.name)
+        );
     });
     readonly visibleCatalog = computed(() =>
         this.filteredCatalog().slice(0, this.catalogLimit())
