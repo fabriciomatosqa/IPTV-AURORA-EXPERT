@@ -231,7 +231,8 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
                 this.allScores.set(row.key,row.matches);
                 if (row.checked) this.requestedLeagues.set(row.key,row.checked);
             }
-            this.scoreEvents.set(Array.from(this.allScores.values()).flat());
+            this.scoreEvents.set(Array.from(this.allScores.values())
+                .reduce((all: SportsMatch[], group) => all.concat(group), []));
             this.staleScores.set(results.some(r=>r.stale));
             this.scoreChecked.set(Math.max(...results.map(r=>r.checked),0));
         } finally {

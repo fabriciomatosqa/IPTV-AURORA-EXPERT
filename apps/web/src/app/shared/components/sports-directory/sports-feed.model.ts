@@ -47,6 +47,8 @@ const stamp = (value: unknown): number => {
 const object = (value: unknown): Record<string, any> =>
     value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, any> : {};
 const array = (value: unknown): any[] => Array.isArray(value) ? value : [];
+const flatten = <T, R>(rows: T[], mapper: (row: T) => R[]): R[] =>
+    rows.reduce((all: R[], row) => all.concat(mapper(row)), []);
 const score = (value: unknown): string | null => {
     if (typeof value === 'number' && Number.isFinite(value)) return String(value);
     if (typeof value === 'string' && /^\d+$/.test(value.trim())) return value.trim();
@@ -58,7 +60,7 @@ export function parseSportsScoreboard(raw: unknown, league: string, sport: strin
     const leagueInfo = object(array(feed.leagues)[0]);
     const competition = String(leagueInfo.name || league);
     const leagueLogo = safeImage(object(array(leagueInfo.logos)[0]).href);
-    return array(feed.events).flatMap((item): SportsMatch[] => {
+    return flatten(array(feed.events),(item): SportsMatch[] => {
         const event = object(item);
         const contest = object(array(event.competitions)[0]);
         const competitors = array(contest.competitors);
@@ -97,20 +99,20 @@ export function parseSportsScoreboard(raw: unknown, league: string, sport: strin
 
 export function parseF1Calendar(raw: unknown, year: number): F1Race[] {
     const data = object(object(raw).MRData);
-    return array(object(data.RaceTable).Races).flatMap((row): F1Race[] => {
+    return flatten(array(object(data.RaceTable).Races),(row): F1Race[] => {
         const race = object(row);
         const round = Number(race.round);
         const time = stamp(String(race.date ?? '') + 'T' + String(race.time || '12:00:00Z'));
         if (!Number.isInteger(round) || round < 1 || !time) return [];
         const circuit = object(race.Circuit);
-        const sessions = [
+        const sessions = flatten([
             ['FirstPractice', 'Treino Livre 1'],
             ['SecondPractice', 'Treino Livre 2'],
             ['ThirdPractice', 'Treino Livre 3'],
             ['Qualifying', 'Classificação'],
             ['Sprint', 'Sprint'],
             ['SprintQualifying', 'Classificação Sprint'],
-        ].flatMap(([key, title]): { title: string; time: number }[] => {
+        ], ([key, title]): { title: string; time: number }[] => {
             const session = object(race[key]);
             const t = stamp(String(session.date || '') + 'T' + String(session.time || '12:00:00Z'));
             return t ? [{ title, time: t }] : [];
@@ -130,7 +132,7 @@ export function parseF1Standings(raw: unknown, kind: 'drivers' | 'teams'): F1Sta
     const table = object(object(raw).MRData).StandingsTable;
     const list = object(array(object(table).StandingsLists)[0]);
     const rows = array(list[kind === 'drivers' ? 'DriverStandings' : 'ConstructorStandings']);
-    return rows.flatMap((r): F1Standing[] => {
+    return flatten(rows,(r): F1Standing[] => {
         const row = object(r);
         const driver = object(row.Driver);
         const team = object(row.Constructor);
