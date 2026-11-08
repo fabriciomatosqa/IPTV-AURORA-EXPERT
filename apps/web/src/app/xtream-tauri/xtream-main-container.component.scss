@@ -20,6 +20,119 @@
     }
 }
 
+.catalog-layout {
+    display: flex;
+    flex: 1;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    background: #12151b;
+}
+
+.vod-category-sidebar {
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 clamp(190px, 20vw, 280px);
+    width: clamp(190px, 20vw, 280px);
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    background: #121317;
+}
+
+.vod-sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 64px;
+    padding: 10px 12px 3px 16px;
+    box-sizing: border-box;
+
+    h2 {
+        margin: 0;
+        font: 600 18px 'Segoe UI', sans-serif;
+        color: #e4e9ee;
+    }
+
+    button { color: #aebac7; }
+}
+
+.vod-sidebar-search {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+    padding: 7px 8px;
+    margin: 0 10px 10px;
+    border-radius: 8px;
+    background: #1e252d;
+    color: #aebac7;
+
+    mat-icon {
+        font-size: 19px;
+        height: 19px;
+        width: 19px;
+        flex: 0 0 19px;
+    }
+    input {
+        min-width: 0;
+        flex: 1;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: #e4e9ee;
+        font: 12px 'Segoe UI', sans-serif;
+    }
+    button {
+        border: 0;
+        background: transparent;
+        color: inherit;
+        padding: 1px;
+        cursor: pointer;
+    }
+}
+
+.vod-all-categories {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    flex: 0 0 auto;
+    width: calc(100% - 20px);
+    min-height: 43px;
+    margin: 0 10px 7px;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: #d6e0e7;
+    font: 14px 'Segoe UI', sans-serif;
+    text-align: left;
+    cursor: pointer;
+
+    mat-icon { color: #70d9c5; }
+    &:hover { background: rgba(255, 255, 255, 0.06); }
+    &.selected {
+        color: #78e6d0;
+        background: rgba(115, 224, 198, 0.11);
+    }
+}
+.vod-category-sidebar app-category-view {
+    display: block;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+}
+.catalog-heading {
+    margin: 0;
+    font: 600 19px/1.3 'Segoe UI', sans-serif;
+    color: #e4e9ee;
+    overflow-wrap: anywhere;
+}
+
 .main-content {
     flex: 1;
     display: flex;
@@ -136,4 +249,32 @@
         // When header is hidden, content starts from top
         margin-top: 0;
     }
+}
+
+/* The sidebar belongs to browsing views only. Full-screen detail routes keep
+ * their original width and layout, including the movie/series hero. */
+.catalog-layout.details-open .main-content {
+    padding: 0;
+}
+
+@media (max-width: 1100px) {
+    .vod-category-sidebar {
+        flex-basis: 195px;
+        width: 195px;
+    }
+    .main-content { padding: 18px 12px 0; }
+    .category-search { width: clamp(180px, 26vw, 320px); }
+}
+@media (max-width: 680px) {
+    .vod-category-sidebar {
+        flex-basis: 154px;
+        width: 154px;
+    }
+    .vod-sidebar-header { padding-left: 10px; }
+    .vod-sidebar-header h2 { font-size: 15px; }
+    .vod-sidebar-search { margin-inline: 6px; }
+    .vod-all-categories { margin-inline: 6px; width: calc(100% - 12px); }
+    .content-header { gap: 8px; flex-wrap: wrap; }
+    .catalog-heading { font-size: 16px; }
+    .category-search { width: 180px; }
 }
