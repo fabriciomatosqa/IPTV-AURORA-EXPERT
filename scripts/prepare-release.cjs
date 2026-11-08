@@ -3,7 +3,21 @@ const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const root = path.resolve(__dirname, '..');
 
-function releaseVersion(date, sequence) {
+// Public format: MAJOR.PHASE.DDMMYY-SEQUENCE
+//   0.0 = development, 0.1 = beta, 1.0 = stable.
+// The internal numeric version must increase across stages while remaining
+// compatible with electron-updater, SemVer and Windows file-version limits.
+// For a given date: development < beta < stable, even if the public suffix
+// is the same (-01). Historical 2026.1108.1 packages can update to these.
+const STAGES = Object.freeze({
+    development: { prefix: '0.0', rank: 1 },
+    beta: { prefix: '0.1', rank: 2 },
+    stable: { prefix: '1.0', rank: 3 },
+});
+
+function releaseVersion(date, sequence, stage = 'development') {
+    if (!Object.hasOwn(STAGES, stage))
+        throw Error('Etapa inválida: use development, beta ou stable.');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date))
         throw Error('Use a data AAAA-MM-DD.');
     const parsed = new Date(date + 'T12:00:00Z');
@@ -12,12 +26,16 @@ function releaseVersion(date, sequence) {
         parsed.toISOString().slice(0, 10) !== date
     )
         throw Error('Data inválida.');
-    if (!Number.isInteger(sequence) || sequence < 1 || sequence > 65535)
-        throw Error('Sequência inválida.');
+    // Windows version segments must be <= 65535. The third segment is
+    // 10000 * stage rank + sequence, hence the 9999 sequence limit.
+    if (!Number.isInteger(sequence) || sequence < 1 || sequence > 9999)
+        throw Error('Sequência inválida (1 a 9999).');
     const [year, month, day] = date.split('-');
+    const { prefix, rank } = STAGES[stage];
     return {
-        display: `0.0.${day}${month}${year.slice(-2)}-${String(sequence).padStart(2, '0')}`,
-        internal: `${Number(year)}.${Number(month + day)}.${sequence}`,
+        display: `${prefix}.${day}${month}${year.slice(-2)}-${String(sequence).padStart(2, '0')}`,
+        internal: `${Number(year)}.${Number(month + day)}.${rank * 10000 + sequence}`,
+        stage,
     };
 }
 
@@ -32,6 +50,7 @@ function main() {
         day: '2-digit',
     }).format(new Date());
     const date = args.date || today;
+    const stage = args.stage || 'development';
     let sequence = args.sequence ? Number(args.sequence) : 1;
     if (!args.sequence) {
         const tags = execFileSync('git', ['ls-remote', '--tags', 'origin'], {
@@ -39,7 +58,7 @@ function main() {
             encoding: 'utf8',
             windowsHide: true,
         });
-        const prefix = releaseVersion(date, 1).display.replace(/-01$/, '-');
+        const prefix = releaseVersion(date, 1, stage).display.replace(/-01$/, '-');
         for (const line of tags.split('\n')) {
             const tag = line.split('refs/tags/')[1]?.replace(/^v/, '');
             if (
@@ -52,12 +71,13 @@ function main() {
                 );
         }
     }
-    const version = releaseVersion(date, sequence);
+    const version = releaseVersion(date, sequence, stage);
     for (const name of ['package.json', 'apps/electron-backend/package.json']) {
         const file = path.join(root, name);
         const json = JSON.parse(fs.readFileSync(file, 'utf8'));
         json.version = version.internal;
         json.auroraVersion = version.display;
+        json.auroraStage = version.stage;
         fs.writeFileSync(
             file,
             JSON.stringify(json, null, name === 'package.json' ? 2 : 4) + '\n'
@@ -81,5 +101,5 @@ function main() {
     }
     console.log(JSON.stringify(version));
 }
-module.exports = { releaseVersion };
+module.exports = { releaseVersion, STAGES };
 if (require.main === module) main();
