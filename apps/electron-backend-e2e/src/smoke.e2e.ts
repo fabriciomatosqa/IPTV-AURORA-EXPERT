@@ -1160,20 +1160,17 @@ test.describe('Electron App Smoke Test', () => {
         await mainWindow
             .getByRole('button', { name: 'Voltar ao catálogo', exact: true })
             .click();
-        await mainWindow
+        const seriesTab = mainWindow
             .locator('app-navigation')
-            .getByRole('button', { name: 'Séries', exact: true })
-            .click();
-        await expect(mainWindow.locator('app-grid-list mat-card')).toHaveCount(
-            12
-        );
-        const categoryValue = await mainWindow
-            .locator('#xtream-category option')
-            .nth(1)
-            .getAttribute('value');
-        await mainWindow
-            .locator('#xtream-category')
-            .selectOption(categoryValue!);
+            .getByRole('button', { name: 'Séries', exact: true });
+        await seriesTab.click();
+        await expect(seriesTab).toHaveAttribute('aria-pressed', 'true');
+        // Wait for *series* data rather than reusing a movie category ID while
+        // the select is being replaced. Both sections contain 12 cards.
+        await expect(mainWindow.locator('app-grid-list mat-card')).toHaveCount(12);
+        await expect(
+            mainWindow.locator('app-grid-list mat-card').first()
+        ).toContainText('Jornada Aurora');
         await mainWindow.locator('app-grid-list mat-card').first().click();
         await expect(mainWindow.locator('.season-card')).toHaveCount(2);
         await expect(mainWindow.locator('.episode-card')).toHaveCount(18);
