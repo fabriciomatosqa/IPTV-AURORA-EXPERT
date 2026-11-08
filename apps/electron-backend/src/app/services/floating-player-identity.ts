@@ -1,14 +1,11 @@
 import type { BrowserWindow } from 'electron';
 
-// Electron emits "browser-window-created" before a newly constructed
-// BrowserWindow is returned, so identify our intentional PiP by its
-// private webPreferences rather than an ID registered after construction.
+// The IPC handler creates this window with a distinctive native title.
+// Both application single-window guards allow only this deliberate exception.
 export const FLOATING_PLAYER_MARKER = '--aurora-pip-player';
+export const FLOATING_PLAYER_TITLE =
+    'IPTV AURORA EXPERT — Picture in Picture';
 
 export function isAuroraFloatingPlayer(window: BrowserWindow): boolean {
-    return (
-        window.webContents.getLastWebPreferences()?.additionalArguments?.includes(
-            FLOATING_PLAYER_MARKER
-        ) === true
-    );
+    return window.getTitle() === FLOATING_PLAYER_TITLE;
 }
