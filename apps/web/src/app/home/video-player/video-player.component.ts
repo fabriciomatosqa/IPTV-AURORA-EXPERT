@@ -1,3 +1,4 @@
+import { AuroraCatalogNavigationComponent } from '../../shared/components/aurora-catalog-navigation/aurora-catalog-navigation.component';
 import { DownloadsComponent } from '../../xtream-tauri/downloads/downloads.component';
 import { catalogCategoryWidth } from '../../shared/utils/catalog-column-width';
 import { isAdultContentLabel, moveAdultContentToEnd } from '../../shared/utils/adult-content-order';
@@ -94,6 +95,7 @@ import { WebPlayerViewComponent } from 'shared-portals';
         AudioPlayerComponent,
         ContentHeroComponent,
         CommonModule,
+        AuroraCatalogNavigationComponent,
         DownloadsComponent,
         EpgListComponent,
         HtmlVideoPlayerComponent,
@@ -234,6 +236,13 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
             ))],
             isAdultContentLabel
         )
+    );
+    readonly auroraCategoryOptions = computed(() =>
+        this.catalogCategories().map(title => ({
+            id: title,
+            title,
+            count: this.catalogCategoryCounts().get(title) ?? 0,
+        }))
     );
     readonly categorySidebarWidth = computed(() =>
         catalogCategoryWidth(this.catalogCategories().map((category) =>

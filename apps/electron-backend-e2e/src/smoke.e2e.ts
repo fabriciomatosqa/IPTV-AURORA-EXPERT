@@ -943,6 +943,7 @@ test.describe('Electron App Smoke Test', () => {
     test('filters categories, searches, toggles favorites and browses movie and series posters at desktop sizes', async () => {
         const liveCategories = mainWindow.locator('[data-test-id="m3u-category-sidebar"]');
         await expect(liveCategories).toBeVisible();
+        await liveCategories.locator('[data-root-key="tv"]').click();
         await liveCategories.locator('[data-category-id="TV | Notícias"]').click();
         await expect(
             mainWindow.locator('[data-test-id="channel-item"]')
@@ -994,12 +995,12 @@ test.describe('Electron App Smoke Test', () => {
                     '[data-test-id="m3u-category-sidebar"]'
                 );
                 await expect(m3uCategories).toBeVisible();
-                await m3uCategories.locator('.library-category-list button').first().click();
+                await m3uCategories.locator('.aurora-category-row').first().click();
                 await expect(m3uCategories).toBeVisible();
                 await expect(
                     mainWindow.locator('.poster-grid [data-test-id="channel-item"]')
                 ).not.toHaveCount(12);
-                await m3uCategories.locator('.library-all-categories').click();
+                await m3uCategories.locator('.aurora-all-categories').click();
                 await expect(
                     mainWindow.locator('.poster-grid [data-test-id="channel-item"]')
                 ).toHaveCount(12);
@@ -1147,16 +1148,16 @@ test.describe('Electron App Smoke Test', () => {
             '[data-test-id="vod-category-sidebar"]'
         );
         await expect(movieSidebar).toBeVisible();
-        await expect(movieSidebar.locator('.category-item')).toHaveCount(1);
-        await expect(movieSidebar.locator('.vod-all-categories')).toHaveAttribute(
+        await expect(movieSidebar.locator('.aurora-category-row')).toHaveCount(1);
+        await expect(movieSidebar.locator('.aurora-all-categories')).toHaveAttribute(
             'aria-pressed', 'true'
         );
-        await movieSidebar.locator('.category-item').first().click();
-        await expect(movieSidebar.locator('.category-item.selected')).toBeVisible();
+        await movieSidebar.locator('.aurora-category-row').first().click();
+        await expect(movieSidebar.locator('.aurora-category-row.active')).toBeVisible();
         await expect(mainWindow.locator('app-grid-list mat-card')).toHaveCount(12);
         // The categories column stays mounted when switching back to All.
-        await movieSidebar.locator('.vod-all-categories').click();
-        await expect(movieSidebar.locator('.vod-all-categories')).toHaveAttribute(
+        await movieSidebar.locator('.aurora-all-categories').click();
+        await expect(movieSidebar.locator('.aurora-all-categories')).toHaveAttribute(
             'aria-pressed', 'true'
         );
         await expect(mainWindow.locator('app-grid-list mat-card')).toHaveCount(12);
@@ -1242,13 +1243,13 @@ test.describe('Electron App Smoke Test', () => {
             '[data-test-id="vod-category-sidebar"]'
         );
         await expect(seriesSidebar).toBeVisible();
-        await expect(seriesSidebar.locator('.category-item')).toHaveCount(1);
+        await expect(seriesSidebar.locator('.aurora-category-row')).toHaveCount(1);
         // Clicking a series category must not replace the category column.
-        await seriesSidebar.locator('.category-item').first().click();
-        await expect(seriesSidebar.locator('.category-item.selected')).toBeVisible();
+        await seriesSidebar.locator('.aurora-category-row').first().click();
+        await expect(seriesSidebar.locator('.aurora-category-row.active')).toBeVisible();
         await expect(mainWindow.locator('app-grid-list mat-card')).toHaveCount(12);
         await expect(seriesSidebar).toBeVisible();
-        await seriesSidebar.locator('.vod-all-categories').click();
+        await seriesSidebar.locator('.aurora-all-categories').click();
         // Switching between movie and series tabs must not reuse the old
         // category ID or stale card data.
         await expect(mainWindow.locator('app-grid-list mat-card')).toHaveCount(12);
@@ -1299,23 +1300,29 @@ test.describe('Electron App Smoke Test', () => {
             12
         );
 
-        // Live categories and channels must stay mounted side by side.
+        // The same shared navigator must expose category and subcategory
+        // side by side before the channel list (including Xtream imports).
         await mainWindow.locator('app-navigation')
             .getByRole('button', { name: 'TV ao vivo', exact: true }).click();
-        await expect(mainWindow.locator('.category-sidebar app-category-view')).toBeVisible();
+        const canonicalNav = mainWindow.locator('[data-test-id="xtream-live-categories"]');
+        await expect(canonicalNav.locator('.aurora-category-column')).toBeVisible();
+        await expect(canonicalNav.locator('.aurora-subcategory-column')).toBeVisible();
         await expect(mainWindow.locator('.channels-sidebar')).toBeVisible();
-        await mainWindow.locator('.category-sidebar .category-item').first().click();
+        await canonicalNav.locator('.aurora-category-column .aurora-category-row').first().click();
+        await canonicalNav.locator('.aurora-subcategory-column .aurora-category-row').first().click();
         await expect(mainWindow.locator('.channels-sidebar app-portal-channels-list'))
             .toBeVisible();
-        const categoriesBounds = await mainWindow.locator('.category-sidebar').boundingBox();
+        const categoriesBounds = await canonicalNav.locator('.aurora-category-column').boundingBox();
+        const subcategoriesBounds = await canonicalNav.locator('.aurora-subcategory-column').boundingBox();
         const channelsBounds = await mainWindow.locator('.channels-sidebar').boundingBox();
         expect(categoriesBounds!.x + categoriesBounds!.width).toBeLessThanOrEqual(
+            subcategoriesBounds!.x + 2
+        );
+        expect(subcategoriesBounds!.x + subcategoriesBounds!.width).toBeLessThanOrEqual(
             channelsBounds!.x + 2
         );
-        await expect(mainWindow.locator('.category-sidebar .category-item').first())
-            .toBeVisible();
         await mainWindow.screenshot({
-            path: join(screenshotDir, 'aurora-live-three-columns.png')
+            path: join(screenshotDir, 'aurora-live-category-subcategory-channels.png')
         });
     });
 

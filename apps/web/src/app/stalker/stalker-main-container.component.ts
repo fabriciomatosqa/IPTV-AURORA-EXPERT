@@ -1,3 +1,4 @@
+import { AuroraCatalogNavigationComponent } from '../shared/components/aurora-catalog-navigation/aurora-catalog-navigation.component';
 import { catalogCategoryWidth } from '../shared/utils/catalog-column-width';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { MatIconButton } from '@angular/material/button';
@@ -21,6 +22,7 @@ import { StalkerStore } from './stalker.store';
     ],
     imports: [
         CategoryViewComponent,
+        AuroraCatalogNavigationComponent,
         MatIcon,
         MatIconButton,
         MatPaginatorModule,
@@ -58,6 +60,12 @@ export class StalkerMainContainerComponent {
             item.category_name?.toLocaleLowerCase().includes(query)
         ) : items;
     });
+    readonly auroraCategories = computed(() =>
+        (this.categories() ?? []).map(category => ({
+            id: String(category.category_id),
+            title: category.category_name || 'Sem categoria',
+        }))
+    );
     readonly categoryColumnWidth = computed(() =>
         catalogCategoryWidth((this.categories() ?? []).map(
             item => item.category_name || ''
@@ -75,6 +83,15 @@ export class StalkerMainContainerComponent {
         effect(() => {
             this.stalkerStore.selectedContentType();
         });
+    }
+
+    selectAuroraCategory(id: string): void {
+        if (!id) {
+            this.selectAllCategories();
+            return;
+        }
+        const category = this.categories()?.find(item => String(item.category_id) === id);
+        if (category) this.categoryClicked(category);
     }
 
     categoryClicked(item: { category_name: string; category_id: string }) {

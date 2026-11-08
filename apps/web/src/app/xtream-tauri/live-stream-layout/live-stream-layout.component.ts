@@ -1,3 +1,4 @@
+import { AuroraCatalogNavigationComponent } from '../../shared/components/aurora-catalog-navigation/aurora-catalog-navigation.component';
 import { catalogCategoryWidth } from '../../shared/utils/catalog-column-width';
 import {
     ChangeDetectionStrategy,
@@ -48,6 +49,7 @@ const LIVE_CHANNEL_SORT_STORAGE_KEY = 'xtream-live-channel-sort-mode';
     styleUrls: ['./live-stream-layout.component.scss', '../sidebar.scss'],
     imports: [
         CategoryViewComponent,
+        AuroraCatalogNavigationComponent,
         EpgViewComponent,
         FormsModule,
         MatFormFieldModule,
@@ -88,6 +90,17 @@ export class LiveStreamLayoutComponent implements OnInit, OnDestroy {
         });
     });
     readonly categoryItemCounts = this.xtreamStore.getCategoryItemCounts;
+    readonly auroraCategories = computed(() =>
+        (this.categories() ?? []).map((category: any) => {
+            const id = String(category.category_id ?? category.id);
+            const countId = Number(category.id ?? category.category_id);
+            return {
+                id,
+                title: String(category.category_name ?? category.name ?? 'Sem categoria'),
+                count: this.categoryItemCounts()?.get(countId) ?? 0,
+            };
+        })
+    );
     readonly categoryColumnWidth = computed(() =>
         catalogCategoryWidth((this.categories() ?? []).map((category: any) => {
             const id = Number(category.id ?? category.category_id);
@@ -237,6 +250,13 @@ export class LiveStreamLayoutComponent implements OnInit, OnDestroy {
             return;
         }
         this.xtreamStore.openPlayer(streamUrl, item.title, item.poster_url);
+    }
+
+    selectAuroraCategory(id: string): void {
+        const category = this.categories().find((item: any) =>
+            String(item.category_id ?? item.id) === id
+        );
+        if (category) this.selectCategory(category);
     }
 
     selectCategory(category: XtreamCategory) {

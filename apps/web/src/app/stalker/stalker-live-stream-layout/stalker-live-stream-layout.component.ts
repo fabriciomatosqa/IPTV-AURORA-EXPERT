@@ -1,3 +1,4 @@
+import { AuroraCatalogNavigationComponent } from '../../shared/components/aurora-catalog-navigation/aurora-catalog-navigation.component';
 import { catalogCategoryWidth } from '../../shared/utils/catalog-column-width';
 import { isAdultContentLabel, moveAdultContentToEnd } from '../../shared/utils/adult-content-order';
 import {
@@ -56,6 +57,7 @@ import {
     ],
     imports: [
         CategoryViewComponent,
+        AuroraCatalogNavigationComponent,
         DatePipe,
         EpgViewComponent,
         FormsModule,
@@ -93,6 +95,12 @@ export class StalkerLiveStreamLayoutComponent implements OnDestroy {
             category.category_name?.toLocaleLowerCase().includes(query)
         ) : items;
     });
+    readonly auroraCategories = computed(() =>
+        (this.categories() ?? []).map(category => ({
+            id: String(category.category_id),
+            title: category.category_name || 'Sem categoria',
+        }))
+    );
     readonly categoryColumnWidth = computed(() =>
         catalogCategoryWidth((this.categories() ?? []).map(category => category.category_name || ''))
     );
@@ -262,6 +270,11 @@ export class StalkerLiveStreamLayoutComponent implements OnDestroy {
         if (this.searchDebounceTimer) {
             clearTimeout(this.searchDebounceTimer);
         }
+    }
+
+    selectAuroraCategory(id: string): void {
+        const category = this.categories()?.find(item => String(item.category_id) === id);
+        if (category) this.selectCategory(category);
     }
 
     selectCategory(item: StalkerCategoryItem) {

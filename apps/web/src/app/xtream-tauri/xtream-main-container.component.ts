@@ -1,3 +1,4 @@
+import { AuroraCatalogNavigationComponent } from '../shared/components/aurora-catalog-navigation/aurora-catalog-navigation.component';
 import { catalogCategoryWidth } from '../shared/utils/catalog-column-width';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -34,6 +35,7 @@ const XTREAM_CATEGORY_SORT_STORAGE_KEY = 'xtream-category-sort-mode';
         MatMenuModule,
         MatTooltipModule,
         CategoryViewComponent,
+        AuroraCatalogNavigationComponent,
         RouterOutlet,
         TranslateModule,
     ],
@@ -47,6 +49,17 @@ export class XtreamMainContainerComponent implements OnInit {
 
     readonly categories = this.xtreamStore.getCategoriesBySelectedType;
     readonly categoryItemCounts = this.xtreamStore.getCategoryItemCounts;
+    readonly auroraCategories = computed(() =>
+        (this.categories() ?? []).map((category: any) => {
+            const id = String(category.category_id ?? category.id);
+            const countId = Number(category.id ?? category.category_id);
+            return {
+                id,
+                title: String(category.category_name ?? category.name ?? 'Sem categoria'),
+                count: this.categoryItemCounts()?.get(countId) ?? 0,
+            };
+        })
+    );
     readonly categoryColumnWidth = computed(() =>
         catalogCategoryWidth((this.categories() ?? []).map((category: any) => {
             const label = String(category.category_name ?? category.name ?? '');
