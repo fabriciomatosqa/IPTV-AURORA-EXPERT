@@ -586,7 +586,7 @@ test.describe('Electron App Smoke Test', () => {
         expect(nativeWindow?.maximizable).toBe(true);
         expect(nativeWindow?.width).toBe(360);
         expect(nativeWindow?.height).toBe(240);
-        await pipPage.getByTestId('pip-always-on-top').click();
+        await pipPage.locator('[data-test-id="pip-always-on-top"]').click();
         const isAlwaysOnTop = await electronApp.evaluate(({ BrowserWindow }) =>
             BrowserWindow.getAllWindows().some(
                 (win) =>
@@ -595,7 +595,7 @@ test.describe('Electron App Smoke Test', () => {
             )
         );
         expect(isAlwaysOnTop).toBe(true);
-        await pipPage.getByTestId('pip-return').click();
+        await pipPage.locator('[data-test-id="pip-return"]').click();
         const dialog = mainWindow.locator('.aurora-player-dialog');
         await expect(dialog).toBeVisible({ timeout: 20000 });
         const dialogSize = await dialog.boundingBox();
