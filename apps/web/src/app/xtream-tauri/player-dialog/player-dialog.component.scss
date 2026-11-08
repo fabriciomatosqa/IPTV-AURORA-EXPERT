@@ -93,20 +93,6 @@
     max-height: 100% !important;
 }
 
-.aurora-player-dialog .aurora-player-actions {
-    box-sizing: border-box;
-    display: flex;
-    flex: 0 0 48px;
-    align-items: center;
-    justify-content: space-between;
-    min-height: 48px;
-    max-height: 48px;
-    padding: 0 16px !important;
-    margin: 0 !important;
-    border-top: 1px solid rgba(255, 255, 255, 0.09);
-    background: #171a21;
-}
-
 @media (max-width: 600px) {
     .aurora-player-heading {
         padding-inline: 8px !important;
@@ -116,8 +102,5 @@
     }
     .aurora-player-heading-actions {
         gap: 0;
-    }
-    .aurora-player-dialog .aurora-player-actions {
-        padding-inline: 6px !important;
     }
 }
