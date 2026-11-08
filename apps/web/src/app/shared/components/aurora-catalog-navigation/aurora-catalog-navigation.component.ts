@@ -14,6 +14,8 @@ import { AuroraCategoryOption, buildAuroraLiveGroups } from './aurora-category-m
 })
 export class AuroraCatalogNavigationComponent {
     readonly mode = input<'live' | 'library'>('library');
+    /** Only playlists with a real root (M3U groups) show subcategories. */
+    readonly hasSubcategories = input(false);
     readonly categories = input<readonly AuroraCategoryOption[]>([]);
     readonly selectedId = input<string | number | null | undefined>(null);
     readonly loading = input(false);
@@ -66,7 +68,7 @@ export class AuroraCatalogNavigationComponent {
             : group.children;
     });
     readonly firstColumnWidth = computed(() => catalogCategoryWidth(
-        this.mode() === 'live'
+        this.mode() === 'live' && this.hasSubcategories()
             ? this.groups().map(group => group.title + ' (' + (group.count ?? '') + ')')
             : this.categories().map(cat => cat.title + ' (' + (cat.count ?? '') + ')'),
         84
@@ -91,10 +93,8 @@ export class AuroraCatalogNavigationComponent {
         const group = this.groups().find(group => group.key === key);
         if (!group) return;
         this.rootOverride.set(key);
-        // Selecting the parent picks its first real provider subcategory.
-        // There is no synthesized category ID that remote APIs could reject.
-        const child = group.children[0];
-        if (child) this.categorySelected.emit(child.id);
+        // Root means all channels, not the first M3U subcategory.
+        this.categorySelected.emit('');
     }
 
     chooseChild(id: string): void {

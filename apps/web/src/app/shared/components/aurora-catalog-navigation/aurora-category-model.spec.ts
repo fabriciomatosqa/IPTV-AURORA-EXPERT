@@ -1,40 +1,41 @@
-import { buildAuroraLiveGroups, categoryGroupParts } from './aurora-category-model';
+import { buildAuroraLiveGroups } from './aurora-category-model';
 
-describe('canonical Aurora live category hierarchy', () => {
-    it('separates the provider category and subcategory without altering IDs', () => {
+describe('canonical IPTV live navigation', () => {
+    it('puts real M3U group titles under a single Canais root', () => {
         const groups = buildAuroraLiveGroups([
-            { id: '4', title: 'GLOBO | CAPITAIS', count: 89 },
-            { id: '5', title: 'GLOBO | REGIONAIS', count: 287 },
-            { id: '7', title: 'ESPN', count: 30 },
+            { id: 'Variedades', title: 'Variedades', count: 121 },
+            { id: 'ESPN', title: 'ESPN', count: 30 },
+            { id: 'Globo Regionais', title: 'Globo Regionais', count: 287 },
         ]);
-        expect(groups.map(group => group.title)).toEqual(['GLOBO', 'ESPN']);
-        expect(groups[0].children.map(child => [child.id, child.subtitle]))
-            .toEqual([['4', 'CAPITAIS'], ['5', 'REGIONAIS']]);
-        expect(groups[0].count).toBe(376);
-        expect(groups[1].children[0].subtitle).toBe('Todos');
+        expect(groups.map(group => group.title)).toEqual(['Canais']);
+        expect(groups[0].count).toBe(438);
+        expect(groups[0].children.map(child => [child.id, child.subtitle])).toEqual([
+            ['Variedades', 'Variedades'],
+            ['ESPN', 'ESPN'],
+            ['Globo Regionais', 'Globo Regionais'],
+        ]);
     });
-    it('keeps duplicate names with different provider IDs selectable', () => {
+
+    it('never splits a category title, including provider separators', () => {
         const groups = buildAuroraLiveGroups([
-            { id: 'one', title: 'Canais | Esportes' },
-            { id: 'two', title: 'Canais | Esportes' },
+            { id: '4', title: 'GLOBO | CAPITAIS' },
+            { id: '5', title: 'GLOBO | REGIONAIS' },
         ]);
-        expect(groups[0].children.map(c => c.id)).toEqual(['one', 'two']);
+        expect(groups[0].children.map(child => [child.id, child.subtitle])).toEqual([
+            ['4', 'GLOBO | CAPITAIS'],
+            ['5', 'GLOBO | REGIONAIS'],
+        ]);
     });
-    it('puts adult categories at the end without hiding them', () => {
+
+    it('moves adult groups last while preserving all original IDs', () => {
         const groups = buildAuroraLiveGroups([
-            { id: 'a', title: 'Adultos | Onlyfans' },
-            { id: 'b', title: 'Filmes | Infantis' },
-            { id: 'c', title: 'Filmes | Adultos +18' },
+            { id: 'adult1', title: 'ADULTOS +18' },
+            { id: 'safe', title: 'Infantis' },
         ]);
-        expect(groups.map(x => x.title)).toEqual(['Filmes', 'Adultos']);
-        expect(groups[0].children.map(x => x.subtitle)).toEqual(['Infantis','Adultos +18']);
+        expect(groups[0].children.map(child => child.id)).toEqual(['safe', 'adult1']);
     });
-    it('does not invent a hierarchy based on arbitrary punctuation', () => {
-        expect(categoryGroupParts('AÇÃO - AVENTURA')).toEqual({
-            parent: 'AÇÃO - AVENTURA', child: 'Todos'
-        });
-        expect(categoryGroupParts('SPORTS / FHD')).toEqual({
-            parent: 'SPORTS / FHD', child: 'Todos'
-        });
+
+    it('returns no artificial category when a playlist contains no channels', () => {
+        expect(buildAuroraLiveGroups([])).toEqual([]);
     });
 });

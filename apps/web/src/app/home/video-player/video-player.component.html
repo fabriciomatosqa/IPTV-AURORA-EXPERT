@@ -120,6 +120,7 @@
                         <app-aurora-catalog-navigation
                             data-test-id="m3u-category-sidebar"
                             [mode]="catalogSection() === 'live' ? 'live' : 'library'"
+                            [hasSubcategories]="catalogSection() === 'live'"
                             [categories]="auroraCategoryOptions()"
                             [selectedId]="catalogCategory()"
                             (categorySelected)="selectCatalogCategory($event)">
