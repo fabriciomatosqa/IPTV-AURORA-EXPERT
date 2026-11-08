@@ -1,78 +1,110 @@
 <div
-    class="main-content"
+    class="catalog-layout"
     [class.details-open]="
         !!xtreamStore.selectedItem() || xtreamStore.isLoadingDetails()
     "
 >
     @if (!xtreamStore.selectedItem() && !xtreamStore.isLoadingDetails()) {
-        <div class="content-header">
-            <div class="header-left">
-                <label class="category-heading" for="xtream-category"
-                    >Categorias <mat-icon>expand_circle_down</mat-icon></label
+        <aside
+            class="vod-category-sidebar"
+            data-test-id="vod-category-sidebar"
+            aria-label="Categorias de filmes e séries"
+        >
+            <div class="vod-sidebar-header">
+                <h2>Categorias</h2>
+                <button
+                    mat-icon-button
+                    type="button"
+                    aria-label="Gerenciar categorias"
+                    [matTooltip]="'Gerenciar categorias'"
+                    (click)="openCategoryManagement()"
                 >
-                <select
-                    id="xtream-category"
-                    aria-label="Selecionar categoria"
-                    [value]="selectedCategoryId() ?? ''"
-                    (change)="selectCategoryById($any($event.target).value)"
-                >
-                    <option value="">Todas</option>
-                    @for (
-                        category of categories();
-                        track $any(category).category_id ?? category.id
-                    ) {
-                        <option
-                            [value]="$any(category).category_id ?? category.id"
-                        >
-                            {{ $any(category).category_name ?? category.name }}
-                        </option>
-                    }
-                </select>
+                    <mat-icon>tune</mat-icon>
+                </button>
             </div>
-            @if (canShowFilterButton()) {
-                <div class="header-actions">
-                    @if (isCategorySearchOpen()) {
-                        <mat-form-field
-                            class="category-search"
-                            appearance="outline"
-                            subscriptSizing="dynamic"
-                        >
-                            <mat-icon matPrefix>search</mat-icon>
-                            <input
-                                matInput
-                                type="search"
-                                spellcheck="false"
-                                [ngModel]="categorySearchTerm()"
-                                (ngModelChange)="onCategorySearchChange($event)"
-                                placeholder="Pesquisar"
-                                aria-label="Pesquisar no catálogo"
-                            />
-                            @if (categorySearchTerm()) {
-                                <button
-                                    mat-icon-button
-                                    matSuffix
-                                    aria-label="Clear search"
-                                    (click)="clearCategorySearch()"
-                                >
-                                    <mat-icon>close</mat-icon>
-                                </button>
-                            }
-                        </mat-form-field>
-                    }
+            <label class="vod-sidebar-search">
+                <mat-icon>search</mat-icon>
+                <input
+                    type="search"
+                    aria-label="Pesquisar categorias de filmes e séries"
+                    placeholder="Pesquisar categorias"
+                    [value]="sidebarSearch()"
+                    (input)="sidebarSearch.set($any($event.target).value)"
+                />
+                @if (sidebarSearch()) {
                     <button
-                        mat-icon-button
-                        (click)="openCategoryManagement()"
-                        aria-label="Gerenciar categorias"
+                        type="button"
+                        aria-label="Limpar busca de categorias"
+                        (click)="sidebarSearch.set('')"
                     >
-                        <mat-icon>tune</mat-icon>
+                        <mat-icon>close</mat-icon>
                     </button>
-                    @if (canShowSortMenu()) {
+                }
+            </label>
+            <button
+                class="vod-all-categories"
+                type="button"
+                [class.selected]="selectedCategoryId() == null"
+                [attr.aria-pressed]="selectedCategoryId() == null"
+                (click)="selectCategoryById('')"
+            >
+                <mat-icon>apps</mat-icon>
+                <span>Todas</span>
+            </button>
+            <app-category-view
+                [items]="filteredSidebarCategories()"
+                [selectedCategoryId]="selectedCategoryId()"
+                [itemCounts]="categoryItemCounts()"
+                [showCounts]="true"
+                (categoryClicked)="categoryClicked($event)"
+            />
+        </aside>
+    }
+    <div
+        class="main-content"
+        [class.details-open]="
+            !!xtreamStore.selectedItem() || xtreamStore.isLoadingDetails()
+        "
+    >
+        @if (!xtreamStore.selectedItem() && !xtreamStore.isLoadingDetails()) {
+            <div class="content-header">
+                <h2 class="catalog-heading">{{ selectedCatalogHeading() }}</h2>
+                @if (canShowFilterButton()) {
+                    <div class="header-actions">
+                        @if (isCategorySearchOpen()) {
+                            <mat-form-field
+                                class="category-search"
+                                appearance="outline"
+                                subscriptSizing="dynamic"
+                            >
+                                <mat-icon matPrefix>search</mat-icon>
+                                <input
+                                    matInput
+                                    type="search"
+                                    spellcheck="false"
+                                    [ngModel]="categorySearchTerm()"
+                                    (ngModelChange)="onCategorySearchChange($event)"
+                                    placeholder="Pesquisar títulos"
+                                    aria-label="Pesquisar no catálogo"
+                                />
+                                @if (categorySearchTerm()) {
+                                    <button
+                                        mat-icon-button
+                                        matSuffix
+                                        aria-label="Limpar pesquisa de títulos"
+                                        (click)="clearCategorySearch()"
+                                    >
+                                        <mat-icon>close</mat-icon>
+                                    </button>
+                                }
+                            </mat-form-field>
+                        }
                         <mat-menu #xtreamSortMenu="matMenu">
                             <button
                                 mat-menu-item
                                 (click)="setContentSortMode('date-desc')"
                             >
-                                <span>Date Added (Latest First)</span>
+                                <span>Adicionados recentemente</span>
                                 @if (contentSortMode() === 'date-desc') {
                                     <mat-icon>check</mat-icon>
                                 }
@@ -81,7 +113,7 @@
                                 mat-menu-item
                                 (click)="setContentSortMode('date-asc')"
                             >
-                                <span>Date Added (Oldest First)</span>
+                                <span>Mais antigos primeiro</span>
                                 @if (contentSortMode() === 'date-asc') {
                                     <mat-icon>check</mat-icon>
                                 }
@@ -90,7 +122,7 @@
                                 mat-menu-item
                                 (click)="setContentSortMode('name-asc')"
                             >
-                                <span>Name A-Z</span>
+                                <span>Nome A–Z</span>
                                 @if (contentSortMode() === 'name-asc') {
                                     <mat-icon>check</mat-icon>
                                 }
@@ -99,7 +131,7 @@
                                 mat-menu-item
                                 (click)="setContentSortMode('name-desc')"
                             >
-                                <span>Name Z-A</span>
+                                <span>Nome Z–A</span>
                                 @if (contentSortMode() === 'name-desc') {
                                     <mat-icon>check</mat-icon>
                                 }
@@ -108,23 +140,22 @@
                         <button
                             mat-icon-button
                             [matMenuTriggerFor]="xtreamSortMenu"
-                            [matTooltip]="'Sort: ' + contentSortLabel()"
-                            aria-label="Sort content"
+                            [matTooltip]="'Ordenar: ' + contentSortLabel()"
+                            aria-label="Ordenar títulos"
                         >
                             <mat-icon>sort</mat-icon>
                         </button>
-                    }
-                </div>
-            }
+                    </div>
+                }
+            </div>
+        }
+        <div
+            class="scrollable-content"
+            [class.no-header]="
+                xtreamStore.selectedItem() || xtreamStore.isLoadingDetails()
+            "
+        >
+            <router-outlet />
         </div>
-    }
-    <div
-        class="scrollable-content"
-        [class.no-header]="
-            xtreamStore.selectedItem() || xtreamStore.isLoadingDetails()
-        "
-    >
-        <router-outlet />
     </div>
-    <!-- <app-mpv-player-bar /> -->
 </div>
