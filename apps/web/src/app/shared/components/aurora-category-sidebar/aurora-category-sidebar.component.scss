@@ -1,0 +1,120 @@
+:host {
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 clamp(190px, 20vw, 280px);
+    width: clamp(190px, 20vw, 280px);
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    box-sizing: border-box;
+    border-right: 1px solid rgba(255, 255, 255, .1);
+    background: #121317;
+    color: #e4e9ee;
+    font: 13px/1.4 'Segoe UI', sans-serif;
+}
+.aurora-sidebar-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex: 0 0 60px;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 10px 10px 4px 15px;
+    h2 { margin: 0; font: 600 18px/1.35 'Segoe UI', sans-serif; }
+}
+.aurora-sidebar-manage {
+    flex: 0 0 auto;
+    border: 0;
+    background: transparent;
+    color: #aebac7;
+    cursor: pointer;
+    border-radius: 8px;
+    padding: 5px;
+    &:hover { background: rgba(255, 255, 255, .08); }
+}
+.aurora-sidebar-search {
+    display: flex;
+    flex: 0 0 37px;
+    align-items: center;
+    gap: 7px;
+    margin: 0 10px 9px;
+    padding: 5px 8px;
+    box-sizing: border-box;
+    border-radius: 8px;
+    min-width: 0;
+    background: #1e252d;
+    color: #aebac7;
+    mat-icon { width: 19px; height: 19px; flex-shrink: 0; font-size: 19px; }
+    input {
+        min-width: 0;
+        width: 100%;
+        flex: 1;
+        border: 0;
+        outline: 0;
+        color: #e4e9ee;
+        background: transparent;
+        font: 12px 'Segoe UI', sans-serif;
+    }
+    button {
+        display: grid;
+        place-items: center;
+        padding: 0;
+        border: 0;
+        cursor: pointer;
+        background: transparent;
+        color: #aebac7;
+    }
+}
+.aurora-sidebar-list {
+    min-height: 0;
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    padding: 0 8px 12px;
+}
+.aurora-sidebar-list button {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    min-height: 43px;
+    border: 0;
+    border-radius: 11px;
+    text-align: left;
+    background: transparent;
+    color: #d9e2eb;
+    font: 14px 'Segoe UI', sans-serif;
+    cursor: pointer;
+    &:hover { background: rgba(255,255,255,.07); }
+    &.selected { background: rgba(115,224,198,.12); color: #79e5d0; }
+    &:focus-visible { outline: 2px solid #73e0c6; outline-offset: -2px; }
+    mat-icon {
+        flex: 0 0 17px;
+        width: 17px;
+        height: 17px;
+        font-size: 17px;
+        color: #fa3986;
+    }
+    &.aurora-category-all mat-icon { color: #73e0c6; }
+    .aurora-category-name {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        flex: 1;
+    }
+    small { flex-shrink: 0; color: #929ca8; font-size: 12px; }
+}
+.aurora-sidebar-empty { color: #98a9b9; padding: 8px 12px; }
+@media (max-width: 1100px) {
+    :host { flex-basis: 195px; width: 195px; }
+}
+@media (max-width: 680px) {
+    :host { flex-basis: 154px; width: 154px; }
+    .aurora-sidebar-heading h2 { font-size: 16px; }
+    .aurora-sidebar-list button { font-size: 12px; gap: 6px; padding: 8px 6px; }
+    .aurora-sidebar-list { padding: 0 5px 10px; }
+    .aurora-sidebar-search { margin-inline: 6px; }
+}

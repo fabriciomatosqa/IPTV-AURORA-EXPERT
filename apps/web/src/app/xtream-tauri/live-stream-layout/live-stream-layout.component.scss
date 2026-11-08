@@ -124,3 +124,16 @@
     .channels-sidebar { width: 245px; min-width: 210px; }
     .category-title { font-size: 13px; }
 }
+
+/* The same Aurora list/search/selection is used by movies and series. */
+.category-sidebar .live-category-widget {
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    flex: 1 1 auto;
+    border-right: 0;
+}
+.category-sidebar {
+    gap: 0;
+}

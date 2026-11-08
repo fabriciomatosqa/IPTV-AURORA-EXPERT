@@ -600,3 +600,76 @@
         transform: scale(1);
     }
 }
+
+/* All imported M3U movie/series playlists use the exact same two-column
+ * structure and Aurora category component as Xtream catalogs. */
+.library-catalog.catalog-with-categories {
+    display: grid;
+    grid-template-columns: clamp(190px, 20vw, 280px) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    column-gap: 0;
+    min-height: 0;
+    padding: 0;
+}
+.catalog-with-categories .library-header {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+    margin: 0;
+    padding: 24px 20px 22px;
+    background: #12151b;
+}
+.catalog-with-categories .library-body { display: contents; }
+.catalog-with-categories .library-category-sidebar {
+    grid-column: 1;
+    grid-row: 1 / 3;
+    display: flex;
+    flex: initial;
+    align-self: stretch;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    min-width: 0;
+    padding: 0;
+    margin: 0;
+    border-radius: 0;
+    border-right: 1px solid rgba(255,255,255,.1);
+    background: #121317;
+}
+.catalog-with-categories .library-scroll {
+    grid-column: 2;
+    grid-row: 2;
+    min-width: 0;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 16px;
+    margin: 0 20px;
+    border-radius: 16px 16px 0 0;
+    background: #1b2028;
+}
+.library-sort-action {
+    border: 0;
+    border-radius: 10px;
+    color: #dbe8f2;
+    background: transparent;
+    padding: 8px;
+    cursor: pointer;
+}
+.library-sort-action[aria-pressed='true'] {
+    color: #73e0c6;
+    background: rgba(115,224,198,.12);
+}
+@media (max-width: 1100px) {
+    .library-catalog.catalog-with-categories {
+        grid-template-columns: 195px minmax(0,1fr);
+    }
+    .catalog-with-categories .library-header { padding: 18px 12px 18px; }
+    .catalog-with-categories .library-scroll { margin: 0 12px; }
+}
+@media (max-width: 680px) {
+    .library-catalog.catalog-with-categories {
+        grid-template-columns: 154px minmax(0,1fr);
+    }
+    .catalog-with-categories .library-header { padding: 12px 8px; }
+    .catalog-with-categories .library-scroll { margin: 0 8px; padding: 8px; }
+}

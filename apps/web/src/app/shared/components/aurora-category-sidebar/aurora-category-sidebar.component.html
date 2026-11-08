@@ -1,0 +1,47 @@
+<div class="aurora-sidebar-heading">
+    <h2>{{ heading() }}</h2>
+    @if (showManage()) {
+        <button type="button" class="aurora-sidebar-manage"
+            aria-label="Gerenciar categorias" title="Gerenciar categorias"
+            (click)="manageClicked.emit()">
+            <mat-icon>tune</mat-icon>
+        </button>
+    }
+</div>
+<label class="aurora-sidebar-search">
+    <mat-icon aria-hidden="true">search</mat-icon>
+    <input type="search" aria-label="Pesquisar categorias"
+        placeholder="Pesquisar categorias"
+        [value]="search()" (input)="search.set($any($event.target).value)" />
+    @if (search()) {
+        <button type="button" aria-label="Limpar busca de categorias"
+            (click)="clearSearch()">
+            <mat-icon>close</mat-icon>
+        </button>
+    }
+</label>
+<div class="aurora-sidebar-list" role="group" aria-label="Categorias">
+    <button type="button" class="aurora-category-all"
+        [class.selected]="selectedId() == null"
+        [attr.aria-pressed]="selectedId() == null"
+        (click)="select(null)">
+        <mat-icon aria-hidden="true">apps</mat-icon>
+        <span>Todas</span>
+    </button>
+    @for (category of filtered(); track category.id) {
+        <button type="button" class="aurora-category-item category-item"
+            [class.selected]="selectedId() === category.id"
+            [attr.aria-pressed]="selectedId() === category.id"
+            [attr.data-category-id]="category.id"
+            [title]="category.name"
+            (click)="select(category.id)">
+            <mat-icon aria-hidden="true">diamond</mat-icon>
+            <span class="aurora-category-name">{{ category.name }}</span>
+            @if (category.count !== undefined) {
+                <small>({{ category.count }})</small>
+            }
+        </button>
+    } @empty {
+        <p class="aurora-sidebar-empty">Nenhuma categoria encontrada.</p>
+    }
+</div>

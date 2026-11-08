@@ -9,34 +9,14 @@
             [currentTitle]="currentPlaylist()?.name || currentPlaylist()?.title || 'Playlist'"
             [subtitle]="'Xtream Code'"
         />
-        <button mat-icon-button type="button"
-            (click)="toggleCategorySearch()"
-            [matTooltip]="'Pesquisar categorias'"
-            aria-label="Pesquisar categorias">
-            <mat-icon>search</mat-icon>
-        </button>
-        <button mat-icon-button type="button"
-            (click)="openCategoryManagement()"
-            [matTooltip]="'XTREAM.CATEGORY_MANAGEMENT.TITLE' | translate"
-            aria-label="Gerenciar categorias">
-            <mat-icon>tune</mat-icon>
-        </button>
     </div>
-    @if (showCategorySearch()) {
-        <mat-form-field class="category-search" appearance="outline" subscriptSizing="dynamic">
-            <mat-icon matPrefix>search</mat-icon>
-            <input matInput type="search" spellcheck="false"
-                [ngModel]="categorySearchTerm()"
-                (ngModelChange)="onCategorySearchChange($event)"
-                placeholder="Pesquisar categorias" />
-        </mat-form-field>
-    }
-    <app-category-view
-        [items]="filteredCategories()"
-        [itemCounts]="categoryItemCounts()"
-        [selectedCategoryId]="selectedCategoryId()"
-        (categoryClicked)="selectCategory($event)"
-        [showCounts]="true"
+    <app-aurora-category-sidebar
+        class="live-category-widget"
+        [categories]="unifiedCategories()"
+        [selectedId]="selectedSidebarId()"
+        [showManage]="true"
+        (categorySelected)="selectCategoryById($event)"
+        (manageClicked)="openCategoryManagement()"
     />
 </div>
 

@@ -31,9 +31,7 @@ import {
     CategoryManagementDialogComponent,
     CategoryManagementDialogData,
 } from '../category-management-dialog/category-management-dialog.component';
-import {
-    CategoryViewComponent,
-} from '../category-view/category-view.component';
+import { AuroraCategorySidebarComponent } from '../../shared/components/aurora-category-sidebar/aurora-category-sidebar.component';
 import { PortalChannelsListComponent } from '../portal-channels-list/portal-channels-list.component';
 import { FavoritesService } from '../services/favorites.service';
 import { XtreamStore } from '../stores/xtream.store';
@@ -46,7 +44,7 @@ const LIVE_CHANNEL_SORT_STORAGE_KEY = 'xtream-live-channel-sort-mode';
     templateUrl: './live-stream-layout.component.html',
     styleUrls: ['./live-stream-layout.component.scss', '../sidebar.scss'],
     imports: [
-        CategoryViewComponent,
+        AuroraCategorySidebarComponent,
         EpgViewComponent,
         FormsModule,
         MatFormFieldModule,
@@ -88,6 +86,20 @@ export class LiveStreamLayoutComponent implements OnInit, OnDestroy {
         });
     });
     readonly categoryItemCounts = this.xtreamStore.getCategoryItemCounts;
+    readonly unifiedCategories = computed(() => {
+        const counts = this.categoryItemCounts();
+        return this.categories().map((category) => {
+            const raw = category as any;
+            return {
+                id: String(raw.category_id ?? category.id),
+                name: String(raw.category_name ?? raw.name ?? 'Sem nome'),
+                count: counts.get(Number(category.id ?? raw.category_id)) ?? 0,
+            };
+        });
+    });
+    readonly selectedSidebarId = computed(() =>
+        this.selectedCategoryId() == null ? null : String(this.selectedCategoryId())
+    );
     readonly currentPlaylist = this.xtreamStore.currentPlaylist;
     readonly epgItems = this.xtreamStore.epgItems;
     readonly selectedCategoryId = this.xtreamStore.selectedCategoryId;
@@ -225,10 +237,11 @@ export class LiveStreamLayoutComponent implements OnInit, OnDestroy {
         this.xtreamStore.openPlayer(streamUrl, item.title, item.poster_url);
     }
 
-    selectCategory(category: XtreamCategory) {
-        const categoryId = (category as any).category_id ?? category.id;
-        this.xtreamStore.setSelectedCategory(categoryId);
-        // Keep category list and its scroll position visible for fast switching.
+    selectCategoryById(categoryId: string | null): void {
+        this.xtreamStore.setSelectedCategory(
+            categoryId == null ? null : Number(categoryId)
+        );
+        // Both category navigation and channel list stay mounted.
     }
 
     openCategoryManagement(): void {

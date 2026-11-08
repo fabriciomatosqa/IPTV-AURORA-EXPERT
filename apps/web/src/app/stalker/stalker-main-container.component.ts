@@ -1,12 +1,12 @@
-import { Component, effect, inject } from '@angular/core';
+import { Component, computed, effect, inject } from '@angular/core';
 import { MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { ActivatedRoute, Router, RouterOutlet } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { NgxSkeletonLoaderModule } from 'ngx-skeleton-loader';
-import { PlaylistSwitcherComponent, ResizableDirective } from 'components';
-import { CategoryViewComponent } from '../xtream-tauri/category-view/category-view.component';
+import { PlaylistSwitcherComponent } from 'components';
+import { AuroraCategorySidebarComponent } from '../shared/components/aurora-category-sidebar/aurora-category-sidebar.component';
 import { PlaylistErrorViewComponent } from '../xtream/playlist-error-view/playlist-error-view.component';
 import { StalkerStore } from './stalker.store';
 
@@ -19,14 +19,13 @@ import { StalkerStore } from './stalker.store';
         '../xtream-tauri/sidebar.scss',
     ],
     imports: [
-        CategoryViewComponent,
+        AuroraCategorySidebarComponent,
         MatIcon,
         MatIconButton,
         MatPaginatorModule,
         NgxSkeletonLoaderModule,
         PlaylistErrorViewComponent,
         PlaylistSwitcherComponent,
-        ResizableDirective,
         RouterOutlet,
         TranslatePipe,
     ],
@@ -51,6 +50,18 @@ export class StalkerMainContainerComponent {
     readonly categories = this.stalkerStore.getCategoryResource;
     readonly isCategoryLoading = this.stalkerStore.isCategoryResourceLoading;
     readonly isCategoryFailed = this.stalkerStore.isCategoryResourceFailed;
+    readonly unifiedCategories = computed(() =>
+        (this.categories() ?? [])
+            .map((category: any) => ({
+                id: String(category.category_id ?? category.id),
+                name: String(category.category_name ?? category.name ?? 'Sem nome'),
+            }))
+            .filter((category) => category.id !== '*')
+    );
+    readonly selectedSidebarId = computed(() => {
+        const id = this.stalkerStore.selectedCategoryId();
+        return !id || id === '*' ? null : String(id);
+    });
 
     /** content items */
     readonly contentItems = this.stalkerStore.getPaginatedContent;
@@ -72,6 +83,20 @@ export class StalkerMainContainerComponent {
         this.router.navigate(['.', item.category_id], {
             relativeTo: this.activatedRoute,
         });
+    }
+
+    selectCategoryById(id: string | null): void {
+        if (id == null) {
+            this.stalkerStore.setSelectedCategory('*');
+            this.stalkerStore.setPage(0);
+            this.stalkerStore.setSelectedItem(undefined);
+            void this.router.navigate(['.'], { relativeTo: this.activatedRoute });
+            return;
+        }
+        const category = this.categories().find(
+            (c: any) => String(c.category_id ?? c.id) === id
+        );
+        if (category) this.categoryClicked(category as any);
     }
 
     historyBack() {

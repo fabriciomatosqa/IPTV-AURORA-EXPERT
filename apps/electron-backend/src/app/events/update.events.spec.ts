@@ -66,7 +66,8 @@ describe('installed application updater', () => {
         expect((await UpdateEvents.download()).phase).toBe('ready');
         expect(handlers.get('APP_UPDATE_INSTALL')!()).toBe(true);
         await new Promise((resolve) => setImmediate(resolve));
-        expect(autoUpdater.quitAndInstall).toHaveBeenCalledWith(false, true);
+        // Silent NSIS upgrade, while forcing the app to restart afterward.
+        expect(autoUpdater.quitAndInstall).toHaveBeenCalledWith(true, true);
     });
 
     it('blocks installation on checksum failure and reports safe errors', async () => {

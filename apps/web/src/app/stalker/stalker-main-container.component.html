@@ -1,11 +1,4 @@
-<div
-    class="sidebar"
-    appResizable
-    [minWidth]="250"
-    [maxWidth]="600"
-    [defaultWidth]="400"
-    storageKey="sidebar-width"
->
+<div class="sidebar">
     <div class="sidebar-header">
         <app-playlist-switcher
             class="switcher"
@@ -30,11 +23,12 @@
             "
         />
     } @else {
-        <app-category-view
-            [items]="categories()"
-            [selectedCategoryId]="$any(stalkerStore.selectedCategoryId())"
-            (categoryClicked)="categoryClicked($event)"
-        />
+        <app-aurora-category-sidebar
+            class="stalker-category-widget"
+            [categories]="unifiedCategories()"
+            [selectedId]="selectedSidebarId()"
+            (categorySelected)="selectCategoryById($event)"
+        />      />
     }
 </div>
 

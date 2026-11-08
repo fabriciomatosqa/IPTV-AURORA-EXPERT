@@ -5,60 +5,15 @@
     "
 >
     @if (!xtreamStore.selectedItem() && !xtreamStore.isLoadingDetails()) {
-        <aside
+        <app-aurora-category-sidebar
             class="vod-category-sidebar"
             data-test-id="vod-category-sidebar"
-            aria-label="Categorias de filmes e séries"
-        >
-            <div class="vod-sidebar-header">
-                <h2>Categorias</h2>
-                <button
-                    mat-icon-button
-                    type="button"
-                    aria-label="Gerenciar categorias"
-                    [matTooltip]="'Gerenciar categorias'"
-                    (click)="openCategoryManagement()"
-                >
-                    <mat-icon>tune</mat-icon>
-                </button>
-            </div>
-            <label class="vod-sidebar-search">
-                <mat-icon>search</mat-icon>
-                <input
-                    type="search"
-                    aria-label="Pesquisar categorias de filmes e séries"
-                    placeholder="Pesquisar categorias"
-                    [value]="sidebarSearch()"
-                    (input)="sidebarSearch.set($any($event.target).value)"
-                />
-                @if (sidebarSearch()) {
-                    <button
-                        type="button"
-                        aria-label="Limpar busca de categorias"
-                        (click)="sidebarSearch.set('')"
-                    >
-                        <mat-icon>close</mat-icon>
-                    </button>
-                }
-            </label>
-            <button
-                class="vod-all-categories"
-                type="button"
-                [class.selected]="selectedCategoryId() == null"
-                [attr.aria-pressed]="selectedCategoryId() == null"
-                (click)="selectCategoryById('')"
-            >
-                <mat-icon>apps</mat-icon>
-                <span>Todas</span>
-            </button>
-            <app-category-view
-                [items]="filteredSidebarCategories()"
-                [selectedCategoryId]="selectedCategoryId()"
-                [itemCounts]="categoryItemCounts()"
-                [showCounts]="true"
-                (categoryClicked)="categoryClicked($event)"
-            />
-        </aside>
+            [categories]="unifiedCategories()"
+            [selectedId]="selectedSidebarCategoryId()"
+            [showManage]="true"
+            (categorySelected)="selectCategoryById($event ?? '')"
+            (manageClicked)="openCategoryManagement()"
+        />
     }
     <div
         class="main-content"

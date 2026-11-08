@@ -15,7 +15,9 @@ import {
     CategoryManagementDialogData,
 } from './category-management-dialog/category-management-dialog.component';
 import { XtreamStore } from './stores/xtream.store';
-import { CategoryViewComponent } from './category-view/category-view.component';
+import {
+    AuroraCategorySidebarComponent,
+} from '../shared/components/aurora-category-sidebar/aurora-category-sidebar.component';
 import { XtreamCategorySortMode } from './stores/features/with-selection.feature';
 
 const XTREAM_CATEGORY_SORT_STORAGE_KEY = 'xtream-category-sort-mode';
@@ -32,7 +34,7 @@ const XTREAM_CATEGORY_SORT_STORAGE_KEY = 'xtream-category-sort-mode';
         MatInputModule,
         MatMenuModule,
         MatTooltipModule,
-        CategoryViewComponent,
+        AuroraCategorySidebarComponent,
         RouterOutlet,
         TranslateModule,
     ],
@@ -51,6 +53,21 @@ export class XtreamMainContainerComponent implements OnInit {
     readonly contentSortMode = this.xtreamStore.contentSortMode;
     readonly categorySearchTerm = this.xtreamStore.categorySearchTerm;
     readonly isCategorySearchOpen = signal(true);
+    readonly unifiedCategories = computed(() => {
+        const counts = this.categoryItemCounts();
+        return this.categories().map((category) => {
+            const raw = category as any;
+            const id = String(raw.category_id ?? category.id);
+            return {
+                id,
+                name: String(raw.category_name ?? raw.name ?? 'Sem nome'),
+                count: counts.get(Number(category.id ?? raw.category_id)) ?? 0,
+            };
+        });
+    });
+    readonly selectedSidebarCategoryId = computed(() =>
+        this.selectedCategoryId() == null ? null : String(this.selectedCategoryId())
+    );
     readonly sidebarSearch = signal('');
     readonly filteredSidebarCategories = computed(() => {
         const search = this.sidebarSearch().trim().toLocaleLowerCase();
