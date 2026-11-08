@@ -31,10 +31,20 @@ export class SportsPageComponent {
                 title: category.category_name || '',
             }));
         }
-        return (this.xtream?.liveCategories() || []).map(category => ({
-            id: String(category.category_id ?? category.id),
-            title: category.category_name || '',
-        }));
+        return (this.xtream?.liveCategories() || []).map(category => {
+            // Categories read from SQLite and those fetched from Xtream APIs
+            // use different property names; preserve the original provider ID.
+            const source = category as {
+                id?: number | string;
+                category_id?: number | string;
+                name?: string;
+                category_name?: string;
+            };
+            return {
+                id: String(source.category_id ?? source.id ?? ''),
+                title: source.category_name ?? source.name ?? '',
+            };
+        });
     });
 
     readonly isLoading = computed(() => this.provider === 'stalker'
