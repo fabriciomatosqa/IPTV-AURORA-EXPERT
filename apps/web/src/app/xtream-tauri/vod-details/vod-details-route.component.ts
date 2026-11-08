@@ -20,6 +20,7 @@ import { SettingsStore } from '../../services/settings-store.service';
 import { XtreamStore } from '../stores/xtream.store';
 import { SafePipe } from '@iptvmate/pipes';
 import { createLogger } from '../../shared/utils/logger';
+import { XtreamUrlService } from '../services/xtream-url.service';
 import {
     ActorFilmographyService,
     ActorProfile,
@@ -52,6 +53,7 @@ export class VodDetailsRouteComponent implements OnInit, OnDestroy {
     private location = inject(Location);
     private readonly router = inject(Router);
     private readonly actorsService = inject(ActorFilmographyService);
+    private readonly urlService = inject(XtreamUrlService);
     private settingsStore = inject(SettingsStore);
     private route = inject(ActivatedRoute);
     private readonly xtreamStore = inject(XtreamStore);
@@ -194,6 +196,19 @@ export class VodDetailsRouteComponent implements OnInit, OnDestroy {
         this.xtreamStore.setSelectedItem(null);
     }
 
+    private vodAlternateUrls(vodItem: XtreamVodDetails): string[] {
+        const playlist = this.xtreamStore.currentPlaylist();
+        if (!playlist) return [];
+        return this.urlService.constructVodAlternateUrls(
+            {
+                serverUrl: playlist.serverUrl,
+                username: playlist.username,
+                password: playlist.password,
+            },
+            vodItem
+        );
+    }
+
     async playVod(vodItem: XtreamVodDetails) {
         this.addToRecentlyViewed();
         const streamUrl = this.xtreamStore.constructVodStreamUrl(vodItem);
@@ -230,7 +245,8 @@ export class VodDetailsRouteComponent implements OnInit, OnDestroy {
             vodItem.info.movie_image,
             undefined,
             contentInfo,
-            subtitleUrl
+            subtitleUrl,
+            this.vodAlternateUrls(vodItem)
         );
     }
 
@@ -265,7 +281,8 @@ export class VodDetailsRouteComponent implements OnInit, OnDestroy {
             vodItem.info.movie_image,
             position?.positionSeconds,
             contentInfo,
-            subtitleUrl
+            subtitleUrl,
+            this.vodAlternateUrls(vodItem)
         );
     }
 
