@@ -1,3 +1,4 @@
+import { catalogCategoryWidth } from '../../shared/utils/catalog-column-width';
 import { isAdultContentLabel, moveAdultContentToEnd } from '../../shared/utils/adult-content-order';
 import {
     ChangeDetectionStrategy,
@@ -22,7 +23,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { PlaylistSwitcherComponent, ResizableDirective } from 'components';
+import { PlaylistSwitcherComponent } from 'components';
 import { PlaylistsService } from 'services';
 import { EpgItem } from 'shared-interfaces';
 import { EpgViewComponent, WebPlayerViewComponent } from 'shared-portals';
@@ -67,7 +68,6 @@ import {
         NgxSkeletonLoaderModule,
         PlaylistErrorViewComponent,
         PlaylistSwitcherComponent,
-        ResizableDirective,
         TranslatePipe,
         WebPlayerViewComponent,
     ],
@@ -84,6 +84,18 @@ export class StalkerLiveStreamLayoutComponent implements OnDestroy {
 
     /** Categories */
     readonly categories = this.stalkerStore.getCategoryResource;
+    readonly categoryQuery = signal('');
+    readonly categorySearchOpen = signal(false);
+    readonly filteredCategories = computed(() => {
+        const query = this.categoryQuery().trim().toLocaleLowerCase();
+        const items = this.categories() ?? [];
+        return query ? items.filter(category =>
+            category.category_name?.toLocaleLowerCase().includes(query)
+        ) : items;
+    });
+    readonly categoryColumnWidth = computed(() =>
+        catalogCategoryWidth((this.categories() ?? []).map(category => category.category_name || ''))
+    );
     readonly isCategoryLoading = this.stalkerStore.isCategoryResourceLoading;
     readonly isCategoryFailed = this.stalkerStore.isCategoryResourceFailed;
     readonly selectedCategoryTitle = this.stalkerStore.getSelectedCategoryName;
@@ -91,6 +103,11 @@ export class StalkerLiveStreamLayoutComponent implements OnDestroy {
 
     /** Channels */
     readonly itvChannels = this.stalkerStore.itvChannels;
+    readonly channelColumnWidth = computed(() =>
+        catalogCategoryWidth(this.itvChannels().map(channel =>
+            channel.o_name || channel.name || ''
+        ), 116)
+    );
     readonly visibleChannels = computed(() =>
         moveAdultContentToEnd(this.itvChannels(), (channel) =>
             isAdultContentLabel(channel.o_name || channel.name)
