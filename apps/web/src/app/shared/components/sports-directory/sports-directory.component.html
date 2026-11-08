@@ -199,7 +199,16 @@
                     </div>
                     <footer class="match-footer">
                         <span><mat-icon>calendar_today</mat-icon>{{ displayDate(match.kickoff) }} · {{ displayTime(match.kickoff) }}</span>
-                        <small>Transmissão IPTV não confirmada</small>
+                        @if (linkedBroadcasts(match).length) {
+                            <div class="match-watch-channels">
+                                @for (airing of linkedBroadcasts(match); track airing.id) {
+                                    <button type="button" (click)="watch.emit(airing.channel.id)">
+                                        <mat-icon>play_arrow</mat-icon>
+                                        {{ airing.replay ? 'REPRISE' : 'Assistir' }} · {{ airing.channel.name }}
+                                    </button>
+                                }
+                            </div>
+                        } @else { <small>Transmissão IPTV não confirmada</small> }
                     </footer>
                 </article>
             } @empty {

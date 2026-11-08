@@ -149,3 +149,10 @@
     border:1px solid #5c9e92; border-radius:9px;background:#225149;color:#a3ffec;
     cursor:pointer;font:600 12px 'Segoe UI',sans-serif; margin-top:auto;}
 .sports-broadcast-card button:hover {background:#2a665a;}
+
+.match-watch-channels {display:flex;flex-wrap:wrap;gap:6px;}
+.match-watch-channels button {display:flex;gap:5px;align-items:center;border:1px solid #4e9b8f;
+    border-radius:9px;padding:7px 8px;background:#205449;color:#9cfbe7;
+    cursor:pointer;font:600 11px 'Segoe UI',sans-serif;}
+.match-watch-channels button:hover {background:#2a6a5d;}
+.match-watch-channels mat-icon {font-size:15px;width:16px;height:16px;}

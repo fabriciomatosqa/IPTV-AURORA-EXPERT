@@ -1,4 +1,4 @@
-import { SportsBroadcast, sportsBroadcastStatus } from './sports-broadcast.model';
+import { SportsBroadcast, sportsBroadcastStatus, confirmedMatchBroadcasts } from './sports-broadcast.model';
 import { Component, computed, input, OnDestroy, OnInit, output, signal } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { identifySport, organizeSports, SportName, SportsSource } from './sports-directory.model';
@@ -129,6 +129,15 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
         return sorted;
     });
     readonly displayedGames = computed(() => this.visibleGames().slice(0, this.maxVisible()));
+    readonly matchLinks = computed(() => {
+        const broadcasts = this.broadcasts();
+        return new Map(this.scoreEvents().map(match =>
+            [match.id,confirmedMatchBroadcasts(match,broadcasts)] as const
+        ));
+    });
+    linkedBroadcasts(match: SportsMatch): SportsBroadcast[] {
+        return this.matchLinks().get(match.id) || [];
+    }
     readonly visibleBroadcasts = computed(() => {
         const sport = this.selectedSport(), tab = this.selectedTab();
         const now = this.now(), words = this.normalized(this.search()).split(' ').filter(Boolean);
