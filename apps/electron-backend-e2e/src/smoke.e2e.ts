@@ -543,6 +543,18 @@ test.describe('Electron App Smoke Test', () => {
         expect(title).toContain('IPTV AURORA EXPERT');
     });
 
+    test('opens the new four-card dashboard and keeps playlist management accessible', async () => {
+        await expect(mainWindow.locator('[data-test-id="aurora-home-dashboard"]')).toBeVisible();
+        for (const section of ['live', 'movies', 'series', 'favorites']) {
+            await expect(mainWindow.locator(`[data-test-id="home-card-${section}"]`)).toBeVisible();
+            await expect(mainWindow.locator(`[data-test-id="home-card-${section}"]`)).toBeDisabled();
+        }
+        await mainWindow.locator('[data-test-id="home-open-playlists"]').click();
+        await expect(mainWindow.locator('app-recent-playlists')).toBeVisible();
+        await mainWindow.evaluate(() => { location.hash = '#/'; });
+        await expect(mainWindow.locator('[data-test-id="aurora-home-dashboard"]')).toBeVisible();
+    });
+
     test('app should have expected window properties', async () => {
         const isVisible = await electronApp.evaluate(({ BrowserWindow }) => {
             const mainWindow = BrowserWindow.getAllWindows()[0];
@@ -752,6 +764,26 @@ test.describe('Electron App Smoke Test', () => {
             path: join(screenshotDir, 'aurora-m3u-navigation.png'),
             fullPage: true,
         });
+    });
+
+    test('home shortcuts open the selected M3U content without losing the playlist', async () => {
+        await mainWindow.evaluate(() => { location.hash = '#/'; });
+        await expect(mainWindow.locator('[data-test-id="aurora-home-dashboard"]')).toBeVisible();
+        await expect(mainWindow.locator('[data-test-id="home-playlist-selector"]')).toBeVisible();
+        const sections = [
+            ['movies', 'Filmes'],
+            ['series', 'Séries'],
+            ['favorites', 'Favoritos'],
+            ['live', 'TV ao vivo'],
+        ] as const;
+        for (const [section, label] of sections) {
+            await mainWindow.locator(`[data-test-id="home-card-${section}"]`).click();
+            await expect(mainWindow.locator('.library-rail-links button.active')).toContainText(label);
+            await mainWindow.locator('.library-brand').click();
+            await expect(mainWindow.locator('[data-test-id="aurora-home-dashboard"]')).toBeVisible();
+        }
+        await mainWindow.locator('[data-test-id="home-card-live"]').click();
+        await expect(mainWindow.locator('[data-test-id="channel-item"]').first()).toBeVisible();
     });
 
     test('plays synthetic MP4, HLS and raw MPEG-TS with channel changes', async () => {
