@@ -181,26 +181,20 @@ ipcMain.handle(AUTO_UPDATE_PLAYLISTS, async (event, playlists) => {
 
             if (playlist.importDate && playlist.url) {
                 // Update from URL
-                console.log(
-                    `Updating playlist "${playlist.title}" from URL: ${playlist.url}`
-                );
+                console.log('Updating IPTV playlist from its saved URL.');
                 playlistObject = await fetchPlaylistFromUrl(
                     playlist.url,
                     playlist.title
                 );
             } else if (playlist.filePath) {
                 // Update from file path
-                console.log(
-                    `Updating playlist "${playlist.title}" from file: ${playlist.filePath}`
-                );
+                console.log('Updating IPTV playlist from saved file.');
                 playlistObject = await fetchPlaylistFromFile(
                     playlist.filePath,
                     playlist.title
                 );
             } else {
-                console.warn(
-                    `Skipping playlist "${playlist.title}": no URL or file path found`
-                );
+                console.warn('Skipping IPTV playlist: no URL or file path found.');
                 continue;
             }
 
@@ -213,12 +207,9 @@ ipcMain.handle(AUTO_UPDATE_PLAYLISTS, async (event, playlists) => {
                 userAgent: playlist.userAgent, // Preserve custom user agent
             });
 
-            console.log(`Successfully updated playlist "${playlist.title}"`);
+            console.log('IPTV playlist update completed.');
         } catch (error) {
-            console.error(
-                `Failed to update playlist "${playlist.title}":`,
-                error
-            );
+            console.warn('Unable to refresh an IPTV playlist; credentials omitted.');
             // Continue with other playlists even if one fails
         }
     }
