@@ -24,6 +24,8 @@ import SharedEvents from './app/events/shared.events';
 import SquirrelEvents from './app/events/squirrel.events';
 import StalkerEvents from './app/events/stalker.events';
 import XtreamEvents from './app/events/xtream.events';
+import { isAuroraFloatingPlayer } from './app/services/floating-player-identity';
+import { registerAuroraFloatingPlayer } from './app/services/floating-player.service';
 
 app.setName('IPTV AURORA EXPERT');
 app.setAppUserModelId('com.aurora.iptvexpert');
@@ -57,6 +59,7 @@ if (!hasSingleInstanceLock) {
 let primaryWindowId: number | null = null;
 
 app.on('browser-window-created', (_event, window) => {
+    if (isAuroraFloatingPlayer(window)) return;
     if (primaryWindowId === null) {
         primaryWindowId = window.id;
         console.log(`[Main] Registered primary BrowserWindow id=${window.id}`);
@@ -149,6 +152,7 @@ export default class Main {
         await initDatabase();
 
         ElectronEvents.bootstrapElectronEvents();
+        registerAuroraFloatingPlayer();
         PlaylistEvents.bootstrapPlaylistEvents();
         SharedEvents.bootstrapSharedEvents();
         PlayerEvents.bootstrapPlayerEvents();
