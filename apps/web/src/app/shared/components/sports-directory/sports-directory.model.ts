@@ -4,7 +4,7 @@
  * Original source IDs remain attached to entries for navigation.
  */
 export type SportName = 'Futebol' | 'Automobilismo' | 'Basquete' | 'Vôlei' |
-    'Tênis' | 'Lutas' | 'Outros esportes';
+    'Tênis' | 'Lutas' | 'Futebol Americano' | 'Beisebol' | 'Hóquei' | 'Handebol' | 'Outros esportes';
 
 export interface SportsSource {
     id: string;
@@ -23,7 +23,7 @@ export interface SportsSection {
 }
 
 const order: SportName[] = [
-    'Futebol', 'Automobilismo', 'Basquete', 'Vôlei', 'Tênis', 'Lutas', 'Outros esportes'
+    'Futebol', 'Automobilismo', 'Basquete', 'Vôlei', 'Futebol Americano', 'Beisebol', 'Hóquei', 'Tênis', 'Handebol', 'Lutas', 'Outros esportes'
 ];
 
 const normalized = (value: string): string =>
@@ -35,6 +35,14 @@ export function identifySport(title: string): { sport: SportName; competition: s
     if (!name) return null;
 
     // Priority is important: NBB, F1, NBA or MotoGP must not fall into generic sports.
+    if (/\b(nfl|futebol americano|american football|college football)\b/.test(name))
+        return { sport: 'Futebol Americano', competition: /\bnfl\b/.test(name) ? 'NFL' : title.trim() };
+    if (/\b(mlb|beisebol|baseball|npb)\b/.test(name))
+        return { sport: 'Beisebol', competition: /\bmlb\b/.test(name) ? 'MLB' : title.trim() };
+    if (/\b(nhl|khl|hoquei|hockey)\b/.test(name))
+        return { sport: 'Hóquei', competition: /\bnhl\b/.test(name) ? 'NHL' : title.trim() };
+    if (/\b(handebol|handball)\b/.test(name))
+        return { sport: 'Handebol', competition: title.trim() };
     if (/\b(nba|wnba|nbb|euroleague|euroliga|basquete|basketball|fiba)\b/.test(name)) {
         const competition = /\bwnba\b/.test(name) ? 'WNBA' :
             /\bnbb\b/.test(name) ? 'NBB' :
