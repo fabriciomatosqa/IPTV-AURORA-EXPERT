@@ -181,14 +181,44 @@ export class ElectronService extends DataService {
     }
 
     private async fetchM3uPlaylistFromUrl(payload: Partial<Playlist>) {
-        window.electron.fetchPlaylistByUrl(payload.url).then((result) => {
+        try {
+            if (!payload.url) {
+                throw new Error('Endereço da lista não informado.');
+            }
+            const result = await window.electron.fetchPlaylistByUrl(
+                payload.url,
+                payload.title
+            );
+            if (!result?.playlist?.items?.length) {
+                throw new Error('A lista não contém canais ou conteúdos.');
+            }
             this.store.dispatch(
                 PlaylistActions.handleAddingPlaylistByUrl({
-                    isTemporary: !!payload?.isTemporary,
+                    isTemporary: !!payload.isTemporary,
                     playlist: result,
                 })
             );
-        });
+        } catch (error) {
+            // Never show or log the raw IPC/Axios error: it can contain
+            // username/password from a credential-bearing playlist URL.
+            const detail = error instanceof Error ? error.message : '';
+            let message = 'Confira o endereço da lista e sua conexão.';
+            if (/HTTP 401|HTTP 403/.test(detail)) {
+                message = 'Acesso recusado pelo servidor (401/403). Confira a conta ou o provedor.';
+            } else if (/HTTP 404/.test(detail)) {
+                message = 'A lista não foi encontrada no servidor (404).';
+            } else if (/DNS|ENOTFOUND|EAI_AGAIN/i.test(detail)) {
+                message = 'Não foi possível localizar o servidor da lista (DNS).';
+            } else if (/Tempo esgotado|timeout|ETIMEDOUT/i.test(detail)) {
+                message = 'O servidor demorou demais para responder.';
+            } else if (/M3U|contém canais/i.test(detail)) {
+                message = 'O endereço não retornou uma lista M3U válida com conteúdos.';
+            }
+            console.warn('[AURORA IPTV] Falha ao importar lista M3U (dados do servidor omitidos).');
+            this.snackBar.open(`Falha ao importar IPTV. ${message}`, 'Fechar', {
+                duration: 9000,
+            });
+        }
     }
 
     private async updateM3uPlaylistFromFile(data: {
