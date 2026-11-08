@@ -125,27 +125,77 @@
             }
         </ng-container>
 
-        <!-- YouTube Trailer -->
-        @if (item.info?.actors || item.info?.cast) {
+        <!-- Actor portrait cards and filmography -->
+        @if (castMembers().length) {
             <section class="cast-section">
                 <h2>Elenco</h2>
                 <div class="cast-strip">
-                    @for (
-                        actor of (
-                            item.info.actors ||
-                            item.info.cast ||
-                            ''
-                        ).split(',');
-                        track $index
-                    ) {
-                        <div class="cast-member">
-                            <span class="cast-avatar" aria-hidden="true">{{
-                                actor.trim().charAt(0)
-                            }}</span
-                            ><span>{{ actor.trim() }}</span>
-                        </div>
+                    @for (actor of castMembers(); track actor) {
+                        <button type="button"
+                            class="cast-member"
+                            [class.cast-member--active]="selectedActor() === actor"
+                            [attr.aria-label]="'Ver filmes e séries de ' + actor"
+                            [attr.aria-pressed]="selectedActor() === actor"
+                            (click)="selectActor(actor)">
+                            <span class="cast-avatar">
+                                @if (actorPhoto(actor)) {
+                                    <img [src]="actorPhoto(actor)" [alt]="'Foto de ' + actor"
+                                        loading="lazy" referrerpolicy="no-referrer"
+                                        (error)="markPortraitUnavailable(actor)" />
+                                } @else {
+                                    <span class="cast-fallback" aria-hidden="true">{{ actor.charAt(0) }}</span>
+                                }
+                            </span>
+                            <span class="cast-name">{{ actor }}</span>
+                        </button>
                     }
                 </div>
+                @if (selectedActor()) {
+                    <div class="actor-filmography" aria-live="polite">
+                        <div class="actor-filmography__heading">
+                            <h3>Filmes e séries com {{ selectedActor() }}</h3>
+                            <button type="button" class="actor-close"
+                                (click)="selectedActor.set(null)" aria-label="Fechar filmografia">
+                                <mat-icon>close</mat-icon>
+                            </button>
+                        </div>
+                        @if (actorFilmographyLoading()) {
+                            <p>Buscando filmografia e títulos disponíveis...</p>
+                        } @else {
+                            @if (actorLocalMatches().length) {
+                                <h4>Na sua biblioteca</h4>
+                                <div class="actor-results">
+                                    @for (work of actorLocalMatches(); track work.kind + '-' + work.id) {
+                                        <button type="button" class="actor-result"
+                                            (click)="openActorCatalogItem(work)">
+                                            <mat-icon>{{ work.kind === 'vod' ? 'movie' : 'tv' }}</mat-icon>
+                                            <span>{{ work.title }}</span>
+                                            <mat-icon>chevron_right</mat-icon>
+                                        </button>
+                                    }
+                                </div>
+                            }
+                            @if (actorFilmography().length) {
+                                <h4>Outros trabalhos registrados no Wikidata</h4>
+                                <div class="actor-results">
+                                    @for (work of actorFilmography(); track work.wikidataId ?? work.title) {
+                                        <a class="actor-result"
+                                            [href]="'https://www.wikidata.org/wiki/' + work.wikidataId"
+                                            target="_blank" rel="noopener noreferrer">
+                                            <mat-icon>theaters</mat-icon>
+                                            <span>{{ work.title }}
+                                                @if (work.year) { <small>({{ work.year }})</small> }
+                                            </span>
+                                            <mat-icon>open_in_new</mat-icon>
+                                        </a>
+                                    }
+                                </div>
+                            } @else if (!actorLocalMatches().length) {
+                                <p>Não encontramos outros títulos com esse elenco nas fontes disponíveis.</p>
+                            }
+                        }
+                    </div>
+                }
             </section>
         }
         @if (item.info?.youtube_trailer && showTrailer()) {
