@@ -714,3 +714,15 @@
 /* The single reusable navigation controls all live/movie/series category panels.
    Do not style provider-specific legacy category sidebars on this route. */
 .aurora-library app-aurora-catalog-navigation { height: 100%; }
+
+/* Share the actual portal navigation component, not merely copied styles. */
+.aurora-library > app-navigation.unified-library-rail {
+    display: block;
+    align-self: stretch;
+    flex: 0 0 84px;
+    width: 84px;
+    height: 100%;
+}
+.aurora-library.details-open > app-navigation.unified-library-rail {
+    display: none;
+}

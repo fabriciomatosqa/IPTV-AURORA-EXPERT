@@ -1,7 +1,7 @@
 import { isAdultContentLabel, moveAdultContentToEnd } from '../../utils/adult-content-order';
 
 export interface AuroraCategoryOption {
-    /** Original provider ID, or exact M3U group title. Never replace with a synthetic parent ID. */
+    /** The exact provider category ID (or exact M3U group title). */
     id: string;
     title: string;
     count?: number;
@@ -14,39 +14,23 @@ export interface AuroraLiveGroup {
     children: Array<AuroraCategoryOption & { subtitle: string }>;
 }
 
-export function categoryGroupParts(label: string): { parent: string; child: string } {
-    // Only explicit IPTV category separators create a hierarchy.
-    // Do not split category titles containing a slash, dash or ordinary space.
-    const match = /^(.*?)\s*[|｜]\s*(.+)$/.exec(label.trim());
-    return match
-        ? { parent: match[1].trim() || 'Outros', child: match[2].trim() || 'Todos' }
-        : { parent: label.trim() || 'Sem categoria', child: 'Todos' };
-}
-
+/**
+ * M3U uses one root ("Canais") followed by its real EXTGRP/tvg group names.
+ *
+ * Xtream and Stalker categories must NOT pass through this function: their
+ * original categories are flat, even if the name contains a pipe. Treating
+ * "GLOBO | CAPITAIS" as two levels breaks the user's provider structure.
+ * Both presentations preserve the same original category IDs.
+ */
 export function buildAuroraLiveGroups(items: readonly AuroraCategoryOption[]): AuroraLiveGroup[] {
-    const map = new Map<string, AuroraLiveGroup>();
-    // Group by normalized root title, but keep exact original child IDs.
-    for (const item of items) {
-        const { parent, child } = categoryGroupParts(item.title);
-        const key = parent.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-            .trim().toLocaleLowerCase('pt-BR');
-        let group = map.get(key);
-        if (!group) {
-            group = { key, title: parent, count: 0, children: [] };
-            map.set(key, group);
-        }
-        if (item.count == null || group.count == null) group.count = undefined;
-        else group.count += item.count;
-        group.children.push({ ...item, subtitle: child });
-    }
-    const groups = [...map.values()];
-    for (const group of groups) {
-        group.children = moveAdultContentToEnd(group.children, item =>
-            isAdultContentLabel(item.subtitle) || isAdultContentLabel(item.title)
-        );
-    }
-    return moveAdultContentToEnd(groups, group =>
-        isAdultContentLabel(group.title) ||
-        group.children.every(child => isAdultContentLabel(child.title))
-    );
+    if (!items.length) return [];
+    const children = moveAdultContentToEnd(items, item => isAdultContentLabel(item.title))
+        .map(item => ({ ...item, subtitle: item.title }));
+    const withCounts = items.every(item => item.count != null);
+    return [{
+        key: 'all-channels',
+        title: 'Canais',
+        count: withCounts ? items.reduce((sum, item) => sum + (item.count ?? 0), 0) : undefined,
+        children,
+    }];
 }

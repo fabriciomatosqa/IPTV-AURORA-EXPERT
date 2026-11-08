@@ -90,3 +90,9 @@
     .aurora-category-row { font-size: 12px; padding-inline: 7px; }
     .aurora-category-heading { padding-inline: 7px; }
 }
+
+/* Flat live providers show the original categories directly beside channels.
+   Only M3U lists have the structural Canais -> group-name middle column. */
+.aurora-category-navigation.live-mode:not(.hierarchical-live) .aurora-category-column {
+    width: clamp(190px, var(--aurora-primary-width, 250px), min(43vw, 580px));
+}

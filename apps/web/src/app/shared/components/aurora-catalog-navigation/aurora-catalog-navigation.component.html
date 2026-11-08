@@ -1,4 +1,5 @@
 <div class="aurora-category-navigation" [class.live-mode]="mode() === 'live'"
+    [class.hierarchical-live]="mode() === 'live' && hasSubcategories()"
     [style.--aurora-primary-width.px]="firstColumnWidth()"
     [style.--aurora-secondary-width.px]="secondColumnWidth()"
     data-test-id="aurora-unified-category-navigation">
@@ -42,7 +43,7 @@
                 <p class="aurora-category-empty" role="status">Carregando categorias…</p>
             } @else if (loadFailed()) {
                 <p class="aurora-category-empty" role="alert">Não foi possível carregar as categorias.</p>
-            } @else if (mode() === 'live') {
+            } @else if (mode() === 'live' && hasSubcategories()) {
                 @for (group of visibleGroups(); track group.key) {
                     <button type="button" class="aurora-category-row"
                         [class.active]="selectedGroup()?.key === group.key"
@@ -74,13 +75,21 @@
             }
         </div>
     </aside>
-    @if (mode() === 'live') {
+    @if (mode() === 'live' && hasSubcategories()) {
         <aside class="aurora-subcategory-column" aria-label="Subcategorias da TV ao vivo">
             <div class="aurora-subcategory-heading">
                 <h2>Subcategorias</h2>
                 <span>{{ selectedGroup()?.title || '' }}</span>
             </div>
             <div class="aurora-category-scroll">
+                <button type="button" class="aurora-category-row"
+                    [class.active]="allSelected()"
+                    [attr.aria-pressed]="allSelected()"
+                    (click)="categorySelected.emit('')">
+                    <mat-icon>apps</mat-icon>
+                    <span class="category-name">Todas</span>
+                    @if (selectedGroup()?.count != null) { <small>({{ selectedGroup()?.count }})</small> }
+                </button>
                 @for (child of currentChildren(); track child.id) {
                     <button type="button" class="aurora-category-row"
                         [class.active]="isSelected(child.id)"

@@ -1,8 +1,8 @@
 ﻿<nav class="aurora-desktop-nav" aria-label="Navegação IPTV AURORA EXPERT">
-    <a class="rail-brand" routerLink="/" title="Gerenciar listas IPTV">
+    <a class="rail-brand library-brand" routerLink="/" title="Gerenciar listas IPTV">
         <img src="assets/aurora/aurora.png" alt="AURORA" />
     </a>
-    <div class="rail-section rail-primary">
+    <div class="rail-section rail-primary library-rail-links">
         @for (item of navigationItems(); track item.id) {
             <button
                 class="rail-item"
@@ -16,13 +16,20 @@
             </button>
         }
         @if (isElectron) {
-            <a
-                class="rail-item"
-                routerLink="./downloads"
-                routerLinkActive="active"
-                ><mat-icon>download</mat-icon
-                ><span>{{ 'DOWNLOADS.TITLE' | translate }}</span></a
-            >
+            @if (mode() === 'm3u') {
+                <button class="rail-item" type="button"
+                    [class.active]="isContentTypeActive('downloads')"
+                    [attr.aria-pressed]="isContentTypeActive('downloads')"
+                    (click)="categoryClick.emit('downloads')">
+                    <mat-icon>download</mat-icon>
+                    <span>{{ 'DOWNLOADS.TITLE' | translate }}</span>
+                </button>
+            } @else {
+                <a class="rail-item" routerLink="./downloads" routerLinkActive="active">
+                    <mat-icon>download</mat-icon>
+                    <span>{{ 'DOWNLOADS.TITLE' | translate }}</span>
+                </a>
+            }
         }
         <button
             class="rail-item"
@@ -32,10 +39,29 @@
             <mat-icon>menu</mat-icon><span>Menu</span>
         </button>
     </div>
-    <a class="rail-item" routerLink="/listas"
+    <a class="rail-item library-playlists" routerLink="/listas"
         ><mat-icon>playlist_play</mat-icon><span>Listas</span></a
     >
     <mat-menu #libraryMenu="matMenu">
+        @if (mode() === 'm3u') {
+            <button mat-menu-item (click)="pageSwitch('favorites')">
+                <mat-icon>star_outline</mat-icon><span>Favoritos</span>
+            </button>
+            <button mat-menu-item (click)="pageSwitch('recent')">
+                <mat-icon>history</mat-icon><span>Histórico</span>
+            </button>
+            <a mat-menu-item routerLink="/listas">
+                <mat-icon>playlist_play</mat-icon><span>Gerenciar listas</span>
+            </a>
+            <button mat-menu-item (click)="openSettings()">
+                <mat-icon>settings</mat-icon><span>Configurações de reprodução</span>
+            </button>
+            @if (isElectron) {
+                <button mat-menu-item (click)="epgRequested.emit()">
+                    <mat-icon>calendar_view_week</mat-icon><span>Guia de programação</span>
+                </button>
+            }
+        } @else {
         <a mat-menu-item routerLink="./search" (click)="pageSwitch('search')"
             ><mat-icon>search</mat-icon
             ><span>{{ 'PORTALS.SIDEBAR.SEARCH' | translate }}</span></a
@@ -74,5 +100,6 @@
             <mat-icon>settings</mat-icon
             ><span>{{ 'MENU.SETTINGS' | translate }}</span>
         </button>
+        }
     </mat-menu>
 </nav>

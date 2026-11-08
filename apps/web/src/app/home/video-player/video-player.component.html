@@ -2,46 +2,14 @@
     class="aurora-library"
     [class.details-open]="browsing() && !!catalogDetail()"
 >
-    <nav class="library-rail" aria-label="Biblioteca AURORA">
-        <a class="library-brand" routerLink="/" title="Voltar ao início"
-            ><img src="assets/aurora/aurora.png" alt="AURORA"
-        /></a>
-        <div class="library-rail-links">
-            @for (item of catalogNavigation; track item.id) {
-                <button
-                    type="button"
-                    [class.active]="catalogSection() === item.id"
-                    [attr.aria-pressed]="catalogSection() === item.id"
-                    (click)="changeCatalogSection(item.id)"
-                >
-                    <mat-icon>{{ item.icon }}</mat-icon
-                    ><span>{{ item.label }}</span>
-                </button>
-            }
-            <button type="button" [matMenuTriggerFor]="libraryMenu">
-                <mat-icon>menu</mat-icon><span>Menu</span>
-            </button>
-            <mat-menu #libraryMenu="matMenu">
-                <button mat-menu-item (click)="changeCatalogSection('favorites')"><mat-icon>star_outline</mat-icon>Favoritos</button>
-                <button mat-menu-item (click)="changeCatalogSection('recent')"><mat-icon>history</mat-icon>Histórico</button>
-                <a mat-menu-item routerLink="/listas"
-                    ><mat-icon>playlist_play</mat-icon>Gerenciar listas</a
-                >
-                <button mat-menu-item (click)="openSettings()">
-                    <mat-icon>settings</mat-icon>Configurações de reprodução
-                </button>
-                @if (isDesktop) {
-                    <button mat-menu-item (click)="openMultiEpgView()">
-                        <mat-icon>calendar_view_week</mat-icon>Guia de
-                        programação
-                    </button>
-                }
-            </mat-menu>
-        </div>
-        <a routerLink="/listas" class="library-playlists"
-            ><mat-icon>playlist_play</mat-icon><span>Listas</span></a
-        >
-    </nav>
+    <app-navigation
+        class="unified-library-rail"
+        mode="m3u"
+        [navigationItems]="catalogNavigation"
+        [selectedContentType]="catalogSection()"
+        (categoryClick)="changeCatalogSection($event)"
+        (pageClicked)="changeCatalogSection($event)"
+        (epgRequested)="openMultiEpgView()" />
     @if (browsing()) {
         @if (catalogSection() === 'downloads') {
             <app-downloads class="m3u-downloads" />
@@ -120,6 +88,7 @@
                         <app-aurora-catalog-navigation
                             data-test-id="m3u-category-sidebar"
                             [mode]="catalogSection() === 'live' ? 'live' : 'library'"
+                            [hasSubcategories]="catalogSection() === 'live'"
                             [categories]="auroraCategoryOptions()"
                             [selectedId]="catalogCategory()"
                             (categorySelected)="selectCatalogCategory($event)">
