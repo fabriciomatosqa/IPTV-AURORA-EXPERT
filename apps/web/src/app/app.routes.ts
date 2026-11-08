@@ -16,6 +16,12 @@ export const routes: Routes = [
             import('./home/home.component').then((c) => c.HomeComponent),
     },
     {
+        path: 'listas',
+        data: { playlistManager: true },
+        loadComponent: () =>
+            import('./home/home.component').then((c) => c.HomeComponent),
+    },
+    {
         path: 'playlists',
         loadComponent: () =>
             import('./home/video-player/video-player.component').then(
