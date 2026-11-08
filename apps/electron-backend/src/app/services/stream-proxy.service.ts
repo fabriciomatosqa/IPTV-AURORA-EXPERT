@@ -331,13 +331,25 @@ function spawnUrlAudioTranscode(
             ? ['-map', `0:a:${audioStreamIndex}?`]
             : ['-map', '0:a:0?'];
 
+    // Route FFmpeg's seekable requests through our local HTTP proxy. This
+    // retains HTTP Range seeking while preserving the provider TLS/redirect
+    // handling supplied by Node (FFmpeg alone can reject older IPTV TLS).
+    let inputUrl = targetUrl;
+    if (proxyPort !== null) {
+        const passthrough = new URLSearchParams({ url: targetUrl });
+        if (userAgent) passthrough.set('ua', userAgent);
+        if (referer) passthrough.set('ref', referer);
+        if (origin) passthrough.set('org', origin);
+        inputUrl = `http://127.0.0.1:${proxyPort}/stream?${passthrough.toString()}`;
+    }
+
     ffmpegArgs.push(
         '-probesize',
         '10M',
         '-analyzeduration',
         '20M',
         '-i',
-        targetUrl,
+        inputUrl,
         '-map',
         '0:v:0?',
         ...audioMapArgs,
