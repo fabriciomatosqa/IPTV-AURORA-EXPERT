@@ -82,6 +82,17 @@ describe('PlayerService', () => {
         expect(config.data.streamUrl).toBe(proxiedUrl);
     });
 
+    it('opens films and episodes across the full app viewport', () => {
+        service.openPlayer('https://example.test/movie/1.mp4', 'Filme de teste');
+        const config = dialog.open.mock.calls[0][1];
+        expect(config.width).toBe('100vw');
+        expect(config.height).toBe('100vh');
+        expect(config.maxWidth).toBe('100vw');
+        expect(config.maxHeight).toBe('100vh');
+        expect(config.panelClass).toBe('aurora-player-dialog');
+        expect(config.data.title).toBe('Filme de teste');
+    });
+
     it('keeps the raw url for external players', () => {
         settingsStore.player.mockReturnValue(VideoPlayer.MPV);
         const rawUrl = 'http://provider.example/movie/user/pass/99.mp4';
