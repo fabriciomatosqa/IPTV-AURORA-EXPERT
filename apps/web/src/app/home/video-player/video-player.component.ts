@@ -1,3 +1,4 @@
+import { catalogCategoryWidth } from '../../shared/utils/catalog-column-width';
 import { isAdultContentLabel, moveAdultContentToEnd } from '../../shared/utils/adult-content-order';
 import { Overlay, OverlayRef } from '@angular/cdk/overlay';
 import { ComponentPortal } from '@angular/cdk/portal';
@@ -132,6 +133,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
     readonly catalogSearch = signal('');
     readonly catalogCategory = signal('');
     readonly categorySidebarQuery = signal('');
+    readonly categorySearchOpen = signal(false);
     readonly catalogLimit = signal(200);
     readonly catalogSorted = signal(false);
     readonly catalogFavorites = this.store.selectSignal(selectFavorites);
@@ -229,6 +231,11 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
             isAdultContentLabel
         )
     );
+    readonly categorySidebarWidth = computed(() =>
+        catalogCategoryWidth(this.catalogCategories().map((category) =>
+            category + ' (' + (this.catalogCategoryCounts().get(category) || 0) + ')'
+        ))
+    );
     readonly catalogCategoryCounts = computed(() => {
         const counts = new Map<string, number>();
         for (const channel of this.sectionChannels()) {
@@ -275,6 +282,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
         this.catalogSection.set(section);
         this.catalogCategory.set('');
         this.categorySidebarQuery.set('');
+        this.categorySearchOpen.set(false);
         this.catalogSearch.set('');
         this.catalogLimit.set(200);
         this.browsing.set(true);
