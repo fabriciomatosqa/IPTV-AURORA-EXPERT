@@ -1,16 +1,74 @@
 # Atualizações e carregamento de catálogos
 
-Nas configurações, **Verificar atualização** consulta a última release pública. Uma versão nova oferece **Baixar atualização** e, depois da verificação SHA-512, **Reiniciar e instalar**. O app também consulta ao iniciar, após 30 segundos, e a cada quatro horas; o download e a instalação dependem do clique do usuário. Fechar o programa não instala automaticamente.
+## Formato de versões e canais
 
-O feed oficial é `https://github.com/fabriciomatosqa/IPTV-AURORA-EXPERT/releases/latest/download/latest.yml`. Cada release precisa conter o instalador referenciado nesse manifesto. Commits na main sem uma release publicada não são atualizações instaláveis. A instalação anterior 1.1.2 não possuía esse atualizador: precisa receber a primeira nova versão pelo EXE.
+O nome exibido ao usuário segue **FASE.ETAPA.DDMMAA-NN**, com duas etapas
+antes da data e com sequência independente para cada fase e dia:
+
+| Uso | Exemplo | Publicação GitHub |
+| --- | --- | --- |
+| Desenvolvimento | `0.0.081126-01` | Pré-lançamento (quando publicado) |
+| Testes beta, para outras pessoas | `0.1.081126-01` | Pré-lançamento |
+| Versão definitiva | `1.0.081126-01` | Versão estável/latest |
+
+Na mesma data, o sufixo `-01` pode ser usado nas três fases: trata-se de
+sequências independentes. `-02` significa a segunda compilação publicada
+**naquela fase e naquela data**.
+
+O Windows e o `electron-updater` usam internamente uma versão numérica
+SemVer diferente, pois `081126` com zeros à esquerda não serve para
+comparação de versões: `AAAA.MMDD.(etapa + sequência)`. A etapa de
+desenvolvimento ocupa `10001–19999`, beta `20001–29999` e estável
+`30001–39999`. Exemplos para 08/11/2026:
+
+- `0.0.081126-01` → `2026.1108.10001`
+- `0.1.081126-01` → `2026.1108.20001`
+- `1.0.081126-01` → `2026.1108.30001`
+
+Esses números garantem a ordem desenvolvimento → beta → definitiva,
+também respeitando os limites numéricos do Windows.
+
+O atualizador consulta a lista pública de Releases do GitHub e seleciona
+uma versão maior **do canal permitido**. Desenvolvimento pode receber
+desenvolvimento, beta e definitiva; beta pode receber outra beta ou
+definitiva; uma instalação definitiva **nunca** recebe beta automaticamente.
+A versão escolhida é baixada a partir do `latest.yml` publicado junto
+ao **tag exato**, permitindo encontrar betas marcadas como pré-lançamento
+sem colocá-las como última versão estável.
+
+No aplicativo, **Verificar atualização** consulta as releases publicadas.
+Uma versão nova oferece **Baixar atualização** e depois
+**Reiniciar e instalar**, com verificação de integridade. O download
+e a instalação só ocorrem após ação do usuário.
+
+**Compatibilidade com instaladores antigos:** a versão já distribuída
+`0.0.081126-01` tem numeração interna legada `2026.1108.1` e usa
+apenas `/releases/latest`. Ela não pode aprender a descobrir
+pré-lançamentos sem primeiro instalar uma versão com o novo atualizador.
+A primeira migração poderá exigir instalar manualmente o novo EXE; após
+isso, as transições de beta para definitiva e futuras versões são feitas
+pelo programa. As listas e preferências são preservadas.
 
 ## Publicar as próximas versões
 
-Execute o workflow **Build Windows Installer** na main com `publish_release` habilitado. Ele calcula a próxima sequência usando as tags remotas, testa, empacota, testa o executável e publica o EXE, latest.yml, blockmap e os hashes. A execução padrão em push/PR apenas valida e disponibiliza o artefato.
 
-Para preparar localmente: `node scripts/prepare-release.cjs`. A data usa America/Sao_Paulo. `--date=2026-11-07 --sequence=2` permite uma escolha explícita para manutenção; não reutilize versões já publicadas. Depois execute `pnpm nx run electron-backend:make`.
+Execute **GitHub Actions → Build Windows Installer → Run workflow** na
+branch `main`; marque `publish_release` e escolha `release_stage`:
 
-O nome público é `0.0.DDMMAA-NN`. Esse nome contém zeros à esquerda e não pode ser usado diretamente como SemVer. O pacote usa internamente `AAAA.MMDD.N`, por exemplo `2026.1107.1`, preservando a ordem também na troca do mês e do ano. O manifesto utiliza a versão interna em `version` e a pública em `releaseName`. As tags usam `v0.0.DDMMAA-NN`.
+- `development` gera `0.0.DDMMAA-NN` e marca a release como prerelease.
+- `beta` gera `0.1.DDMMAA-NN` e marca a release como prerelease.
+- `stable` gera `1.0.DDMMAA-NN` e define a nova release definitiva/latest.
+
+O workflow escolhe automaticamente a próxima sequência procurando tags
+**somente da fase escolhida e do dia atual**. Ele executa testes, empacota,
+verifica o executável e só então publica EXE, `latest.yml`, blockmap e
+hashes. Publicações comuns na `main`, sem `publish_release`, geram apenas
+o artefato do Actions: não são atualizações instaláveis.
+
+Para testar localmente o gerador:
+`node scripts/prepare-release.cjs --date=2026-11-08 --stage=beta --sequence=1`.
+Use `--stage=stable` para versão definitiva. Essas mudanças locais alteram
+metadados e nome do instalador; não publique uma tag já existente.
 
 ## Catálogos
 
