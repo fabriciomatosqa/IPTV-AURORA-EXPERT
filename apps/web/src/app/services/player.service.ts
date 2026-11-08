@@ -84,7 +84,8 @@ export class PlayerService {
         origin?: string,
         contentInfo?: any,
         startTime?: number,
-        subtitleUrl?: string | null
+        subtitleUrl?: string | null,
+        alternateUrls?: string[]
     ) {
         const player = this.settingsStore.player() ?? VideoPlayer.VideoJs;
         const playableStreamUrl = this.getPlayableUrlForBrowser(
@@ -129,6 +130,7 @@ export class PlayerService {
                 contentInfo,
                 startTime,
                 subtitleUrl: subtitleUrl ?? undefined,
+                alternateUrls,
                 streamHeaders: {
                     userAgent,
                     referrer: referer,
