@@ -1,5 +1,41 @@
-<h2 mat-dialog-title>{{ title }}</h2>
-<mat-dialog-content class="content">
+<h2 mat-dialog-title class="aurora-player-heading">
+    <span class="aurora-player-title" [title]="title">{{ title }}</span>
+    <div class="aurora-player-heading-actions">
+        @if (canUseNativePiP) {
+            <button
+                mat-icon-button
+                type="button"
+                [disabled]="isOpeningPiP()"
+                (click)="openPictureInPicture()"
+                matTooltip="Picture in Picture — janela redimensionável do Windows"
+                aria-label="Abrir Picture in Picture"
+                data-test-id="player-open-pip"
+            >
+                <mat-icon>picture_in_picture_alt</mat-icon>
+            </button>
+        }
+        <button
+            mat-icon-button
+            type="button"
+            (click)="toggleDialogFullscreen()"
+            matTooltip="Alternar tela cheia do aplicativo"
+            aria-label="Alternar tela cheia"
+            data-test-id="player-fullscreen"
+        >
+            <mat-icon>{{ isFullscreen() ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
+        </button>
+        <button
+            mat-icon-button
+            type="button"
+            mat-dialog-close
+            matTooltip="Fechar player"
+            aria-label="Fechar player"
+        >
+            <mat-icon>close</mat-icon>
+        </button>
+    </div>
+</h2>
+<mat-dialog-content class="content aurora-player-content">
     <app-web-player-view
         [streamUrl]="streamUrl"
         [startTime]="data.startTime || 0"
@@ -7,12 +43,12 @@
         (timeUpdate)="handleTimeUpdate($event)"
     />
 </mat-dialog-content>
-<mat-dialog-actions class="align-actions">
+<mat-dialog-actions class="align-actions aurora-player-actions">
     <button
         mat-button
         [cdkCopyToClipboard]="streamUrl"
         (click)="showCopyNotification()"
-        [matTooltip]="streamUrl"
+        matTooltip="Copiar endereço de reprodução"
     >
         <mat-icon>content_copy</mat-icon>
         {{ 'PORTALS.COPY_STREAM_URL' | translate }}
