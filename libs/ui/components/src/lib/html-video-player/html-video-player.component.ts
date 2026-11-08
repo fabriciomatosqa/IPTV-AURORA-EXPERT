@@ -310,7 +310,9 @@ export class HtmlVideoPlayerComponent implements OnInit, OnChanges, OnDestroy {
             } else if (extension === 'm3u8') {
                 this.playNative(playbackUrl, 'application/x-mpegURL');
             } else if (extension === 'ts') {
-                this.playNative(playbackUrl, 'video/mp2t');
+                // Standalone MPEG-TS is usually not supported by Chromium.
+                // Route it through the bundled FFmpeg proxy as fragmented MP4.
+                void this.playMpegTsWithProxy(playbackUrl, this.sourceGeneration);
             } else if (extension === 'mp4') {
                 this.playNative(playbackUrl, 'video/mp4');
             } else {
@@ -318,6 +320,46 @@ export class HtmlVideoPlayerComponent implements OnInit, OnChanges, OnDestroy {
             }
             // Side-load external subtitle if provided
             this.applySubtitleTrack();
+        }
+    }
+
+    private async playMpegTsWithProxy(
+        sourceUrl: string,
+        sourceGeneration: number
+    ): Promise<void> {
+        const isCurrent = () => sourceGeneration === this.sourceGeneration;
+        try {
+            const parsed = new URL(sourceUrl);
+            if (parsed.pathname.endsWith('/stream') && parsed.searchParams.has('url')) {
+                parsed.searchParams.set('transcode', '1');
+                if (isCurrent()) {
+                    const playbackUrl = parsed.toString();
+                    this.currentSourceUrl = playbackUrl;
+                    this.playNative(playbackUrl, 'video/mp4');
+                }
+                return;
+            }
+
+            const port = await this.electronApi?.getStreamProxyPort?.();
+            if (!isCurrent()) {
+                return;
+            }
+            if (port) {
+                const params = new URLSearchParams({
+                    url: sourceUrl,
+                    transcode: '1',
+                });
+                const playbackUrl =
+                    `http://127.0.0.1:${port}/stream?${params.toString()}`;
+                this.currentSourceUrl = playbackUrl;
+                this.playNative(playbackUrl, 'video/mp4');
+                return;
+            }
+        } catch {
+            // No desktop proxy available: preserve legacy direct fallback.
+        }
+        if (isCurrent()) {
+            this.playNative(sourceUrl, 'video/mp2t');
         }
     }
 
