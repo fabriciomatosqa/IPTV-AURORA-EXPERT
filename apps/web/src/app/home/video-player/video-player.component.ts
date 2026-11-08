@@ -1,3 +1,4 @@
+import { NavigationComponent } from '../../xtream-tauri/navigation/navigation.component';
 import { AuroraCatalogNavigationComponent } from '../../shared/components/aurora-catalog-navigation/aurora-catalog-navigation.component';
 import { DownloadsComponent } from '../../xtream-tauri/downloads/downloads.component';
 import { catalogCategoryWidth } from '../../shared/utils/catalog-column-width';
@@ -97,6 +98,7 @@ import { WebPlayerViewComponent } from 'shared-portals';
         CommonModule,
         AuroraCatalogNavigationComponent,
         DownloadsComponent,
+        NavigationComponent,
         EpgListComponent,
         HtmlVideoPlayerComponent,
         InfoOverlayComponent,
@@ -205,10 +207,9 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
         else this.catalogDetail.set(channel);
     }
     readonly catalogNavigation = [
-        { id: 'live', label: 'TV ao vivo', icon: 'tv' },
-        { id: 'series', label: 'Séries', icon: 'video_library' },
-        { id: 'movies', label: 'Filmes', icon: 'local_movies' },
-        { id: 'downloads', label: 'Downloads', icon: 'download' },
+        { id: 'live', labelKey: 'PORTALS.SIDEBAR.LIVE_TV', icon: 'live_tv' },
+        { id: 'series', labelKey: 'PORTALS.SIDEBAR.SERIES', icon: 'tv' },
+        { id: 'movies', labelKey: 'PORTALS.SIDEBAR.MOVIES', icon: 'movie' },
     ];
     private contentKind(channel: Channel): string {
         return (

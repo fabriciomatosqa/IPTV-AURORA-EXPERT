@@ -29,7 +29,10 @@ export class NavigationComponent {
     private readonly activatedRoute = inject(ActivatedRoute);
     private readonly dialog = inject(MatDialog);
     private readonly store = inject(Store);
-    readonly xtreamStore = inject(XtreamStore);
+    readonly xtreamStore = inject(XtreamStore, { optional: true });
+    /** The same structural sidebar renders for M3U, Xtream and Stalker. */
+    readonly mode = input<'portal' | 'm3u'>('portal');
+    readonly epgRequested = output<void>();
 
     readonly portalStatus = input<'active' | 'inactive' | 'expired'>();
     readonly selectedContentType = input<string>();
@@ -88,9 +91,9 @@ export class NavigationComponent {
             maxWidth: '1200px',
             maxHeight: '90vh',
             data: {
-                vodStreamsCount: this.xtreamStore.vodStreams().length,
-                liveStreamsCount: this.xtreamStore.liveStreams().length,
-                seriesCount: this.xtreamStore.serialStreams().length,
+                vodStreamsCount: this.xtreamStore?.vodStreams().length ?? 0,
+                liveStreamsCount: this.xtreamStore?.liveStreams().length ?? 0,
+                seriesCount: this.xtreamStore?.serialStreams().length ?? 0,
             },
         });
     }
@@ -118,6 +121,6 @@ export class NavigationComponent {
 
     pageSwitch(page: 'search' | 'recent' | 'favorites' | 'recently-added') {
         this.pageClicked.emit(page);
-        this.xtreamStore.setSelectedContentType(undefined);
+        this.xtreamStore?.setSelectedContentType(undefined);
     }
 }
