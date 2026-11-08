@@ -77,7 +77,7 @@ export class FloatingPlayerComponent implements OnInit, OnDestroy {
         if (now - this.lastSaveTime < 15000) return;
         this.lastSaveTime = now;
         void this.xtreamStore.savePosition(data['playlistId'], {
-            ...(data as PlaybackPositionData),
+            ...(data as unknown as PlaybackPositionData),
             positionSeconds: Math.floor(this.lastPositionSeconds),
             durationSeconds: Number.isFinite(event.duration)
                 ? Math.floor(event.duration)
