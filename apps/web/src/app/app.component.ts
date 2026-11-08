@@ -7,7 +7,7 @@ import { Store } from '@ngrx/store';
 import { TranslateService } from '@ngx-translate/core';
 import { PlaylistActions, selectAllPlaylistsMeta } from 'm3u-state';
 import { filter, take } from 'rxjs';
-import { DataService, EpgService } from 'services';
+import { DataService, EpgService, PlaylistLoadingService } from 'services';
 import {
     AUTO_UPDATE_PLAYLISTS,
     Language,
@@ -25,6 +25,46 @@ import { GlobalSearchResultsComponent } from './xtream-tauri/search-results/glob
     selector: 'app-root',
     templateUrl: './app.component.html',
     imports: [EpgProgressPanelComponent, RouterOutlet],
+    styles: [
+        `
+            .playlist-loading-screen {
+                position: fixed;
+                inset: 0;
+                z-index: 2000;
+                display: grid;
+                place-items: center;
+                background: #10151de8;
+                color: #eef6f4;
+                font-family: 'Segoe UI', sans-serif;
+            }
+            .playlist-loading-card {
+                text-align: center;
+                max-width: 440px;
+                padding: 32px;
+            }
+            .playlist-spinner {
+                width: 42px;
+                height: 42px;
+                margin: 0 auto 24px;
+                border: 3px solid #ffffff16;
+                border-top-color: #73e0c6;
+                border-radius: 50%;
+                animation: playlist-spin 0.8s linear infinite;
+            }
+            .playlist-loading-card progress {
+                width: 260px;
+                accent-color: #73e0c6;
+            }
+            .playlist-loading-card p {
+                color: #b3c4cf;
+            }
+            @keyframes playlist-spin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+        `,
+    ],
 })
 export class AppComponent implements OnInit {
     @HostBinding('class.macos-platform') get isMacOS() {
@@ -44,6 +84,7 @@ export class AppComponent implements OnInit {
     private store = inject(Store);
     private translate = inject(TranslateService);
     private settingsService = inject(SettingsService);
+    readonly playlistLoading = inject(PlaylistLoadingService);
 
     /** Default language as fallback */
     private readonly DEFAULT_LANG = Language.PORTUGUESE;

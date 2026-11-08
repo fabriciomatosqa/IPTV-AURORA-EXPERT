@@ -13,6 +13,7 @@ export * from './lib/parsed-playlist.interface';
 export * from './lib/playback-position.interface';
 export * from './lib/playlist-meta.type';
 export * from './lib/playlist.interface';
+export * from './lib/app-update.interface';
 export * from './lib/settings.interface';
 export * from './lib/stalker-portal-actions.enum';
 export * from './lib/store-keys.enum';

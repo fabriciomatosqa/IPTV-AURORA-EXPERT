@@ -8,7 +8,7 @@ import { TranslateModule } from '@ngx-translate/core';
     template: `
         <div mat-dialog-content>
             <img
-                src="./assets/aurora/aurora.svg"
+                src="./assets/aurora/aurora.png"
                 width="128"
                 alt="IPTV AURORA EXPERT"
             /><br />

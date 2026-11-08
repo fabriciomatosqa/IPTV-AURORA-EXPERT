@@ -4,6 +4,11 @@ import { PlaylistActions } from '../actions';
 import { playlistsAdapter } from '../playlists.state';
 import { PlaylistState } from '../state';
 
+function playlistMetadata(playlist: any) {
+    const { playlist: contents, items, header, ...metadata } = playlist;
+    return metadata;
+}
+
 export const playlistReducers = [
     on(PlaylistActions.loadPlaylistsSuccess, (state, action): PlaylistState => {
         return {
@@ -30,7 +35,7 @@ export const playlistReducers = [
                 {
                     id: action.playlistId,
                     changes: {
-                        ...action.playlist,
+                        ...playlistMetadata(action.playlist),
                         _id: action.playlistId,
                         updateDate: Date.now(),
                         count: action.playlist.playlist.items.length,
@@ -48,7 +53,7 @@ export const playlistReducers = [
         return {
             ...state,
             playlists: playlistsAdapter.addOne(
-                action.playlist,
+                playlistMetadata(action.playlist),
                 state.playlists
             ),
         };
@@ -57,7 +62,7 @@ export const playlistReducers = [
         return {
             ...state,
             playlists: playlistsAdapter.addMany(
-                action.playlists,
+                action.playlists.map(playlistMetadata),
                 state.playlists
             ),
         };

@@ -8,12 +8,12 @@ import { dialog, ipcMain } from 'electron';
 import {
     createPlaylistObject,
     getFilenameFromUrl,
-    parsePlaylistContent,
     playlistImportError,
 } from 'm3u-utils';
 import { readFile, writeFile } from 'node:fs/promises';
 import { basename } from 'node:path';
 import { AUTO_UPDATE_PLAYLISTS, type Playlist } from 'shared-interfaces';
+import { parsePlaylistInWorker } from '../services/playlist-parser.service';
 
 export default class PlaylistEvents {
     static bootstrapPlaylistEvents(): Electron.IpcMain {
@@ -31,7 +31,8 @@ const https = require('https');
  */
 async function fetchPlaylistFromUrl(
     url: string,
-    title?: string
+    title?: string,
+    progress?: (phase: 'download' | 'parse', percent?: number) => void
 ): Promise<Playlist> {
     try {
         const parsedUrl = new URL(url.trim());
@@ -43,6 +44,8 @@ async function fetchPlaylistFromUrl(
     }
 
     const agent = new https.Agent({ rejectUnauthorized: false });
+    const provider = await resolveXtreamPlaylist(url, title);
+    if (provider) return provider;
     let body: string;
     let sourceUrl = url;
     try {
@@ -53,6 +56,16 @@ async function fetchPlaylistFromUrl(
             responseType: 'text',
             timeout: 90000,
             maxRedirects: 5,
+            onDownloadProgress: (event) =>
+                progress?.(
+                    'download',
+                    event.total
+                        ? Math.min(
+                              100,
+                              Math.round((event.loaded / event.total) * 100)
+                          )
+                        : undefined
+                ),
             headers: {
                 Accept: '*/*',
                 'User-Agent':
@@ -82,7 +95,8 @@ async function fetchPlaylistFromUrl(
         throw playlistImportError('CONNECTION');
     }
 
-    const parsedPlaylist = parsePlaylistContent(body, sourceUrl);
+    progress?.('parse');
+    const parsedPlaylist = await parsePlaylistInWorker(body, sourceUrl);
 
     const extractedName = getFilenameFromUrl(url);
     const playlistName =
@@ -104,6 +118,54 @@ async function fetchPlaylistFromUrl(
  * @param title - Title for the playlist
  * @returns Parsed playlist object
  */
+async function resolveXtreamPlaylist(
+    url: string,
+    title?: string
+): Promise<Playlist | null> {
+    const providerUrl = new URL(url);
+    if (!['http:', 'https:'].includes(providerUrl.protocol)) return null;
+    const username = providerUrl.searchParams.get('username');
+    const password = providerUrl.searchParams.get('password');
+    if (!/\/get\.php$/i.test(providerUrl.pathname) || !username || !password)
+        return null;
+    const serverUrl =
+        providerUrl.origin + providerUrl.pathname.replace(/\/get\.php$/i, '');
+    try {
+        const account = await axios.get(serverUrl + '/player_api.php', {
+            params: { username, password, action: 'get_account_info' },
+            timeout: 8000,
+            httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+        });
+        if (
+            String(account.data?.user_info?.auth) !== '1' ||
+            account.data.user_info.status !== 'Active'
+        )
+            return null;
+        return {
+            ...createPlaylistObject(title || getFilenameFromUrl(url), {
+                header: { attrs: { 'x-tvg-url': '' }, raw: '' },
+                items: [],
+            }),
+            serverUrl,
+            username,
+            password,
+        };
+    } catch {
+        return null;
+    }
+}
+
+ipcMain.handle(
+    'resolve-xtream-playlist',
+    async (_event, url: string, title?: string) => {
+        try {
+            return await resolveXtreamPlaylist(url, title);
+        } catch {
+            return null;
+        }
+    }
+);
+
 async function fetchPlaylistFromFile(
     filePath: string,
     title: string
@@ -114,7 +176,7 @@ async function fetchPlaylistFromFile(
     } catch {
         throw playlistImportError('FILE');
     }
-    const parsedPlaylist = parsePlaylistContent(fileContent);
+    const parsedPlaylist = await parsePlaylistInWorker(fileContent);
     const playlistObject = createPlaylistObject(
         title,
         parsedPlaylist,
@@ -126,7 +188,13 @@ async function fetchPlaylistFromFile(
 
 ipcMain.handle('fetch-playlist-by-url', async (event, url, title?: string) => {
     try {
-        return await fetchPlaylistFromUrl(url, title);
+        return await fetchPlaylistFromUrl(url, title, (phase, percent) => {
+            if (!event.sender?.isDestroyed())
+                event.sender?.send('PLAYLIST_IMPORT_PROGRESS', {
+                    phase,
+                    percent,
+                });
+        });
     } catch (error) {
         throw error;
     }

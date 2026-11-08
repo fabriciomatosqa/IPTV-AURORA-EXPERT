@@ -19,7 +19,12 @@ import {
     tap,
     withLatestFrom,
 } from 'rxjs';
-import { DataService, EpgService, PlaylistsService } from 'services';
+import {
+    DataService,
+    EpgService,
+    PlaylistsService,
+    PlaylistLoadingService,
+} from 'services';
 import {
     GLOBAL_FAVORITES_PLAYLIST_ID,
     OPEN_MPV_PLAYER,
@@ -43,6 +48,7 @@ import {
 
 @Injectable({ providedIn: 'any' })
 export class PlaylistEffects {
+    private readonly playlistLoading = inject(PlaylistLoadingService);
     private actions$ = inject(Actions);
     private playlistsService = inject(PlaylistsService);
     private dataService = inject(DataService);
@@ -317,45 +323,57 @@ export class PlaylistEffects {
                 ),
                 switchMap((action) => {
                     if ('isTemporary' in action && action.isTemporary) {
+                        this.playlistLoading.finish();
                         return EMPTY;
                     }
-                    return this.playlistsService.addPlaylist(action.playlist);
+                    return this.playlistsService
+                        .addPlaylist(action.playlist)
+                        .pipe(
+                            tap(() => this.playlistLoading.finish()),
+                            catchError(() => {
+                                this.playlistLoading.finish();
+                                this.snackBar.open(
+                                    'Não foi possível salvar a lista. Verifique o espaço disponível e tente novamente.',
+                                    'Fechar',
+                                    { duration: 9000 }
+                                );
+                                return EMPTY;
+                            })
+                        );
                 }),
-                map((playlist: Playlist) => {
-                    if (playlist.serverUrl && !this.dataService.isElectron) {
-                        this.router.navigate(['/xtreams/', playlist._id]);
-                    } else if (playlist.macAddress) {
-                        this.router.navigate(['stalker', playlist._id]);
-                    } else {
-                        this.router.navigate(['/playlists/', playlist._id]);
-                    }
-                    return playlist;
-                }),
-                map(async (playlist) => {
-                    if (playlist.serverUrl && this.dataService.isElectron) {
-                        // Create Xtream playlist in SQLite
+                switchMap(async (playlist: Playlist) => {
+                    if (
+                        this.dataService.isElectron &&
+                        (playlist.serverUrl || playlist.macAddress)
+                    ) {
                         await window.electron.dbCreatePlaylist({
                             id: playlist._id.toString(),
                             name: playlist.title || '',
                             serverUrl: playlist.serverUrl || '',
                             username: playlist.username || '',
                             password: playlist.password || '',
-                            type: 'xtream',
-                        });
-                        this.router.navigate(['/xtreams/', playlist._id]);
-                    } else if (
-                        playlist.macAddress &&
-                        this.dataService.isElectron
-                    ) {
-                        // Create Stalker playlist in SQLite
-                        await window.electron.dbCreatePlaylist({
-                            id: playlist._id.toString(),
-                            name: playlist.title || '',
                             macAddress: playlist.macAddress || '',
                             url: playlist.portalUrl || '',
-                            type: 'stalker',
+                            type: playlist.serverUrl ? 'xtream' : 'stalker',
                         });
                     }
+                    await this.router.navigate([
+                        playlist.serverUrl
+                            ? '/xtreams'
+                            : playlist.macAddress
+                              ? '/stalker'
+                              : '/playlists',
+                        playlist._id,
+                    ]);
+                }),
+                catchError(() => {
+                    this.playlistLoading.finish();
+                    this.snackBar.open(
+                        'Não foi possível abrir a lista. Volte ao início e tente novamente.',
+                        'Fechar',
+                        { duration: 9000 }
+                    );
+                    return EMPTY;
                 })
             );
         },

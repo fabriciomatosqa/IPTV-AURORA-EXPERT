@@ -2,6 +2,33 @@ button {
     cursor: pointer !important;
     text-transform: uppercase;
 }
+.settings-quick-actions {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 16px 22px;
+    background: #171d26;
+    border-bottom: 1px solid #ffffff12;
+    color: #e1eeeb;
+}
+.settings-quick-actions button {
+    text-transform: none;
+}
+.app-update-status {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+    align-items: center;
+    font-size: 13px;
+}
+.app-update-status progress {
+    accent-color: #73e0c6;
+    width: 180px;
+}
 
 .settings-container {
     overflow: auto;

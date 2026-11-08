@@ -15,7 +15,7 @@ import {
     getPlaylistImportMessage,
     parsePlaylistContent,
 } from 'm3u-utils';
-import { DataService } from 'services';
+import { DataService, PlaylistLoadingService } from 'services';
 import { PLAYLIST_PARSE_BY_URL } from 'shared-interfaces';
 import { FileUploadComponent } from '../../../home/file-upload/file-upload.component';
 import { StalkerPortalImportComponent } from '../../../home/stalker-portal-import/stalker-portal-import.component';
@@ -41,6 +41,7 @@ export type PlaylistType = 'xtream' | 'url' | 'text' | 'file' | 'stalker';
 })
 export class AddPlaylistDialogComponent {
     private dataService = inject(DataService);
+    private readonly playlistLoading = inject(PlaylistLoadingService);
     private dialogRef = inject(MatDialogRef<AddPlaylistDialogComponent>);
     private store = inject(Store);
     private snackBar = inject(MatSnackBar);
@@ -101,12 +102,14 @@ export class AddPlaylistDialogComponent {
         );
     }
 
-    private importContent(
+    private async importContent(
         content: string,
         title: string,
         type: 'FILE' | 'TEXT',
         path?: string
-    ): void {
+    ): Promise<void> {
+        this.playlistLoading.begin('Lendo conteúdos da lista…');
+        await new Promise((resolve) => setTimeout(resolve, 0));
         try {
             const playlist = createPlaylistObject(
                 title,
@@ -115,8 +118,10 @@ export class AddPlaylistDialogComponent {
                 type
             );
             this.store.dispatch(PlaylistActions.addPlaylist({ playlist }));
+            this.playlistLoading.stage('Salvando lista…');
             this.closeDialog();
         } catch (error) {
+            this.playlistLoading.finish();
             this.snackBar.open(getPlaylistImportMessage(error), 'Fechar', {
                 duration: 9000,
             });

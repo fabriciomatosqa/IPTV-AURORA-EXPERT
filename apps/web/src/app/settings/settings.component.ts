@@ -38,6 +38,7 @@ import {
     VideoPlayer,
 } from 'shared-interfaces';
 import { SettingsStore } from '../services/settings-store.service';
+import { AppUpdateService } from '../services/app-update.service';
 import { HeaderComponent } from '../shared/components/header/header.component';
 import { SettingsService } from './../services/settings.service';
 
@@ -62,6 +63,7 @@ import { SettingsService } from './../services/settings.service';
     ],
 })
 export class SettingsComponent implements OnInit {
+    readonly appUpdate = inject(AppUpdateService);
     private dialogService = inject(DialogService);
     public dataService = inject(DataService);
     private epgService = inject(EpgService);
@@ -241,6 +243,7 @@ export class SettingsComponent implements OnInit {
      * settings UI
      */
     checkAppVersion(): void {
+        if (window.electron?.checkForAppUpdates) return;
         this.settingsService
             .getAppVersion()
             .pipe(take(1))
@@ -355,9 +358,8 @@ export class SettingsComponent implements OnInit {
     backToHome(): void {
         if (this.isDialog) {
             this.matDialog.closeAll();
-        } else {
-            this.router.navigateByUrl('/');
         }
+        this.router.navigateByUrl('/');
     }
 
     /**

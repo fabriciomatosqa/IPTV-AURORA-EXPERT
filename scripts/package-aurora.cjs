@@ -65,6 +65,7 @@ async function main() {
         'electron-backend/main.js',
         'electron-backend/main.preload.js',
         'electron-backend/workers/epg-parser.worker.js',
+        'electron-backend/workers/playlist-parser.worker.js',
         'web/index.html',
         'remote-control-web/browser/index.html',
     ]) {
@@ -95,6 +96,28 @@ async function main() {
         publish: 'never',
         ...(process.argv.includes('--dir') ? { dir: true } : {}),
     });
+    if (!process.argv.includes('--dir') && process.platform === 'win32') {
+        const name = `iptv-aurora-expert-${metadata.auroraVersion || metadata.version}-windows-x64-setup.exe`;
+        const installer = path.join(root, 'dist/executables', name);
+        const bytes = fs.readFileSync(installer);
+        const sha512 = createHash('sha512').update(bytes).digest('base64');
+        const update = {
+            version: metadata.version,
+            releaseName: metadata.auroraVersion || metadata.version,
+            files: [{ url: name, sha512, size: bytes.length }],
+            path: name,
+            sha512,
+            releaseDate: new Date().toISOString(),
+        };
+        // JSON is valid YAML and avoids hand-escaped manifest values.
+        fs.writeFileSync(
+            path.join(root, 'dist/executables/latest.yml'),
+            JSON.stringify(update, null, 2) + '\n'
+        );
+        console.log(
+            'PASS updater manifest: version, installer filename, size and SHA-512'
+        );
+    }
 }
 main().catch((error) => {
     console.error(error);

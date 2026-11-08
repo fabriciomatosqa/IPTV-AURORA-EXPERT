@@ -12,6 +12,64 @@
 }
 
 <div class="settings-container" data-test-id="settings-container">
+    <div class="settings-quick-actions">
+        <button
+            mat-stroked-button
+            type="button"
+            (click)="backToHome()"
+            data-test-id="back-to-home"
+        >
+            <mat-icon>home</mat-icon>Voltar ao início
+        </button>
+        @if (isDesktop) {
+            <button
+                mat-flat-button
+                type="button"
+                (click)="appUpdate.check()"
+                [disabled]="appUpdate.busy()"
+                data-test-id="check-app-update"
+            >
+                <mat-icon>system_update_alt</mat-icon>Verificar atualização
+            </button>
+            @if (appUpdate.state().phase === 'available') {
+                <button
+                    mat-flat-button
+                    type="button"
+                    (click)="appUpdate.download()"
+                    data-test-id="download-app-update"
+                >
+                    <mat-icon>download</mat-icon>Baixar atualização
+                </button>
+            }
+            @if (appUpdate.state().phase === 'ready') {
+                <button
+                    mat-flat-button
+                    type="button"
+                    (click)="appUpdate.install()"
+                    data-test-id="install-app-update"
+                >
+                    <mat-icon>restart_alt</mat-icon>Reiniciar e instalar
+                </button>
+            }
+            <div
+                class="app-update-status"
+                role="status"
+                aria-live="polite"
+                data-test-id="app-update-status"
+            >
+                <strong>Versão {{ version }}</strong
+                ><span>{{ appUpdate.state().message }}</span>
+                @if (appUpdate.state().phase === 'downloading') {
+                    <progress
+                        max="100"
+                        [value]="appUpdate.state().percent || 0"
+                        aria-label="Download da atualização"
+                    ></progress
+                    ><span>{{ appUpdate.state().percent || 0 }}%</span>
+                }
+            </div>
+        }
+    </div>
     <form [formGroup]="settingsForm" (ngSubmit)="onSubmit()" novalidate>
         @if (isDesktop) {
             <ng-container formArrayName="epgUrl">
@@ -567,16 +625,6 @@
 
         <mat-divider />
         <div class="action-buttons" align="end">
-            <button
-                mat-button
-                color="accent"
-                type="reset"
-                (click)="backToHome()"
-                data-test-id="back-to-home"
-            >
-                <mat-icon>chevron_left</mat-icon>
-                {{ 'SETTINGS.BACK_TO_HOME' | translate }}
-            </button>
             <button
                 mat-button
                 color="accent"

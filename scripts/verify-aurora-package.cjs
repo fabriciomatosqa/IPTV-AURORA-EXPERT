@@ -18,6 +18,8 @@ module.exports = async function verifyPackage(context) {
         throw new Error('Bundled FFmpeg integrity check failed');
     for (const file of [
         'workers/epg-parser.worker.js',
+        'workers/playlist-parser.worker.js',
+        'app-update.yml',
         'legal/LICENSE.md',
         'legal/THIRD_PARTY_NOTICES.md',
         'app.asar.unpacked/node_modules/better-sqlite3/build/Release/better_sqlite3.node',

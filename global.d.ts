@@ -13,8 +13,33 @@ declare global {
     interface Window {
         electron: {
             getAppVersion: () => Promise<string>;
+            getAppUpdateState?: () => Promise<
+                import('./libs/shared/interfaces/src/lib/app-update.interface').AppUpdateState
+            >;
+            checkForAppUpdates?: () => Promise<
+                import('./libs/shared/interfaces/src/lib/app-update.interface').AppUpdateState
+            >;
+            downloadAppUpdate?: () => Promise<
+                import('./libs/shared/interfaces/src/lib/app-update.interface').AppUpdateState
+            >;
+            installAppUpdate?: () => Promise<boolean>;
+            onAppUpdateState?: (
+                callback: (
+                    state: import('./libs/shared/interfaces/src/lib/app-update.interface').AppUpdateState
+                ) => void
+            ) => () => void;
+            onPlaylistImportProgress?: (
+                callback: (progress: {
+                    phase: 'download' | 'parse';
+                    percent?: number;
+                }) => void
+            ) => () => void;
             getStreamProxyPort: () => Promise<number | null>;
             platform: string;
+            resolveXtreamPlaylist?: (
+                url: string,
+                title?: string
+            ) => Promise<import('shared-interfaces').Playlist | null>;
             fetchPlaylistByUrl: (
                 url: string,
                 title?: string
@@ -252,7 +277,9 @@ declare global {
                 }) => void
             ) => void;
             // DB save content progress listener
-            onDbSaveContentProgress: (callback: (count: number) => void) => void;
+            onDbSaveContentProgress: (
+                callback: (count: number) => void
+            ) => void;
             removeDbSaveContentProgress: () => void;
             dbDeleteAllPlaylists: () => Promise<{ success: boolean }>;
             // Playback positions
@@ -273,15 +300,15 @@ declare global {
                 playlistId: string,
                 limit?: number
             ) => Promise<any[]>;
-            dbGetAllPlaybackPositions: (
-                playlistId: string
-            ) => Promise<any[]>;
+            dbGetAllPlaybackPositions: (playlistId: string) => Promise<any[]>;
             dbClearPlaybackPosition: (
                 playlistId: string,
                 contentXtreamId: number,
                 contentType: 'vod' | 'episode'
             ) => Promise<{ success: boolean }>;
-            onPlaybackPositionUpdate: (callback: (data: any) => void) => () => void;
+            onPlaybackPositionUpdate: (
+                callback: (data: any) => void
+            ) => () => void;
             // Downloads
             downloadsStart: (data: {
                 playlistId: string;
@@ -301,7 +328,12 @@ declare global {
                 episodeNumber?: number;
                 // Playlist info for auto-creation if needed
                 playlistName?: string;
-                playlistType?: 'xtream' | 'stalker' | 'm3u-file' | 'm3u-text' | 'm3u-url';
+                playlistType?:
+                    | 'xtream'
+                    | 'stalker'
+                    | 'm3u-file'
+                    | 'm3u-text'
+                    | 'm3u-url';
                 serverUrl?: string;
                 portalUrl?: string;
                 macAddress?: string;

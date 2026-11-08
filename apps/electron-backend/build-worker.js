@@ -3,35 +3,77 @@ const path = require('path');
 
 // Node.js built-in modules that should be externalized
 const nodeBuiltins = [
-    'assert', 'async_hooks', 'buffer', 'child_process', 'cluster',
-    'console', 'constants', 'crypto', 'dgram', 'dns', 'domain',
-    'events', 'fs', 'http', 'http2', 'https', 'inspector', 'module',
-    'net', 'os', 'path', 'perf_hooks', 'process', 'punycode',
-    'querystring', 'readline', 'repl', 'stream', 'string_decoder',
-    'sys', 'timers', 'tls', 'trace_events', 'tty', 'url', 'util',
-    'v8', 'vm', 'worker_threads', 'zlib'
+    'assert',
+    'async_hooks',
+    'buffer',
+    'child_process',
+    'cluster',
+    'console',
+    'constants',
+    'crypto',
+    'dgram',
+    'dns',
+    'domain',
+    'events',
+    'fs',
+    'http',
+    'http2',
+    'https',
+    'inspector',
+    'module',
+    'net',
+    'os',
+    'path',
+    'perf_hooks',
+    'process',
+    'punycode',
+    'querystring',
+    'readline',
+    'repl',
+    'stream',
+    'string_decoder',
+    'sys',
+    'timers',
+    'tls',
+    'trace_events',
+    'tty',
+    'url',
+    'util',
+    'v8',
+    'vm',
+    'worker_threads',
+    'zlib',
 ];
 
 // Native modules that must be externalized (loaded at runtime)
-const nativeModules = [
-    'better-sqlite3',
-];
+const nativeModules = ['better-sqlite3'];
 
 const isProduction = process.env.NODE_ENV === 'production';
 
 async function buildWorker() {
     try {
-        console.log(`Building EPG parser worker with esbuild (${isProduction ? 'production' : 'development'})...`);
+        console.log(
+            `Building EPG parser worker with esbuild (${isProduction ? 'production' : 'development'})...`
+        );
 
         await esbuild.build({
-            entryPoints: [path.join(__dirname, 'src/app/workers/epg-parser.worker.ts')],
+            entryPoints: [
+                path.join(__dirname, 'src/app/workers/epg-parser.worker.ts'),
+                path.join(
+                    __dirname,
+                    'src/app/workers/playlist-parser.worker.ts'
+                ),
+            ],
             bundle: true,
             platform: 'node',
             target: 'node18',
             format: 'cjs',
-            outfile: path.join(__dirname, '../../dist/apps/electron-backend/workers/epg-parser.worker.js'),
+            outdir: path.join(
+                __dirname,
+                '../../dist/apps/electron-backend/workers'
+            ),
             external: [
-                ...nodeBuiltins.map(m => `node:${m}`),
+                ...nodeBuiltins.map((m) => `node:${m}`),
                 ...nodeBuiltins,
                 ...nativeModules,
             ],
@@ -39,9 +81,22 @@ async function buildWorker() {
             minify: isProduction,
             // Resolve workspace libraries from tsconfig paths
             alias: {
-                'aurora-paths': path.join(__dirname, '../../libs/shared/database/src/lib/app-paths.ts'),
-                'shared-interfaces': path.join(__dirname, '../../libs/shared/interfaces/src/index.ts'),
-                'database': path.join(__dirname, '../../libs/shared/database/src/index.ts'),
+                'm3u-utils': path.join(
+                    __dirname,
+                    '../../libs/shared/m3u-utils/src/index.ts'
+                ),
+                'aurora-paths': path.join(
+                    __dirname,
+                    '../../libs/shared/database/src/lib/app-paths.ts'
+                ),
+                'shared-interfaces': path.join(
+                    __dirname,
+                    '../../libs/shared/interfaces/src/index.ts'
+                ),
+                database: path.join(
+                    __dirname,
+                    '../../libs/shared/database/src/index.ts'
+                ),
             },
         });
 

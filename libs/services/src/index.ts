@@ -6,3 +6,4 @@ export * from './lib/playlists.service';
 export * from './lib/portal-status.service';
 export * from './lib/sort.service';
 export * from './lib/stalker-session.service';
+export * from './lib/playlist-loading.service';

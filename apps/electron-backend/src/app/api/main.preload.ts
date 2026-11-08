@@ -1,5 +1,9 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { PlaybackPositionData, Playlist, Settings } from 'shared-interfaces';
+import type {
+    PlaybackPositionData,
+    Playlist,
+    Settings,
+} from 'shared-interfaces';
 
 type ChannelChangeData = { direction: 'up' | 'down' };
 
@@ -50,8 +54,10 @@ type DbCategoryRecord = {
 contextBridge.exposeInMainWorld('electron', {
     // Remote control channel change listener
     onChannelChange: (callback: (data: ChannelChangeData) => void) => {
-        const handler = (_event: Electron.IpcRendererEvent, data: ChannelChangeData) =>
-            callback(data);
+        const handler = (
+            _event: Electron.IpcRendererEvent,
+            data: ChannelChangeData
+        ) => callback(data);
         ipcRenderer.on('CHANNEL_CHANGE', handler);
         return () => ipcRenderer.off('CHANNEL_CHANGE', handler);
     },
@@ -61,8 +67,7 @@ contextBridge.exposeInMainWorld('electron', {
         const handler = (
             _event: Electron.IpcRendererEvent,
             data: RemoteControlCommandData
-        ) =>
-            callback(data);
+        ) => callback(data);
         ipcRenderer.on('REMOTE_CONTROL_COMMAND', handler);
         return () => ipcRenderer.off('REMOTE_CONTROL_COMMAND', handler);
     },
@@ -78,12 +83,13 @@ contextBridge.exposeInMainWorld('electron', {
         ipcRenderer.on('EPG_PROGRESS_UPDATE', (_event, data) => callback(data));
     },
     // Playback position update listener - returns unsubscribe function
-    onPlaybackPositionUpdate: (callback: (data: PlaybackPositionData) => void) => {
+    onPlaybackPositionUpdate: (
+        callback: (data: PlaybackPositionData) => void
+    ) => {
         const handler = (
             _event: Electron.IpcRendererEvent,
             data: PlaybackPositionData
-        ) =>
-            callback(data);
+        ) => callback(data);
         ipcRenderer.on('playback-position-update', handler);
         return () => ipcRenderer.off('playback-position-update', handler);
     },
@@ -98,10 +104,39 @@ contextBridge.exposeInMainWorld('electron', {
         ipcRenderer.removeAllListeners('DB_SAVE_CONTENT_PROGRESS');
     },
     getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+    getAppUpdateState: () => ipcRenderer.invoke('APP_UPDATE_GET_STATE'),
+    checkForAppUpdates: () => ipcRenderer.invoke('APP_UPDATE_CHECK'),
+    downloadAppUpdate: () => ipcRenderer.invoke('APP_UPDATE_DOWNLOAD'),
+    installAppUpdate: () => ipcRenderer.invoke('APP_UPDATE_INSTALL'),
+    onAppUpdateState: (
+        callback: (state: import('shared-interfaces').AppUpdateState) => void
+    ) => {
+        const handler = (
+            _event: Electron.IpcRendererEvent,
+            state: import('shared-interfaces').AppUpdateState
+        ) => callback(state);
+        ipcRenderer.on('APP_UPDATE_STATE', handler);
+        return () => ipcRenderer.off('APP_UPDATE_STATE', handler);
+    },
+    onPlaylistImportProgress: (
+        callback: (progress: {
+            phase: 'download' | 'parse';
+            percent?: number;
+        }) => void
+    ) => {
+        const handler = (
+            _event: Electron.IpcRendererEvent,
+            progress: { phase: 'download' | 'parse'; percent?: number }
+        ) => callback(progress);
+        ipcRenderer.on('PLAYLIST_IMPORT_PROGRESS', handler);
+        return () => ipcRenderer.off('PLAYLIST_IMPORT_PROGRESS', handler);
+    },
     getStreamProxyPort: () => ipcRenderer.invoke('GET_STREAM_PROXY_PORT'),
     toggleFullScreen: () => ipcRenderer.invoke('TOGGLE_FULLSCREEN'),
     isFullScreen: () => ipcRenderer.invoke('IS_FULLSCREEN'),
     platform: process.platform,
+    resolveXtreamPlaylist: (url: string, title?: string) =>
+        ipcRenderer.invoke('resolve-xtream-playlist', url, title),
     fetchPlaylistByUrl: (url: string, title?: string) =>
         ipcRenderer.invoke('fetch-playlist-by-url', url, title),
     updatePlaylistFromFilePath: (filePath: string, title: string) =>
@@ -195,8 +230,7 @@ contextBridge.exposeInMainWorld('electron', {
     // Database operations
     dbCreatePlaylist: (playlist: DbPlaylistRecord) =>
         ipcRenderer.invoke('DB_CREATE_PLAYLIST', playlist),
-    dbGetAllPlaylists: () =>
-        ipcRenderer.invoke('DB_GET_ALL_PLAYLISTS'),
+    dbGetAllPlaylists: () => ipcRenderer.invoke('DB_GET_ALL_PLAYLISTS'),
     dbGetPlaylist: (playlistId: string) =>
         ipcRenderer.invoke('DB_GET_PLAYLIST', playlistId),
     dbUpdatePlaylist: (playlistId: string, updates: DbPlaylistRecord) =>
@@ -249,16 +283,31 @@ contextBridge.exposeInMainWorld('electron', {
         playlistId: string,
         streams: Array<Record<string, unknown>>,
         type: string
-    ) =>
-        ipcRenderer.invoke('DB_SAVE_CONTENT', playlistId, streams, type),
+    ) => ipcRenderer.invoke('DB_SAVE_CONTENT', playlistId, streams, type),
     dbSearchContent: (
         playlistId: string,
         searchTerm: string,
         types: string[],
         excludeHidden?: boolean
-    ) => ipcRenderer.invoke('DB_SEARCH_CONTENT', playlistId, searchTerm, types, excludeHidden),
-    dbGlobalSearch: (searchTerm: string, types: string[], excludeHidden?: boolean) =>
-        ipcRenderer.invoke('DB_GLOBAL_SEARCH', searchTerm, types, excludeHidden),
+    ) =>
+        ipcRenderer.invoke(
+            'DB_SEARCH_CONTENT',
+            playlistId,
+            searchTerm,
+            types,
+            excludeHidden
+        ),
+    dbGlobalSearch: (
+        searchTerm: string,
+        types: string[],
+        excludeHidden?: boolean
+    ) =>
+        ipcRenderer.invoke(
+            'DB_GLOBAL_SEARCH',
+            searchTerm,
+            types,
+            excludeHidden
+        ),
     dbGetRecentlyViewed: () => ipcRenderer.invoke('DB_GET_RECENTLY_VIEWED'),
     dbClearRecentlyViewed: () => ipcRenderer.invoke('DB_CLEAR_RECENTLY_VIEWED'),
     // Favorites
@@ -340,7 +389,12 @@ contextBridge.exposeInMainWorld('electron', {
         episodeNumber?: number;
         // Playlist info for auto-creation if needed
         playlistName?: string;
-        playlistType?: 'xtream' | 'stalker' | 'm3u-file' | 'm3u-text' | 'm3u-url';
+        playlistType?:
+            | 'xtream'
+            | 'stalker'
+            | 'm3u-file'
+            | 'm3u-text'
+            | 'm3u-url';
         serverUrl?: string;
         portalUrl?: string;
         macAddress?: string;

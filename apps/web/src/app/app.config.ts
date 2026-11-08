@@ -52,10 +52,14 @@ export const appConfig: ApplicationConfig = {
         }),
         provideEffects([PlaylistEffects]),
         provideRouterStore(),
-        provideStoreDevtools({
-            maxAge: 25,
-            logOnly: AppConfig.production,
-        }),
+        ...(AppConfig.production
+            ? []
+            : [
+                  provideStoreDevtools({
+                      maxAge: 25,
+                      logOnly: AppConfig.production,
+                  }),
+              ]),
         provideServiceWorker('ngsw-worker.js', {
             enabled: AppConfig.production && !!window.electron,
             registrationStrategy: 'registerWhenStable:30000',

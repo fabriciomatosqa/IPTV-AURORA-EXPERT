@@ -2,6 +2,10 @@ import axios from 'axios';
 import { dialog, ipcMain } from 'electron';
 import { readFile } from 'node:fs/promises';
 import './playlist.events';
+jest.mock('../services/playlist-parser.service', () => ({
+    parsePlaylistInWorker: async (content: string, sourceUrl?: string) =>
+        require('m3u-utils').parsePlaylistContent(content, sourceUrl),
+}));
 
 jest.mock('electron', () => ({
     ipcMain: { handle: jest.fn() },
@@ -32,6 +36,22 @@ const catalog =
 
 describe('desktop playlist import boundary', () => {
     beforeEach(() => jest.clearAllMocks());
+
+    it('uses the account API when get.php exposes only the live playlist', async () => {
+        (axios.get as jest.Mock).mockResolvedValue({
+            data: { user_info: { auth: 1, status: 'Active' } },
+        });
+        const result = await invoke(
+            'fetch-playlist-by-url',
+            'https://example.test/provider/get.php?username=synthetic&password=synthetic'
+        );
+        expect(result.serverUrl).toBe('https://example.test/provider');
+        expect(result.username).toBe('synthetic');
+        expect(axios.get).toHaveBeenCalledTimes(1);
+        expect((axios.get as jest.Mock).mock.calls[0][0]).toBe(
+            'https://example.test/provider/player_api.php'
+        );
+    });
 
     it('imports M3U Plus with MPEG-TS and retains the provider query privately', async () => {
         (axios.get as jest.Mock).mockResolvedValue({ data: catalog });

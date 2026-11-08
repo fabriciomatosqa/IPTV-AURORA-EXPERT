@@ -5,6 +5,7 @@ import { Store } from '@ngrx/store';
 import { TranslatePipe } from '@ngx-translate/core';
 import { PlaylistActions } from 'm3u-state';
 import { getPlaylistImportMessage } from 'm3u-utils';
+import { PlaylistLoadingService } from 'services';
 import { DragDropFileUploadDirective } from './drag-drop-file-upload.directive';
 
 @Component({
@@ -24,6 +25,7 @@ export class FileUploadComponent {
 
     private readonly store = inject(Store);
     private readonly snackBar = inject(MatSnackBar);
+    private readonly playlistLoading = inject(PlaylistLoadingService);
     importing = false;
 
     private isDesktop = !!window.electron;
@@ -43,15 +45,18 @@ export class FileUploadComponent {
         if (this.importing) return;
         if (this.isDesktop) {
             this.importing = true;
+            this.playlistLoading.begin('Abrindo arquivo da lista…');
             try {
                 const playlist = await window.electron.openPlaylistFromFile();
                 if (playlist) {
+                    this.playlistLoading.stage('Salvando lista…');
                     this.store.dispatch(
                         PlaylistActions.addPlaylist({ playlist })
                     );
                     this.closeDialog.emit();
-                }
+                } else this.playlistLoading.finish();
             } catch (error) {
+                this.playlistLoading.finish();
                 this.snackBar.open(getPlaylistImportMessage(error), 'Fechar', {
                     duration: 9000,
                 });

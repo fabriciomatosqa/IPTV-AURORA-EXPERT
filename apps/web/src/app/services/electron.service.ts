@@ -5,7 +5,7 @@ import { Store } from '@ngrx/store';
 import { TranslateService } from '@ngx-translate/core';
 import { PlaylistActions } from 'm3u-state';
 import { getPlaylistImportMessage } from 'm3u-utils';
-import { DataService } from 'services';
+import { DataService, PlaylistLoadingService } from 'services';
 import {
     AUTO_UPDATE_PLAYLISTS,
     ERROR,
@@ -22,6 +22,7 @@ import { AppConfig } from '../../environments/environment';
     providedIn: 'root',
 })
 export class ElectronService extends DataService {
+    private readonly playlistLoading = inject(PlaylistLoadingService);
     private eventListeners: { [key: string]: () => void } = {};
     private readonly snackBar = inject(MatSnackBar);
     private readonly store = inject(Store);
@@ -182,6 +183,17 @@ export class ElectronService extends DataService {
     }
 
     private async fetchM3uPlaylistFromUrl(payload: Partial<Playlist>) {
+        this.playlistLoading.begin('Baixando lista…');
+        const unsubscribe = window.electron.onPlaylistImportProgress?.(
+            (progress) => {
+                this.playlistLoading.stage(
+                    progress.phase === 'parse'
+                        ? 'Lendo conteúdos da lista…'
+                        : 'Baixando lista…',
+                    progress.percent ?? null
+                );
+            }
+        );
         try {
             if (!payload.url) {
                 throw new Error('Endereço da lista não informado.');
@@ -190,7 +202,7 @@ export class ElectronService extends DataService {
                 payload.url,
                 payload.title
             );
-            if (!result?.playlist?.items?.length) {
+            if (!result?.serverUrl && !result?.playlist?.items?.length) {
                 throw new Error('A lista não contém canais ou conteúdos.');
             }
             this.store.dispatch(
@@ -199,7 +211,9 @@ export class ElectronService extends DataService {
                     playlist: result,
                 })
             );
+            this.playlistLoading.stage('Salvando lista…');
         } catch (error) {
+            this.playlistLoading.finish();
             // Never show or log the raw IPC/Axios error: it can contain
             // username/password from a credential-bearing playlist URL.
             const message = getPlaylistImportMessage(error);
@@ -209,6 +223,8 @@ export class ElectronService extends DataService {
             this.snackBar.open(`Falha ao importar IPTV. ${message}`, 'Fechar', {
                 duration: 9000,
             });
+        } finally {
+            unsubscribe?.();
         }
     }
 

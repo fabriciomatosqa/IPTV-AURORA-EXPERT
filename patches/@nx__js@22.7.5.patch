@@ -1,0 +1,19 @@
+diff --git a/src/executors/tsc/tsc.impl.js b/src/executors/tsc/tsc.impl.js
+index 219b68aa2b190aacf032383f1ef5f7a1947d1437..779e0d05524264159f68214dc6f5376e0f1d7966 100644
+--- a/src/executors/tsc/tsc.impl.js
++++ b/src/executors/tsc/tsc.impl.js
+@@ -52,11 +52,11 @@ function determineModuleFormatFromTsConfig(absolutePathToTsConfig, projectRoot,
+ }
+ function createTypeScriptCompilationOptions(normalizedOptions, context) {
+     return {
+-        outputPath: (0, devkit_1.joinPathFragments)(normalizedOptions.outputPath),
++        outputPath: normalizedOptions.outputPath,
+         projectName: context.projectName,
+         projectRoot: normalizedOptions.projectRoot,
+-        rootDir: (0, devkit_1.joinPathFragments)(normalizedOptions.rootDir),
+-        tsConfig: (0, devkit_1.joinPathFragments)(normalizedOptions.tsConfig),
++        rootDir: normalizedOptions.rootDir,
++        tsConfig: normalizedOptions.tsConfig,
+         watch: normalizedOptions.watch,
+         deleteOutputPath: normalizedOptions.clean,
+         getCustomTransformers: (0, lib_1.getCustomTrasformersFactory)(normalizedOptions.transformers),

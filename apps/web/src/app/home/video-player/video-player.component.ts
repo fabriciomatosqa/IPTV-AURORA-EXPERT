@@ -53,10 +53,14 @@ import {
     take,
     tap,
     shareReplay,
+    from,
+    catchError,
+    firstValueFrom,
 } from 'rxjs';
 import { DataService, PlaylistsService } from 'services';
 import {
     Channel,
+    Playlist,
     PLAYLIST_PARSE_BY_URL,
     STORE_KEY,
     Settings,
@@ -69,7 +73,15 @@ import {
     getChannelItemByNumber,
 } from '../../shared/services/remote-channel-navigation.util';
 import { SettingsComponent } from '../../settings/settings.component';
-import { getExtensionFromUrl } from 'm3u-utils';
+import {
+    getExtensionFromUrl,
+    getEpisodeIdentity,
+    classifyCatalogChannel,
+    buildCatalogIndex,
+    emptyCatalogIndex,
+    seriesKey,
+    CatalogKind,
+} from 'm3u-utils';
 import { WebPlayerViewComponent } from 'shared-portals';
 
 @Component({
@@ -123,19 +135,18 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
     readonly catalogFavorites = this.store.selectSignal(selectFavorites);
     readonly catalogRecent = signal<string[]>([]);
     readonly catalogDetail = signal<Channel | null>(null);
+    readonly catalogLoading = signal(true);
+    readonly catalogProgress = signal(0);
+    readonly catalogLoadError = signal('');
+    readonly catalogIndex = signal(emptyCatalogIndex());
+    private catalogGeneration = 0;
     private episodeInfo(
         channel: Channel
     ): { title: string; season: number; episode: number } | null {
-        const match = /^(.*?)\s*[-–]?\s*S(\d{1,3})\s*E(\d{1,4})(?:\b|$)/i.exec(
-            channel.name || ''
+        return (
+            this.catalogIndex().episodes.get(channel.id) ||
+            getEpisodeIdentity(channel.name)
         );
-        return match
-            ? {
-                  title: match[1].trim(),
-                  season: Number(match[2]),
-                  episode: Number(match[3]),
-              }
-            : null;
     }
     catalogItemTitle(channel: Channel): string {
         return this.catalogSection() === 'series'
@@ -149,18 +160,20 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
     readonly catalogSeriesSeasons = computed(() => {
         const selected = this.catalogDetail();
         const identity = selected && this.episodeInfo(selected);
-        if (!selected || !identity || this.contentKind(selected) !== 'series') return [];
+        if (!selected || !identity || this.contentKind(selected) !== 'series')
+            return [];
         const seasons = new Map<number, Channel[]>();
-        for (const channel of this.catalogChannels()) {
+        for (const channel of this.catalogIndex().seriesItems.get(
+            seriesKey(selected, identity.title)
+        ) || []) {
             const episode = this.episodeInfo(channel);
             if (
                 episode?.title === identity.title &&
                 channel.group?.title === selected.group?.title
             ) {
-                seasons.set(episode.season, [
-                    ...(seasons.get(episode.season) || []),
-                    channel,
-                ]);
+                const items = seasons.get(episode.season) || [];
+                items.push(channel);
+                seasons.set(episode.season, items);
             }
         }
         return [...seasons.entries()]
@@ -188,19 +201,10 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
         { id: 'recent', label: 'Histórico', icon: 'history' },
     ];
     private contentKind(channel: Channel): string {
-        // Xtream M3U Plus explicitly distinguishes these paths. Do not infer
-        // fictional series, ratings or metadata from a generic media extension.
-        try {
-            const path = new URL(channel.url).pathname;
-            if (/\/series\//i.test(path)) return 'series';
-            if (/\/movie\//i.test(path)) return 'movies';
-        } catch {
-            /* Invalid sources are handled at import. */
-        }
-        const group = channel.group?.title || '';
-        if (/^(séries|series)(?:\s|\||-|$)/i.test(group)) return 'series';
-        if (/^(filmes|movies|vod)(?:\s|\||-|$)/i.test(group)) return 'movies';
-        return 'live';
+        return (
+            this.catalogIndex().kinds.get(channel.id) ||
+            classifyCatalogChannel(channel)
+        );
     }
     readonly sectionChannels = computed(() => {
         const section = this.catalogSection();
@@ -213,17 +217,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
                 .map((id) => byId.get(id))
                 .filter((c): c is Channel => !!c);
         }
-        const items = channels.filter((c) => this.contentKind(c) === section);
-        if (section !== 'series') return items;
-        const seen = new Set<string>();
-        return items.filter((channel) => {
-            const info = this.episodeInfo(channel);
-            if (!info) return true;
-            const key = `${channel.group?.title}\n${info.title}`;
-            if (seen.has(key)) return false;
-            seen.add(key);
-            return true;
-        });
+        return this.catalogIndex()[section as CatalogKind] || [];
     });
     readonly catalogCategories = computed(() => [
         ...new Set(
@@ -285,6 +279,27 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
 
     private catalogHistoryKey(): string {
         return `aurora-m3u-history:${this.activatedRoute.snapshot.params['id'] || 'temporary'}`;
+    }
+
+    private async prepareCatalog(channels: Channel[]): Promise<Channel[]> {
+        const generation = ++this.catalogGeneration;
+        this.catalogLoading.set(true);
+        this.catalogProgress.set(0);
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        const index = await buildCatalogIndex(
+            channels,
+            (progress) => {
+                if (generation === this.catalogGeneration)
+                    this.catalogProgress.set(progress);
+            },
+            () => generation !== this.catalogGeneration
+        );
+        if (generation === this.catalogGeneration) {
+            this.catalogChannels.set(channels);
+            this.catalogIndex.set(index);
+            this.catalogLoading.set(false);
+        }
+        return channels;
     }
 
     /** Current epg program */
@@ -389,6 +404,17 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
                         return this.playlistsService
                             .getPlaylist(params['id'])
                             .pipe(
+                                switchMap((playlist) =>
+                                    from(
+                                        this.resolveSavedProvider(
+                                            playlist as Playlist
+                                        )
+                                    )
+                                ),
+                                filter(
+                                    (playlist): playlist is Playlist =>
+                                        !!playlist
+                                ),
                                 map((playlist) => {
                                     // Set user agent if specified on playlist level
                                     if (playlist.userAgent) {
@@ -444,7 +470,14 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
                 })
             )
             .pipe(
-                tap((channels) => this.catalogChannels.set(channels)),
+                switchMap((channels) => from(this.prepareCatalog(channels))),
+                catchError(() => {
+                    this.catalogLoadError.set(
+                        'Não foi possível abrir a lista salva. Volte ao início e tente novamente.'
+                    );
+                    this.catalogLoading.set(false);
+                    return of([] as Channel[]);
+                }),
                 shareReplay({ bufferSize: 1, refCount: true })
             );
 
@@ -521,7 +554,65 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
             });
     }
 
+    private async resolveSavedProvider(
+        playlist: Playlist
+    ): Promise<Playlist | null> {
+        let resolved = playlist;
+        if (
+            !playlist.serverUrl &&
+            playlist.url &&
+            window.electron?.resolveXtreamPlaylist
+        ) {
+            try {
+                const url = new URL(playlist.url);
+                if (
+                    /\/get\.php$/i.test(url.pathname) &&
+                    url.searchParams.has('username') &&
+                    url.searchParams.has('password')
+                ) {
+                    const provider =
+                        await window.electron.resolveXtreamPlaylist(
+                            playlist.url,
+                            playlist.title
+                        );
+                    if (provider) {
+                        resolved = {
+                            ...playlist,
+                            serverUrl: provider.serverUrl,
+                            username: provider.username,
+                            password: provider.password,
+                        };
+                        await firstValueFrom(
+                            this.playlistsService.updatePlaylist(
+                                playlist._id,
+                                resolved
+                            )
+                        );
+                    }
+                }
+            } catch {
+                /* An unavailable provider must not hide the locally saved M3U. */
+            }
+        }
+        if (resolved.serverUrl && window.electron?.dbCreatePlaylist) {
+            await window.electron.dbCreatePlaylist({
+                id: resolved._id,
+                name: resolved.title || '',
+                serverUrl: resolved.serverUrl,
+                username: resolved.username || '',
+                password: resolved.password || '',
+                type: 'xtream',
+            });
+            await this.router.navigate(['/xtreams', resolved._id], {
+                replaceUrl: true,
+            });
+            return null;
+        }
+        return resolved;
+    }
+
     ngOnDestroy(): void {
+        this.catalogGeneration++;
         this.unsubscribeRemoteChannelChange?.();
         this.unsubscribeRemoteCommand?.();
         this.statusSubscription?.unsubscribe();

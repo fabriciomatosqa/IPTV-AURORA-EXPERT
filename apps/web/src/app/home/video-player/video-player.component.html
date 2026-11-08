@@ -4,7 +4,7 @@
 >
     <nav class="library-rail" aria-label="Biblioteca AURORA">
         <a class="library-brand" routerLink="/" title="Gerenciar listas IPTV"
-            ><img src="assets/aurora/aurora.svg" alt="AURORA"
+            ><img src="assets/aurora/aurora.png" alt="AURORA"
         /></a>
         <div class="library-rail-links">
             @for (item of catalogNavigation; track item.id) {
@@ -286,12 +286,28 @@
                                 </article>
                             } @empty {
                                 <div class="library-empty">
-                                    <mat-icon>video_library</mat-icon>
-                                    <h2>Nenhum conteúdo nesta seleção</h2>
-                                    <p>
-                                        Escolha outra categoria ou ajuste a
-                                        busca.
-                                    </p>
+                                    @if (catalogLoading()) {
+                                        <div
+                                            class="catalog-spinner"
+                                            aria-hidden="true"
+                                        ></div>
+                                        <h2 role="status">Carregando lista…</h2>
+                                        <p>
+                                            Organizando canais, filmes e séries
+                                            · {{ catalogProgress() }}%
+                                        </p>
+                                    } @else if (catalogLoadError()) {
+                                        <h2 role="alert">
+                                            {{ catalogLoadError() }}
+                                        </h2>
+                                    } @else {
+                                        <mat-icon>video_library</mat-icon>
+                                        <h2>Nenhum conteúdo nesta seleção</h2>
+                                        <p>
+                                            Escolha outra categoria ou ajuste a
+                                            busca.
+                                        </p>
+                                    }
                                 </div>
                             }
                         </div>

@@ -78,8 +78,10 @@ export const getFilenameFromUrl = (value: string): string => {
         return filename;
     } catch {
         const pathname = value.split(/[?#]/)[0];
-        return pathname.substring(pathname.lastIndexOf('/') + 1).trim() ||
-            'Untitled playlist';
+        return (
+            pathname.substring(pathname.lastIndexOf('/') + 1).trim() ||
+            'Untitled playlist'
+        );
     }
 };
 
@@ -103,8 +105,10 @@ export const createPlaylistObject = (
         count: playlist.items.length,
         playlist: {
             ...playlist,
+            header: { ...playlist.header, raw: '' },
             items: playlist.items.map((item: ParsedPlaylistItem) => ({
                 ...item,
+                raw: '',
                 id: generateId(),
             })),
         },

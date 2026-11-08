@@ -1,13 +1,13 @@
-// Original geometric AURORA artwork; generated locally without external assets.
+// Preserve the user-supplied official artwork; only resize for platform icons.
 const fs = require('node:fs');
 const path = require('node:path');
 const sharp = require('sharp');
 
 async function main() {
     const dir = path.resolve(__dirname, '../apps/web/src/assets/aurora');
-    const svg = path.join(dir, 'aurora.svg');
+    const source = path.join(dir, 'aurora-official.png');
     for (const size of [192, 256, 512, 1024]) {
-        await sharp(svg)
+        await sharp(source)
             .resize(size, size)
             .png()
             .toFile(path.join(dir, `aurora-${size}.png`));

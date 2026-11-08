@@ -12,7 +12,10 @@ import {
     readFileSync,
     appendFileSync,
     writeFileSync,
+    createReadStream,
+    statSync,
 } from 'fs';
+import { createHash } from 'crypto';
 import { spawnSync } from 'child_process';
 import { createServer, Server } from 'http';
 import { join, resolve } from 'path';
@@ -28,21 +31,25 @@ let fixtureServer: Server;
 let fixtureUrl: string;
 let profileRoot: string;
 const mediaRequests: string[] = [];
+const releasePackage = JSON.parse(
+    readFileSync(resolve(__dirname, '../../../package.json'), 'utf8')
+);
+let updateAvailable = false;
 
 function syntheticCatalog(): string {
     const rows = ['#EXTM3U'];
     for (let i = 1; i <= 36; i++)
         rows.push(
-            `#EXTINF:-1 tvg-logo="${fixtureUrl}/logo.svg" group-title="${i % 2 ? 'Cultura' : 'Notícias'}",Aurora Canal ${String(i).padStart(2, '0')}\n${fixtureUrl}/fixture.mp4?channel=${i}`
+            `#EXTINF:-1 tvg-logo="${fixtureUrl}/logo.svg" group-title="${i % 2 ? 'TV | Cultura' : 'TV | Notícias'}",Aurora Canal ${String(i).padStart(2, '0')}\n${fixtureUrl}/fixture.mp4?channel=${i}`
         );
     for (const type of ['Filmes', 'Séries'])
         for (let i = 1; i <= 12; i++) {
             rows.push(
-                `#EXTINF:-1 tvg-logo="${fixtureUrl}/poster.svg" group-title="${type}",${type === 'Filmes' ? 'Horizonte' : 'Jornada'} Aurora ${String(i).padStart(2, '0')}${type === 'Séries' ? ' S01E01' : ''}\n${fixtureUrl}/fixture.mp4?type=${encodeURIComponent(type)}&item=${i}`
+                `#EXTINF:-1 tvg-logo="${fixtureUrl}/poster.svg" group-title="${type === 'Filmes' ? ['♦ Ação ✔', '♦ Cinema ⭐', '♦ UHD|4K ⭐'][i % 3] : ['♦ Netflix', '♦ Doramas', '♦ Novelas Turcas'][i % 3]}",${type === 'Filmes' ? 'Horizonte' : 'Jornada'} Aurora ${String(i).padStart(2, '0')}${type === 'Séries' ? ' 1x01' : ''}\n${fixtureUrl}/fixture.mp4?type=${encodeURIComponent(type)}&item=${i}`
             );
             if (type === 'Séries')
                 rows.push(
-                    `#EXTINF:-1 tvg-logo="${fixtureUrl}/poster.svg" group-title="Séries",Jornada Aurora ${String(i).padStart(2, '0')} S02E01\n${fixtureUrl}/fixture.mp4?type=series&item=${i}&season=2`
+                    `#EXTINF:-1 tvg-logo="${fixtureUrl}/poster.svg" group-title="${['♦ Netflix', '♦ Doramas', '♦ Novelas Turcas'][i % 3]}",Jornada Aurora ${String(i).padStart(2, '0')} Temporada 2 Episódio 1\n${fixtureUrl}/fixture.mp4?type=series&item=${i}&season=2`
                 );
         }
     return rows.join('\n') + '\n';
@@ -173,7 +180,44 @@ test.describe('Electron App Smoke Test', () => {
         const epg = `<?xml version="1.0"?><tv><channel id="aurora.demo"><display-name>Aurora Demo</display-name></channel><programme start="${xmlDate(new Date(Date.now() - 3600000))}" stop="${xmlDate(new Date(Date.now() + 3600000))}" channel="aurora.demo"><title>Programa ficticio Aurora</title><desc>Fixture local autorizada</desc></programme></tv>`;
         fixtureServer = createServer((req, res) => {
             const requestPath = (req.url || '').split('?')[0];
-            if (requestPath === '/player_api.php') {
+            if (requestPath === '/latest.yml') {
+                const installer = process.env.AURORA_E2E_UPDATE_INSTALLER;
+                const bytes = installer
+                    ? readFileSync(installer)
+                    : Buffer.from('fixture');
+                const sha512 = createHash('sha512')
+                    .update(bytes)
+                    .digest('base64');
+                const version = updateAvailable
+                    ? releasePackage.version.replace(/\d+$/, (n: string) =>
+                          String(Number(n) + 1)
+                      )
+                    : releasePackage.version;
+                res.writeHead(200, { 'Content-Type': 'text/yaml' });
+                res.end(
+                    JSON.stringify({
+                        version,
+                        releaseName: updateAvailable
+                            ? 'Validação local de atualização'
+                            : releasePackage.auroraVersion,
+                        files: [
+                            { url: 'update.exe', size: bytes.length, sha512 },
+                        ],
+                        path: 'update.exe',
+                        sha512,
+                    })
+                );
+            } else if (
+                requestPath === '/update.exe' &&
+                process.env.AURORA_E2E_UPDATE_INSTALLER
+            ) {
+                const file = process.env.AURORA_E2E_UPDATE_INSTALLER;
+                res.writeHead(200, {
+                    'Content-Type': 'application/octet-stream',
+                    'Content-Length': statSync(file).size,
+                });
+                createReadStream(file).pipe(res);
+            } else if (requestPath === '/player_api.php') {
                 const action = new URL(
                     req.url || '',
                     'http://localhost'
@@ -292,9 +336,25 @@ test.describe('Electron App Smoke Test', () => {
                 res.end(
                     '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="450" viewBox="0 0 300 450"><defs><linearGradient id="g" x2="1" y2="1"><stop stop-color="#12343e"/><stop offset=".5" stop-color="#347d70"/><stop offset="1" stop-color="#382457"/></linearGradient></defs><rect width="300" height="450" fill="url(#g)"/><circle cx="180" cy="180" r="95" fill="none" stroke="#94ead3" stroke-width="2"/><path d="M0 320L150 90 300 320" fill="none" stroke="#94ead3" stroke-width="3"/><text x="150" y="365" fill="white" font-family="sans-serif" text-anchor="middle" font-size="28">AURORA</text><text x="150" y="395" fill="#c5dfdb" font-family="sans-serif" text-anchor="middle" font-size="12">CONTEUDO SINTETICO</text></svg>'
                 );
-            } else if (req.url === '/catalog.m3u') {
+            } else if (req.url === '/large.m3u') {
+                const rows = ['#EXTM3U'];
+                for (let i = 0; i < 20000; i++) rows.push(`#EXTINF:-1 group-title="TV",Canal ${i}\n${fixtureUrl}/live/${i}.ts`);
+                for (let i = 0; i < 100; i++) rows.push(`#EXTINF:-1 group-title="♦ Ação ✔",Filme ${i}\n${fixtureUrl}/vod/${i}.ts`);
                 res.writeHead(200, { 'Content-Type': 'audio/x-mpegurl' });
-                res.end(syntheticCatalog());
+                setTimeout(() => res.end(rows.join('\n') + '\n'), 300);
+            } else if (req.url?.startsWith('/get.php')) {
+                res.writeHead(200, { 'Content-Type': 'audio/x-mpegurl' });
+                res.end(
+                    `#EXTM3U\n#EXTINF:-1 group-title="TV",Somente TV\n${fixtureUrl}/fixture.ts\n`
+                );
+            } else if (
+                req.url === '/catalog.m3u' ||
+                req.url === '/delayed-catalog.m3u'
+            ) {
+                res.writeHead(200, { 'Content-Type': 'audio/x-mpegurl' });
+                if (req.url === '/delayed-catalog.m3u')
+                    setTimeout(() => res.end(syntheticCatalog()), 1500);
+                else res.end(syntheticCatalog());
             } else if (req.url === '/epg.xml') {
                 res.writeHead(200, { 'Content-Type': 'application/xml' });
                 res.end(epg);
@@ -379,6 +439,8 @@ test.describe('Electron App Smoke Test', () => {
             NODE_ENV: 'test',
             ELECTRON_IS_DEV: '0',
             AURORA_DATA_DIR: profileRoot,
+            AURORA_UPDATE_TEST_FEED: fixtureUrl + '/',
+            LOCALAPPDATA: join(profileRoot, 'local-app-data'),
         };
         delete launchEnv.ELECTRON_RUN_AS_NODE;
         if (process.env.AURORA_E2E_EXECUTABLE) {
@@ -510,7 +572,10 @@ test.describe('Electron App Smoke Test', () => {
         ).toBe(
             JSON.parse(
                 readFileSync(join(workspaceRoot, 'package.json'), 'utf8')
-            ).version
+            ).auroraVersion ||
+                JSON.parse(
+                    readFileSync(join(workspaceRoot, 'package.json'), 'utf8')
+                ).version
         );
         expect(profile.userData).toBe(join(profileRoot, 'profile'));
         await expect
@@ -540,7 +605,7 @@ test.describe('Electron App Smoke Test', () => {
         await mainWindow
             .locator('app-text-import textarea')
             .fill(
-                `#EXTM3U\n#EXTINF:-1 tvg-id="aurora.demo" group-title="Exemplos",Aurora Demo UI\n${fixtureUrl}/fixture.mp4\n#EXTINF:-1 group-title="Exemplos",Aurora HLS UI\n${fixtureUrl}/fixture.m3u8\n#EXTINF:-1 group-title="Exemplos",Aurora TS UI\n${fixtureUrl}/fixture.ts`
+                `#EXTM3U\n#EXTINF:-1 tvg-id="aurora.demo" group-title="TV | Exemplos",Aurora Demo UI\n${fixtureUrl}/fixture.mp4\n#EXTINF:-1 group-title="TV | Exemplos",Aurora HLS UI\n${fixtureUrl}/fixture.m3u8\n#EXTINF:-1 group-title="TV | Exemplos",Aurora TS UI\n${fixtureUrl}/fixture.ts`
             );
         await mainWindow
             .locator('app-text-import button[type="submit"]')
@@ -686,10 +751,16 @@ test.describe('Electron App Smoke Test', () => {
             .click();
         await mainWindow
             .locator('app-url-upload input')
-            .fill(fixtureUrl + '/catalog.m3u');
+            .fill(fixtureUrl + '/delayed-catalog.m3u');
         await mainWindow
             .locator('app-url-upload button[type="submit"]')
             .click();
+        await expect(
+            mainWindow.locator('[data-test-id="playlist-loading"]')
+        ).toBeVisible();
+        await expect(
+            mainWindow.locator('[data-test-id="playlist-loading"]')
+        ).toBeHidden();
         await expect(
             mainWindow.locator('[data-test-id="aurora-catalog"]')
         ).toBeVisible();
@@ -699,7 +770,9 @@ test.describe('Electron App Smoke Test', () => {
     });
 
     test('filters categories, searches, toggles favorites and browses movie and series posters at desktop sizes', async () => {
-        await mainWindow.locator('#aurora-category').selectOption('Notícias');
+        await mainWindow
+            .locator('#aurora-category')
+            .selectOption('TV | Notícias');
         await expect(
             mainWindow.locator('[data-test-id="channel-item"]')
         ).toHaveCount(18);
@@ -1136,5 +1209,106 @@ test.describe('Electron App Smoke Test', () => {
         expect(result.type).toContain('video/mp4');
         expect(result.size).toBeGreaterThan(1000);
         expect(result.fragmented).toBe(true);
+    });
+
+    test('loads a large M3U with progress and bounded catalog rendering', async () => {
+        await mainWindow.evaluate(() => { location.hash = '#/'; });
+        await mainWindow.locator('[data-test-id="add-playlist"]').click();
+        await mainWindow.getByRole('menuitem', { name: 'Adicionar via URL' }).click();
+        await mainWindow.locator('app-url-upload input').fill(fixtureUrl + '/large.m3u');
+        const started = Date.now();
+        await mainWindow.locator('app-url-upload button[type="submit"]').click();
+        await expect(mainWindow.locator('[data-test-id="playlist-loading"]')).toBeVisible();
+        await expect(mainWindow.locator('[data-test-id="channel-item"]')).toHaveCount(200);
+        console.log(`Synthetic 20,100-item import and first render: ${Date.now() - started} ms`);
+        await mainWindow.locator('.library-rail-links').getByRole('button', { name: 'Filmes', exact: true }).click();
+        await expect(mainWindow.locator('.poster-grid [data-test-id="channel-item"]')).toHaveCount(100);
+    });
+
+    test('opens the full movie and series API from a get.php URL that contains only live channels', async () => {
+        await mainWindow.evaluate(() => {
+            location.hash = '#/';
+        });
+        await mainWindow.locator('[data-test-id="add-playlist"]').click();
+        await mainWindow
+            .getByRole('menuitem', { name: 'Adicionar via URL' })
+            .click();
+        await mainWindow
+            .locator('app-url-upload input')
+            .fill(
+                fixtureUrl +
+                    '/get.php?username=synthetic&password=synthetic&type=m3u_plus'
+            );
+        await mainWindow
+            .locator('app-url-upload button[type="submit"]')
+            .click();
+        await expect(mainWindow).toHaveURL(/\/xtreams\//);
+        for (const label of ['Filmes', 'Séries']) {
+            await mainWindow
+                .locator('app-navigation')
+                .getByRole('button', { name: label, exact: true })
+                .click();
+            await expect(
+                mainWindow.locator('app-grid-list mat-card')
+            ).toHaveCount(12);
+        }
+    });
+
+    test('migrates a previously saved get.php M3U without requiring reimport', async () => {
+        await mainWindow.evaluate(async (base) => {
+            const playlist = await window.electron.fetchPlaylistByUrl(base + '/catalog.m3u', 'Lista anterior');
+            playlist._id = 'saved-get-php-migration';
+            playlist.url = base + '/get.php?username=synthetic&password=synthetic';
+            await new Promise<void>((resolve, reject) => {
+                const request = indexedDB.open('iptv-aurora-expert');
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => {
+                    const db = request.result;
+                    const transaction = db.transaction('playlists', 'readwrite');
+                    transaction.objectStore('playlists').put(playlist);
+                    transaction.oncomplete = () => { db.close(); resolve(); };
+                    transaction.onerror = () => reject(transaction.error);
+                };
+            });
+            location.hash = '#/playlists/' + playlist._id;
+        }, fixtureUrl);
+        await expect(mainWindow).toHaveURL(/\/xtreams\/saved-get-php-migration/);
+        await expect(mainWindow.locator('app-grid-list mat-card')).toHaveCount(12);
+        await mainWindow.reload();
+        await expect(mainWindow.locator('app-grid-list mat-card')).toHaveCount(12);
+    });
+
+    test('checks and downloads a verified update through installed settings', async () => {
+        test.skip(
+            !process.env.AURORA_E2E_EXECUTABLE ||
+                !process.env.AURORA_E2E_UPDATE_INSTALLER,
+            'Requires a packaged installer'
+        );
+        await mainWindow.evaluate(() => {
+            location.hash = '#/settings';
+        });
+        await mainWindow.locator('[data-test-id="check-app-update"]').click();
+        await expect(
+            mainWindow.locator('[data-test-id="app-update-status"]')
+        ).toContainText('versão mais recente');
+        updateAvailable = true;
+        await mainWindow.locator('[data-test-id="check-app-update"]').click();
+        await expect(
+            mainWindow.locator('[data-test-id="download-app-update"]')
+        ).toBeVisible();
+        await mainWindow
+            .locator('[data-test-id="download-app-update"]')
+            .click();
+        await expect(
+            mainWindow.locator('[data-test-id="install-app-update"]')
+        ).toBeVisible({ timeout: 60000 });
+        await mainWindow.screenshot({
+            path: join(screenshotDir, 'aurora-update-ready.png'),
+        });
+        // This deliberately future fixture is downloaded and verified, never installed.
+        await mainWindow.locator('[data-test-id="back-to-home"]').click();
+        await expect(
+            mainWindow.locator('[data-test-id="add-playlist"]')
+        ).toBeVisible();
     });
 });

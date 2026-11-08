@@ -14,6 +14,7 @@ import {
     setMainWindow as setDownloadsMainWindow,
 } from './app/events/database/downloads.events';
 import ElectronEvents from './app/events/electron.events';
+import UpdateEvents from './app/events/update.events';
 import EpgEvents from './app/events/epg.events';
 import PlayerEvents from './app/events/player.events';
 import PlaylistEvents from './app/events/playlist.events';
@@ -165,9 +166,7 @@ export default class Main {
         await resetStaleDownloads();
 
         // initialize auto updater service
-        if (!App.isDevelopmentMode()) {
-            // UpdateEvents.initAutoUpdateService();
-        }
+        UpdateEvents.initAutoUpdateService();
     }
 }
 
