@@ -41,6 +41,17 @@ Uma versão nova oferece **Baixar atualização** e depois
 **Reiniciar e instalar**, com verificação de integridade. O download
 e a instalação só ocorrem após ação do usuário.
 
+Depois do clique em **Reiniciar e instalar**, o programa fecha e o
+`electron-updater` chama o instalador NSIS com `quitAndInstall(true, true)`.
+O primeiro `true` executa a atualização **silenciosamente**, sem abrir
+o assistente ou apresentar novas opções; o segundo solicita a reabertura
+após a conclusão. A identidade do aplicativo e o escopo `perMachine: false`
+são preservados, assim como o diretório existente e os dados de usuário
+(não se executa desinstalação nem exclusão de AppData). Isso não oculta
+um eventual pedido obrigatório do Windows/UAC quando a instalação exigir
+permissão administrativa. O aplicativo não instala uma versão sem o
+consentimento explícito do usuário.
+
 **Compatibilidade com instaladores antigos:** a versão já distribuída
 `0.0.081126-01` tem numeração interna legada `2026.1108.1` e usa
 apenas `/releases/latest`. Ela não pode aprender a descobrir
@@ -89,3 +100,13 @@ Em 07/11/2026: 120 testes unitários aprovados nos projetos alterados; quatro ca
 O cenário do atualizador usa feed HTTP restrito a 127.0.0.1 e NODE_ENV de teste, anuncia uma versão futura de QA e baixa o instalador real até o estado pronto. Essa versão fictícia não é instalada. O acionamento quitAndInstall e o bloqueio de instalação antes do download têm testes unitários; a instalação limpa do NSIS real foi executada separadamente, com retorno 0. O teste não certifica a atualização completa entre duas releases públicas diferentes. O provedor privado do usuário não foi acessado.
 
 Evidências locais: `dist/aurora-update-final-unit.log`, `dist/aurora-update-categories-unit.log`, `dist/aurora-update-backend-final.log`, `dist/aurora-update-installed-e2e.log`, `dist/aurora-update-package.log` e `dist/test-results/electron-backend-e2e/aurora-update-ready.png`.
+
+## Ordenação visual de conteúdo adulto
+
+Na navegação de TV ao vivo, Filmes e Séries, nomes com marcadores explícitos
+como Adultos, Pornografia, XXX, OnlyFans, Hentai, Eróticos, +18 ou 18+
+são mostrados ao final, após os demais. A ordenação é estável e feita na
+interface, sem apagar nem ocultar vídeos, categorias, favoritos ou dados da
+playlist. A classificação usa os nomes recebidos de M3U/Xtream/Stalker.
+Nas listagens paginadas remotamente pelo Stalker, a regra se aplica aos itens
+da página carregada; a ordem global de páginas segue o servidor.
