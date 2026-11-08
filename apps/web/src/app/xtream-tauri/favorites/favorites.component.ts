@@ -31,7 +31,7 @@ export class FavoritesComponent implements OnInit {
     readonly live = signal<FavoriteItem[]>([]);
 
     readonly favoritesToShow = signal<FavoriteItem[]>([]);
-    readonly selectedCategoryId = signal<string>('movie');
+    readonly selectedCategoryId = signal<string>('live');
 
     private favoritesRefresh$ = new BehaviorSubject<void>(undefined);
 
@@ -57,20 +57,20 @@ export class FavoritesComponent implements OnInit {
         this.categories.set([
             {
                 id: 1,
-                category_id: 'movie',
-                category_name: 'Movies' + ' (' + this.movies().length + ')',
+                category_id: 'live',
+                category_name: 'Ao vivo (' + this.live().length + ')',
                 parent_id: 0,
             },
             {
                 id: 2,
-                category_id: 'live',
-                category_name: 'Live TV' + ' (' + this.live().length + ')',
+                category_id: 'movie',
+                category_name: 'Filmes (' + this.movies().length + ')',
                 parent_id: 0,
             },
             {
                 id: 3,
                 category_id: 'series',
-                category_name: 'Series' + ' (' + this.series().length + ')',
+                category_name: 'Séries (' + this.series().length + ')',
                 parent_id: 0,
             },
         ]);
@@ -93,7 +93,7 @@ export class FavoritesComponent implements OnInit {
                 this.favoritesToShow.set(this.series());
                 break;
             default:
-                this.favoritesToShow.set(this.movies());
+                this.favoritesToShow.set(this.live());
                 break;
         }
     }

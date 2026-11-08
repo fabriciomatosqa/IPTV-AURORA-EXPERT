@@ -69,32 +69,20 @@ export class StalkerFavoritesComponent {
     readonly categories = computed(() => [
         {
             id: 1,
-            category_id: 'movie',
-            category_name:
-                this.translate.instant('PORTALS.SIDEBAR.MOVIES') +
-                ' (' +
-                (this.movies()?.length ?? 0) +
-                ')',
+            category_id: 'itv',
+            category_name: 'Ao vivo (' + (this.live()?.length ?? 0) + ')',
             parent_id: 0,
         },
         {
             id: 2,
-            category_id: 'itv',
-            category_name:
-                this.translate.instant('PORTALS.SIDEBAR.LIVE_TV') +
-                ' (' +
-                (this.live()?.length ?? 0) +
-                ')',
+            category_id: 'movie',
+            category_name: 'Filmes (' + (this.movies()?.length ?? 0) + ')',
             parent_id: 0,
         },
         {
             id: 3,
             category_id: 'series',
-            category_name:
-                this.translate.instant('PORTALS.SIDEBAR.SERIES') +
-                ' (' +
-                (this.series()?.length ?? 0) +
-                ')',
+            category_name: 'Séries (' + (this.series()?.length ?? 0) + ')',
             parent_id: 0,
         },
     ]);
@@ -112,7 +100,7 @@ export class StalkerFavoritesComponent {
         }
     });
 
-    readonly selectedCategoryId = signal<string>('movie');
+    readonly selectedCategoryId = signal<string>('itv');
 
     readonly series = computed(() =>
         this.allFavorites
