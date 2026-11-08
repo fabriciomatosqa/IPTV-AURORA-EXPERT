@@ -4,6 +4,13 @@ import { xtreamRoutes } from './xtream-tauri/xtream.routes';
 
 export const routes: Routes = [
     {
+        path: 'floating-player',
+        loadComponent: () =>
+            import('./xtream-tauri/player-dialog/floating-player.component').then(
+                (c) => c.FloatingPlayerComponent
+            ),
+    },
+    {
         path: '',
         loadComponent: () =>
             import('./home/home.component').then((c) => c.HomeComponent),
