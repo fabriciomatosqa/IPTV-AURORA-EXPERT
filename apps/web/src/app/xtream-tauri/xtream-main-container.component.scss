@@ -288,3 +288,8 @@
 @media (max-width: 680px) {
     .catalog-layout .vod-category-sidebar { min-width: 130px; max-width: 44vw; }
 }
+
+.catalog-layout > app-aurora-catalog-navigation {
+    height: 100%; flex: 0 0 auto; min-height: 0;
+}
+.catalog-layout.details-open > app-aurora-catalog-navigation { display: none; }

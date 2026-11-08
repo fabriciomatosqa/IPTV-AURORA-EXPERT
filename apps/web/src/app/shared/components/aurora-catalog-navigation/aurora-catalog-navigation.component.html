@@ -39,7 +39,11 @@
             </button>
         }
         <div class="aurora-category-scroll">
-            @if (mode() === 'live') {
+            @if (loading()) {
+                <p class="aurora-category-empty" role="status">Carregando categorias…</p>
+            } @else if (loadFailed()) {
+                <p class="aurora-category-empty" role="alert">Não foi possível carregar as categorias.</p>
+            } @else if (mode() === 'live') {
                 @for (group of visibleGroups(); track group.key) {
                     <button type="button" class="aurora-category-row"
                         [class.active]="selectedGroup()?.key === group.key"

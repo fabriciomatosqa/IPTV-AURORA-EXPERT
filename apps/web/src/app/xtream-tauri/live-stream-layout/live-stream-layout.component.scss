@@ -138,3 +138,5 @@
     :host .category-sidebar { max-width: 40vw; min-width: 125px; }
     :host .channels-sidebar { max-width: 40vw; min-width: 155px; }
 }
+
+:host > app-aurora-catalog-navigation { height: 100%; flex: 0 0 auto; min-height: 0; }

@@ -16,6 +16,8 @@ export class AuroraCatalogNavigationComponent {
     readonly mode = input<'live' | 'library'>('library');
     readonly categories = input<readonly AuroraCategoryOption[]>([]);
     readonly selectedId = input<string | number | null | undefined>(null);
+    readonly loading = input(false);
+    readonly loadFailed = input(false);
     readonly categorySelected = output<string>();
 
     readonly query = signal('');

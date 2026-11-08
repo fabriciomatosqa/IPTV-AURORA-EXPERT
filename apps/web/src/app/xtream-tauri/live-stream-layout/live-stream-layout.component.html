@@ -2,45 +2,22 @@
     player() === 'videojs' || player() === 'html5' || player() === 'artplayer';
 
 <!-- Categories remain visible while changing channels: no more back navigation. -->
-<div class="category-sidebar"
-    [style.--aurora-category-width.px]="categoryColumnWidth()"
-    aria-label="Categorias da TV ao vivo">
-    <div class="sidebar-header category-header">
-        <app-playlist-switcher
-            class="switcher"
-            [currentTitle]="currentPlaylist()?.name || currentPlaylist()?.title || 'Playlist'"
-            [subtitle]="'Xtream Code'"
-        />
-        <button mat-icon-button type="button"
-            (click)="toggleCategorySearch()"
-            [matTooltip]="'Pesquisar categorias'"
-            aria-label="Pesquisar categorias">
-            <mat-icon>search</mat-icon>
-        </button>
-        <button mat-icon-button type="button"
-            (click)="openCategoryManagement()"
-            [matTooltip]="'XTREAM.CATEGORY_MANAGEMENT.TITLE' | translate"
-            aria-label="Gerenciar categorias">
-            <mat-icon>tune</mat-icon>
-        </button>
-    </div>
-    @if (showCategorySearch()) {
-        <mat-form-field class="category-search" appearance="outline" subscriptSizing="dynamic">
-            <mat-icon matPrefix>search</mat-icon>
-            <input matInput type="search" spellcheck="false"
-                [ngModel]="categorySearchTerm()"
-                (ngModelChange)="onCategorySearchChange($event)"
-                placeholder="Pesquisar categorias" />
-        </mat-form-field>
-    }
-    <app-category-view
-        [items]="filteredCategories()"
-        [itemCounts]="categoryItemCounts()"
-        [selectedCategoryId]="selectedCategoryId()"
-        (categoryClicked)="selectCategory($event)"
-        [showCounts]="true"
-    />
-</div>
+<app-aurora-catalog-navigation
+    data-test-id="xtream-live-categories"
+    mode="live"
+    [categories]="auroraCategories()"
+    [selectedId]="selectedCategoryId()"
+    (categorySelected)="selectAuroraCategory($event)">
+    <app-playlist-switcher aurora-category-header class="switcher"
+        [currentTitle]="currentPlaylist()?.name || currentPlaylist()?.title || 'Playlist'"
+        [subtitle]="'Xtream Code'" />
+    <button aurora-category-action mat-icon-button type="button"
+        aria-label="Gerenciar categorias"
+        [matTooltip]="'XTREAM.CATEGORY_MANAGEMENT.TITLE' | translate"
+        (click)="openCategoryManagement()">
+        <mat-icon>tune</mat-icon>
+    </button>
+</app-aurora-catalog-navigation>
 
 <div class="sidebar channels-sidebar"
     [style.--aurora-channel-width.px]="channelColumnWidth()"
