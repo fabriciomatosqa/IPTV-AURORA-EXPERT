@@ -1,0 +1,92 @@
+:host {
+    display: flex; flex: 0 0 auto; min-width: 0; min-height: 0; height: 100%;
+    font: 13px/1.4 'Segoe UI', sans-serif;
+}
+.aurora-category-navigation {
+    display: flex; height: 100%; min-width: 0; min-height: 0;
+    background: #121317; color: #e4e9ee;
+}
+.aurora-category-column, .aurora-subcategory-column {
+    display: flex; flex: 0 0 auto; flex-direction: column;
+    min-width: 0; min-height: 0; overflow: hidden;
+    box-sizing: border-box; background: #121317;
+    border-right: 1px solid rgba(255,255,255,.10);
+}
+.aurora-category-column { width: clamp(190px, var(--aurora-primary-width, 250px), min(43vw, 580px)); }
+.live-mode .aurora-category-column { width: clamp(150px, var(--aurora-primary-width, 210px), min(24vw, 300px)); }
+.aurora-subcategory-column { width: clamp(160px, var(--aurora-secondary-width, 200px), min(24vw, 320px)); }
+.aurora-category-heading, .aurora-subcategory-heading {
+    min-height: 62px; padding: 0 12px; box-sizing: border-box;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 7px; flex: 0 0 auto;
+}
+.aurora-category-heading h2, .aurora-subcategory-heading h2 {
+    margin: 0; font: 600 18px/1.3 'Segoe UI', sans-serif;
+}
+.aurora-header-slot { display: block; min-width: 0; flex: 1; }
+.aurora-category-heading .aurora-icon-button {
+    width: 34px; height: 34px; flex: 0 0 34px;
+    border: 0; border-radius: 7px; background: none; color: #d1dde8;
+    cursor: pointer; display: grid; place-items: center;
+}
+.aurora-icon-button:hover { background: #ffffff12; }
+.aurora-subcategory-heading {
+    flex-direction: column; align-items: flex-start; justify-content: center;
+    gap: 2px; border-bottom: 1px solid #ffffff12;
+}
+.aurora-subcategory-heading h2 { font-size: 15px; }
+.aurora-subcategory-heading span {
+    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-size: 11px; color: #9daab7;
+}
+.aurora-category-search {
+    display: flex; align-items: center; gap: 7px; margin: 2px 9px 10px;
+    padding: 7px 9px; flex: 0 0 auto; min-height: 34px; box-sizing: border-box;
+    background: #1e252d; color: #aebac7; border-radius: 8px;
+}
+.aurora-category-search mat-icon { font-size: 18px; width: 18px; height: 18px; flex: 0 0 18px; }
+.aurora-category-search input {
+    min-width: 0; flex: 1; border: 0; outline: none; background: none;
+    color: #e4e9ee; font: 12px 'Segoe UI', sans-serif;
+}
+.aurora-category-search button { border: 0; background: none; color: #aebac7; padding: 0; cursor: pointer; }
+.aurora-category-search button mat-icon { display: block; }
+.aurora-all-categories {
+    flex: 0 0 auto; display: flex; align-items: center; gap: 10px;
+    width: calc(100% - 18px); margin: 0 9px 8px;
+    border: 0; border-radius: 12px; padding: 10px 12px; text-align: left;
+    color: #dce8e8; background: transparent; font: 13px 'Segoe UI', sans-serif; cursor: pointer;
+}
+.aurora-all-categories.active { background: rgba(115,224,198,.12); color: #79e5d0; }
+.aurora-category-scroll {
+    display: flex; flex-direction: column; min-height: 0; flex: 1;
+    overflow-y: auto; overflow-x: hidden; padding: 4px 7px 12px;
+    scrollbar-width: thin; overscroll-behavior: contain;
+}
+.aurora-category-row {
+    display: flex; flex: 0 0 auto; align-items: center; gap: 9px;
+    min-height: 45px; padding: 9px 10px; text-align: left;
+    background: transparent; border: 0; border-radius: 15px;
+    color: #e4e9ee; cursor: pointer; font: 14px/1.4 'Segoe UI', sans-serif;
+}
+.aurora-category-row:hover { background: #ffffff10; }
+.aurora-category-row.active { background: #20242c; }
+.aurora-category-row:focus-visible, .aurora-all-categories:focus-visible {
+    outline: 2px solid #7be5d3; outline-offset: -2px;
+}
+.aurora-category-row mat-icon {
+    flex: 0 0 18px; width: 18px; height: 18px;
+    font-size: 18px; color: #f33185;
+}
+.aurora-category-row .category-name {
+    flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.aurora-category-row small { flex: 0 0 auto; color: #9ca8b7; font-size: 12px; }
+.aurora-category-empty { padding: 16px 10px; color: #9ca8b7; font-size: 12px; }
+@media (max-width: 800px) {
+    .aurora-category-column { max-width: 43vw; min-width: 145px; }
+    .live-mode .aurora-category-column { max-width: 25vw; min-width: 115px; }
+    .aurora-subcategory-column { max-width: 25vw; min-width: 115px; }
+    .aurora-category-row { font-size: 12px; padding-inline: 7px; }
+    .aurora-category-heading { padding-inline: 7px; }
+}

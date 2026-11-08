@@ -1,0 +1,98 @@
+<div class="aurora-category-navigation" [class.live-mode]="mode() === 'live'"
+    [style.--aurora-primary-width.px]="firstColumnWidth()"
+    [style.--aurora-secondary-width.px]="secondColumnWidth()"
+    data-test-id="aurora-unified-category-navigation">
+    <aside class="aurora-category-column" [attr.aria-label]="mode() === 'live' ? 'Categorias da TV ao vivo' : 'Categorias'">
+        <div class="aurora-category-heading">
+            @if (mode() === 'library') {
+                <h2>Categorias</h2>
+                <ng-content select="[aurora-category-action]" />
+            } @else {
+                <div class="aurora-header-slot">
+                    <ng-content select="[aurora-category-header]" />
+                </div>
+                <button type="button" class="aurora-icon-button"
+                    aria-label="Pesquisar categorias" (click)="searchOpen.set(!searchOpen())">
+                    <mat-icon>search</mat-icon>
+                </button>
+                <ng-content select="[aurora-category-action]" />
+            }
+        </div>
+        @if (mode() === 'library' || searchOpen()) {
+            <label class="aurora-category-search">
+                <mat-icon>search</mat-icon>
+                <input type="search" aria-label="Pesquisar categorias"
+                    placeholder="Pesquisar categorias" [value]="query()"
+                    (input)="query.set($any($event.target).value)" />
+                @if (query()) {
+                    <button type="button" aria-label="Limpar busca"
+                        (click)="query.set('')"><mat-icon>close</mat-icon></button>
+                }
+            </label>
+        }
+        @if (mode() === 'library') {
+            <button type="button" class="aurora-all-categories"
+                [class.active]="allSelected()"
+                [attr.aria-pressed]="allSelected()"
+                (click)="categorySelected.emit('')">
+                <mat-icon>apps</mat-icon><span>Todas</span>
+            </button>
+        }
+        <div class="aurora-category-scroll">
+            @if (mode() === 'live') {
+                @for (group of visibleGroups(); track group.key) {
+                    <button type="button" class="aurora-category-row"
+                        [class.active]="selectedGroup()?.key === group.key"
+                        [attr.aria-pressed]="selectedGroup()?.key === group.key"
+                        [title]="group.title" [attr.data-root-key]="group.key"
+                        (click)="chooseGroup(group.key)">
+                        <mat-icon>diamond</mat-icon>
+                        <span class="category-name">{{ group.title }}</span>
+                        @if (group.count != null) { <small>({{ group.count }})</small> }
+                    </button>
+                } @empty {
+                    <p class="aurora-category-empty">Nenhuma categoria encontrada.</p>
+                }
+            } @else {
+                @for (category of visibleCategories(); track category.id) {
+                    <button type="button" class="aurora-category-row"
+                        [class.active]="String(selectedId()) === category.id"
+                        [attr.aria-pressed]="String(selectedId()) === category.id"
+                        [attr.data-category-id]="category.id"
+                        [title]="category.title"
+                        (click)="chooseChild(category.id)">
+                        <mat-icon>diamond</mat-icon>
+                        <span class="category-name">{{ category.title }}</span>
+                        @if (category.count != null) { <small>({{ category.count }})</small> }
+                    </button>
+                } @empty {
+                    <p class="aurora-category-empty">Nenhuma categoria encontrada.</p>
+                }
+            }
+        </div>
+    </aside>
+    @if (mode() === 'live') {
+        <aside class="aurora-subcategory-column" aria-label="Subcategorias da TV ao vivo">
+            <div class="aurora-subcategory-heading">
+                <h2>Subcategorias</h2>
+                <span>{{ selectedGroup()?.title || '' }}</span>
+            </div>
+            <div class="aurora-category-scroll">
+                @for (child of currentChildren(); track child.id) {
+                    <button type="button" class="aurora-category-row"
+                        [class.active]="String(selectedId()) === child.id"
+                        [attr.aria-pressed]="String(selectedId()) === child.id"
+                        [attr.data-category-id]="child.id"
+                        [title]="child.title"
+                        (click)="chooseChild(child.id)">
+                        <mat-icon>diamond</mat-icon>
+                        <span class="category-name">{{ child.subtitle }}</span>
+                        @if (child.count != null) { <small>({{ child.count }})</small> }
+                    </button>
+                } @empty {
+                    <p class="aurora-category-empty">Escolha uma categoria.</p>
+                }
+            </div>
+        </aside>
+    }
+</div>
