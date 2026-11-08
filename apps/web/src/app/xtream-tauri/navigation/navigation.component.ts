@@ -99,13 +99,14 @@ export class NavigationComponent {
     }
 
     openSettings() {
+        // Keep settings modal within the actual viewport regardless of playlist
+        // provider. The former M3U dialog already enforced these dimensions.
         this.dialog.open(SettingsComponent, {
-            width: '80%',
-            maxWidth: '1200px',
-            maxHeight: '90vh',
-            data: {
-                isDialog: true,
-            },
+            width: '1100px',
+            maxWidth: '96vw',
+            height: '88dvh',
+            maxHeight: '92dvh',
+            data: { isDialog: true },
         });
     }
 
