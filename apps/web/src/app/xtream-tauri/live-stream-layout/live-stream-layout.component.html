@@ -95,7 +95,14 @@
     @if (streamUrl) {
         @if (isEmbeddedPlayer) {
             <div class="video-player">
-                <app-web-player-view [streamUrl]="streamUrl" />
+                <app-web-player-view
+                    [streamUrl]="streamUrl"
+                    [streamHeaders]="{
+                        userAgent: currentPlaylist()?.userAgent,
+                        referrer: currentPlaylist()?.referrer,
+                        origin: currentPlaylist()?.origin
+                    }"
+                />
             </div>
         }
         <div class="epg">
