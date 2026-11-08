@@ -1,3 +1,4 @@
+import { parseSportsBroadcasts, SportsBroadcast } from '../../shared/components/sports-directory/sports-broadcast.model';
 import { SportsDirectoryComponent } from '../../shared/components/sports-directory/sports-directory.component';
 import { identifySport } from '../../shared/components/sports-directory/sports-directory.model';
 import { NavigationComponent } from '../../xtream-tauri/navigation/navigation.component';
@@ -144,6 +145,44 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
     readonly catalogSection = signal('live');
     readonly favoritesKind = signal<'live' | 'movies' | 'series'>('live');
     readonly sportsSelection = signal('');
+    readonly sportsBroadcasts = signal<SportsBroadcast[]>([]);
+    private sportsGuideGeneration = 0;
+
+    /**
+     * Read the existing local EPG for channels in the active playlist.
+     * Never link unrelated score events to a random sports channel.
+     */
+    private async loadSportsBroadcasts(): Promise<void> {
+        const fetch = window.electron?.getChannelPrograms;
+        const generation = ++this.sportsGuideGeneration;
+        if (!fetch) return;
+        const candidates = this.catalogIndex().live.filter(channel =>
+            !!(channel.tvg?.id || channel.tvg?.name || channel.name) &&
+            !!(identifySport(channel.name) || identifySport(channel.group?.title || ''))
+        ).slice(0,64);
+        const results: SportsBroadcast[] = [];
+        for (let i = 0; i < candidates.length; i += 8) {
+            const batch = candidates.slice(i,i+8);
+            const items = await Promise.all(batch.map(async channel => {
+                const guideId = channel.tvg?.id || channel.tvg?.name || channel.name;
+                try {
+                    const programs = await fetch(guideId);
+                    return parseSportsBroadcasts({
+                        id: channel.id, name: channel.name, logo: channel.tvg?.logo,
+                    }, Array.isArray(programs) ? programs : []);
+                } catch { return []; }
+            }));
+            if (generation !== this.sportsGuideGeneration) return;
+            for (const item of items) results.push(...item);
+        }
+        if (generation === this.sportsGuideGeneration)
+            this.sportsBroadcasts.set(results);
+    }
+
+    watchSportsChannel(channelId: string): void {
+        const channel = this.catalogIndex().live.find(item => item.id === channelId);
+        if (channel) this.playCatalogChannel(channel);
+    }
     readonly catalogSearch = signal('');
     readonly catalogCategory = signal('');
     readonly categorySidebarQuery = signal('');
@@ -337,7 +376,10 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
         this.catalogDetail.set(null);
         this.catalogSection.set(section);
         if (section === 'favorites') this.favoritesKind.set('live');
-        if (section === 'sports') this.sportsSelection.set('');
+        if (section === 'sports') {
+            this.sportsSelection.set('');
+            void this.loadSportsBroadcasts();
+        }
         this.catalogCategory.set('');
         this.categorySidebarQuery.set('');
         this.categorySearchOpen.set(false);
@@ -394,6 +436,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
             this.catalogChannels.set(channels);
             this.catalogIndex.set(index);
             this.catalogLoading.set(false);
+            if (this.catalogSection() === 'sports') void this.loadSportsBroadcasts();
         }
         return channels;
     }

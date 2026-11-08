@@ -801,6 +801,16 @@ test.describe('Electron App Smoke Test', () => {
         await expect(mainWindow.locator('.favorite-type-tabs')).toContainText('Séries');
         await rail.getByRole('button', { name: 'Esportes', exact: true }).click();
         await expect(mainWindow.locator('[data-test-id="sports-directory"]')).toBeVisible();
+        // Ported Android hub: two-level sports and competition tabs, not a
+        // simple category directory. F1 includes real championship sections.
+        await expect(mainWindow.locator('[data-test-id="sports-kinds"]')).toBeVisible();
+        await expect(mainWindow.locator('[data-test-id="sports-competitions"]')).toBeVisible();
+        await mainWindow.locator('[data-test-id="sports-kinds"]')
+            .getByRole('button', { name: 'Automobilismo' }).click();
+        await mainWindow.getByRole('button', { name: /Página do Campeonato/ }).click();
+        await expect(mainWindow.locator('[data-test-id="f1-championship"]')).toBeVisible();
+        await mainWindow.getByRole('button', { name: 'Pilotos', exact: true }).click();
+        await expect(mainWindow.locator('[data-test-id="f1-drivers"]')).toBeVisible();
         await rail.getByRole('button', { name: 'TV ao vivo', exact: true }).click();
         await expect(mainWindow.locator('[data-test-id="channel-item"]').first()).toBeVisible();
     });

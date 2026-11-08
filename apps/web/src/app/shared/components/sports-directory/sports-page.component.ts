@@ -1,4 +1,6 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
+import { parseSportsBroadcasts, SportsBroadcast } from './sports-broadcast.model';
+import { identifySport } from './sports-directory.model';
 import { ActivatedRoute, Router } from '@angular/router';
 import { StalkerStore } from '../../../stalker/stalker.store';
 import { XtreamStore } from '../../../xtream-tauri/stores/xtream.store';
@@ -12,6 +14,8 @@ import { SportsSource } from './sports-directory.model';
     template: `<app-sports-directory
         [sources]="sportsCategories()"
         [loading]="isLoading()"
+        [broadcasts]="broadcasts()"
+        (watch)="watchBroadcast($event)"
         (chosen)="openCompetition($event)" />`,
     styles: [':host { display: block; height: 100%; width: 100%; min-width: 0; overflow: hidden; }'],
 })
@@ -21,6 +25,9 @@ export class SportsPageComponent {
     private readonly xtream = inject(XtreamStore, { optional: true });
     private readonly stalker = inject(StalkerStore, { optional: true });
     readonly provider = this.route.snapshot.data['provider'] as 'xtream' | 'stalker';
+    readonly broadcasts = signal<SportsBroadcast[]>([]);
+    private epgRequestedFor = '';
+    private epgGeneration = 0;
 
     readonly sportsCategories = computed<SportsSource[]>(() => {
         if (this.provider === 'stalker') {
@@ -58,6 +65,102 @@ export class SportsPageComponent {
         if (this.provider === 'stalker') {
             this.stalker?.setSelectedContentType('itv');
         }
+        effect(() => {
+            if (this.provider === 'xtream') {
+                const playlist = this.xtream?.currentPlaylist();
+                const content = this.xtream?.liveStreams() || [];
+                const key = String(playlist?.id || '') + ':' + content.length;
+                if (playlist && content.length && this.epgRequestedFor !== key) {
+                    this.epgRequestedFor = key;
+                    void this.loadXtreamSportsEpg();
+                }
+            } else {
+                const playlist = this.stalker?.currentPlaylist();
+                const content = this.stalker?.itvChannels() || [];
+                const key = String(playlist?._id || '') + ':' + content.length;
+                if (playlist && content.length && this.epgRequestedFor !== key) {
+                    this.epgRequestedFor = key;
+                    void this.loadStalkerSportsEpg();
+                }
+            }
+        });
+    }
+
+    private async loadXtreamSportsEpg(): Promise<void> {
+        const store = this.xtream;
+        if (!store) return;
+        const generation = ++this.epgGeneration;
+        const sportsIds = new Set(this.sportsCategories().filter(category =>
+            !!identifySport(category.title)
+        ).map(category => category.id));
+        const candidates = store.liveStreams().filter(stream =>
+            sportsIds.has(String(stream.category_id)) ||
+            !!identifySport(stream.name)
+        ).slice(0,30);
+        const results: SportsBroadcast[] = [];
+        for (let index=0; index<candidates.length; index+=6) {
+            const batch = await Promise.all(candidates.slice(index,index+6).map(async item => {
+                const id = Number(item.xtream_id ?? item.stream_id);
+                if (!Number.isFinite(id) || id < 0) return [];
+                try {
+                    const epg = await store.loadChannelEpg(id);
+                    return parseSportsBroadcasts({
+                        id: String(id), name:item.name,logo:item.stream_icon,
+                    }, epg.map(x => ({
+                        title:x.title,description:x.description,
+                        start:x.start,stop:x.stop || x.end,
+                        start_timestamp:x.start_timestamp,stop_timestamp:x.stop_timestamp,
+                    })));
+                } catch { return []; }
+            }));
+            if (generation !== this.epgGeneration) return;
+            for (const item of batch) results.push(...item);
+        }
+        if (generation === this.epgGeneration) this.broadcasts.set(results);
+    }
+
+    private async loadStalkerSportsEpg(): Promise<void> {
+        const store = this.stalker;
+        if (!store) return;
+        const generation = ++this.epgGeneration;
+        const channels = store.itvChannels().filter(item =>
+            !!identifySport(item.o_name || item.name || '')
+        ).slice(0,24);
+        const results: SportsBroadcast[] = [];
+        for (let i=0; i<channels.length; i+=6) {
+            const batch=await Promise.all(channels.slice(i,i+6).map(async channel => {
+                try {
+                    const programs=await store.fetchChannelEpg(channel.id,10);
+                    return parseSportsBroadcasts({
+                        id:String(channel.id),name:channel.o_name || channel.name,
+                        logo:channel.logo,
+                    },programs.map(x=>({
+                        title:x.title,description:x.description,start:x.start,
+                        stop:x.stop || x.end,start_timestamp:x.start_timestamp,
+                        stop_timestamp:x.stop_timestamp,
+                    })));
+                } catch { return []; }
+            }));
+            if (generation !== this.epgGeneration) return;
+            for (const rows of batch) results.push(...rows);
+        }
+        if (generation === this.epgGeneration) this.broadcasts.set(results);
+    }
+
+    watchBroadcast(id: string): void {
+        if (this.provider === 'stalker') {
+            const channel = this.stalker?.itvChannels().find(c=>String(c.id)===id);
+            if (channel) void this.stalker?.createLinkToPlayVod(
+                channel.cmd,channel.o_name || channel.name,channel.logo
+            );
+            return;
+        }
+        const stream=this.xtream?.liveStreams().find(c =>
+            String(c.xtream_id ?? c.stream_id) === id
+        );
+        if (!stream) return;
+        const url=this.xtream?.constructStreamUrl(stream);
+        if (url) this.xtream?.openPlayer(url,stream.name,stream.stream_icon);
     }
 
     openCompetition(categoryId: string): void {
