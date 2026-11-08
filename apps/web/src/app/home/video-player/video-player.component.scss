@@ -701,3 +701,8 @@
     .aurora-library .library-search { width: 110px; }
     .aurora-library .library-header { padding: 8px; }
 }
+
+.aurora-library .m3u-downloads {
+    flex: 1; min-width: 0; min-height: 0; overflow-y: auto;
+    background: #12151b;
+}

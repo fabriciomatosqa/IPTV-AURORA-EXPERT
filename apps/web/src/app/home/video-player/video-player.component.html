@@ -43,7 +43,9 @@
         >
     </nav>
     @if (browsing()) {
-        @if (catalogDetail(); as item) {
+        @if (catalogSection() === 'downloads') {
+            <app-downloads class="m3u-downloads" />
+        } @else if (catalogDetail(); as item) {
             <main class="library-details">
                 <app-content-hero
                     [layout]="

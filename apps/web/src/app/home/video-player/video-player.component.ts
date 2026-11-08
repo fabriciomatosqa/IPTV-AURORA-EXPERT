@@ -1,3 +1,4 @@
+import { DownloadsComponent } from '../../xtream-tauri/downloads/downloads.component';
 import { catalogCategoryWidth } from '../../shared/utils/catalog-column-width';
 import { isAdultContentLabel, moveAdultContentToEnd } from '../../shared/utils/adult-content-order';
 import { Overlay, OverlayRef } from '@angular/cdk/overlay';
@@ -92,6 +93,7 @@ import { WebPlayerViewComponent } from 'shared-portals';
         AudioPlayerComponent,
         ContentHeroComponent,
         CommonModule,
+        DownloadsComponent,
         EpgListComponent,
         HtmlVideoPlayerComponent,
         InfoOverlayComponent,
@@ -201,8 +203,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
         { id: 'live', label: 'TV ao vivo', icon: 'tv' },
         { id: 'series', label: 'Séries', icon: 'video_library' },
         { id: 'movies', label: 'Filmes', icon: 'local_movies' },
-        { id: 'favorites', label: 'Favoritos', icon: 'star_outline' },
-        { id: 'recent', label: 'Histórico', icon: 'history' },
+        { id: 'downloads', label: 'Downloads', icon: 'download' },
     ];
     private contentKind(channel: Channel): string {
         return (

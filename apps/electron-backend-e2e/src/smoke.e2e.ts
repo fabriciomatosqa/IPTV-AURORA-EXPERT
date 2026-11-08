@@ -935,9 +935,9 @@ test.describe('Electron App Smoke Test', () => {
     });
 
     test('filters categories, searches, toggles favorites and browses movie and series posters at desktop sizes', async () => {
-        await mainWindow
-            .locator('#aurora-category')
-            .selectOption('TV | Notícias');
+        const liveCategories = mainWindow.locator('[data-test-id="m3u-category-sidebar"]');
+        await expect(liveCategories).toBeVisible();
+        await liveCategories.locator('[data-category-id="TV | Notícias"]').click();
         await expect(
             mainWindow.locator('[data-test-id="channel-item"]')
         ).toHaveCount(18);
@@ -953,10 +953,9 @@ test.describe('Electron App Smoke Test', () => {
                 exact: true,
             })
             .click();
-        await mainWindow
-            .locator('.library-rail-links')
-            .getByRole('button', { name: 'Favoritos', exact: true })
-            .click();
+        await mainWindow.locator('.library-rail-links')
+            .getByRole('button', { name: 'Menu', exact: true }).click();
+        await mainWindow.getByRole('menuitem', { name: 'Favoritos' }).click();
         await expect(
             mainWindow.locator('[data-test-id="channel-item"]')
         ).toHaveCount(1);
@@ -989,12 +988,12 @@ test.describe('Electron App Smoke Test', () => {
                     '[data-test-id="m3u-category-sidebar"]'
                 );
                 await expect(m3uCategories).toBeVisible();
-                await m3uCategories.locator('.library-category-list button').nth(1).click();
+                await m3uCategories.locator('.library-category-list button').first().click();
                 await expect(m3uCategories).toBeVisible();
                 await expect(
                     mainWindow.locator('.poster-grid [data-test-id="channel-item"]')
                 ).not.toHaveCount(12);
-                await m3uCategories.locator('.library-category-list button').first().click();
+                await m3uCategories.locator('.library-all-categories').click();
                 await expect(
                     mainWindow.locator('.poster-grid [data-test-id="channel-item"]')
                 ).toHaveCount(12);
@@ -1096,18 +1095,16 @@ test.describe('Electron App Smoke Test', () => {
         await mainWindow
             .getByRole('button', { name: 'Voltar ao catálogo' })
             .click();
-        await mainWindow
-            .locator('.library-rail-links')
-            .getByRole('button', { name: 'Histórico', exact: true })
-            .click();
+        await mainWindow.locator('.library-rail-links')
+            .getByRole('button', { name: 'Menu', exact: true }).click();
+        await mainWindow.getByRole('menuitem', { name: 'Histórico' }).click();
         await expect(
             mainWindow.locator('[data-test-id="channel-item"]')
         ).toHaveCount(1);
         await mainWindow.reload();
-        await mainWindow
-            .locator('.library-rail-links')
-            .getByRole('button', { name: 'Histórico', exact: true })
-            .click();
+        await mainWindow.locator('.library-rail-links')
+            .getByRole('button', { name: 'Menu', exact: true }).click();
+        await mainWindow.getByRole('menuitem', { name: 'Histórico' }).click();
         await expect(
             mainWindow.locator('[data-test-id="channel-item"]')
         ).toHaveCount(1);
