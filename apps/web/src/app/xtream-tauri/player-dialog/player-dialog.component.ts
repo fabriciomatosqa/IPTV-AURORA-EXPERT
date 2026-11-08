@@ -22,6 +22,7 @@ export interface PlayerDialogData {
         referrer?: string;
         origin?: string;
     };
+    alternateUrls?: string[];
 }
 
 @Component({
@@ -46,6 +47,9 @@ export class PlayerDialogComponent {
 
     readonly title: string;
     readonly streamUrl: string;
+    readonly activeStreamUrl = signal('');
+    private readonly alternateUrls: string[];
+    private fallbackIndex = 0;
     readonly isFullscreen = signal(false);
     readonly isOpeningPiP = signal(false);
     readonly canUseNativePiP = !!window.electron?.openAuroraPiP;
@@ -61,6 +65,9 @@ export class PlayerDialogComponent {
 
     constructor() {
         this.streamUrl = this.data.streamUrl;
+        this.activeStreamUrl.set(this.streamUrl);
+        this.alternateUrls = [...new Set((this.data.alternateUrls || [])
+            .filter((url) => url && url !== this.streamUrl))];
         this.title = this.data.title;
         this.lastPositionSeconds = this.data.startTime ?? 0;
     }
@@ -94,7 +101,7 @@ export class PlayerDialogComponent {
         this.isOpeningPiP.set(true);
         try {
             const opened = await window.electron.openAuroraPiP?.({
-                streamUrl: this.streamUrl,
+                streamUrl: this.activeStreamUrl(),
                 title: this.title,
                 startTime: this.lastPositionSeconds,
                 subtitleUrl: this.data.subtitleUrl,
@@ -116,6 +123,15 @@ export class PlayerDialogComponent {
         } finally {
             this.isOpeningPiP.set(false);
         }
+    }
+
+    onPlaybackFailed(): void {
+        // A provider-supplied direct URL may be unavailable even though the
+        // canonical Xtream /movie/ URL works (or vice versa). Retry once with
+        // the other source after codec transcoding has also been attempted.
+        if (this.fallbackIndex >= this.alternateUrls.length) return;
+        const next = this.alternateUrls[this.fallbackIndex++];
+        this.activeStreamUrl.set(next);
     }
 
     handleTimeUpdate(event: { currentTime: number; duration: number }) {
