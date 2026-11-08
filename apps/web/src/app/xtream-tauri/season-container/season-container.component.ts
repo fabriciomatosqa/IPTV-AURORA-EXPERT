@@ -6,12 +6,14 @@ import {
     output,
     signal,
     OnInit,
+    ElementRef,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatIcon } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatMenuModule } from '@angular/material/menu';
 import { TranslateModule } from '@ngx-translate/core';
 import { XtreamSerieEpisode, XtreamSerieEpisodeInfo } from 'shared-interfaces';
 import { XtreamStore } from '../stores/xtream.store';
@@ -31,6 +33,7 @@ const EPISODE_VIEW_MODE_KEY = 'aurora_episode_view_mode';
     imports: [
         KeyValuePipe,
         MatButtonModule,
+        MatMenuModule,
         MatButtonToggleModule,
         MatIcon,
         MatProgressSpinnerModule,
@@ -45,6 +48,7 @@ export class SeasonContainerComponent implements OnInit {
     private readonly stalkerStore = inject(StalkerStore);
     private readonly downloadsService = inject(DownloadsService);
     private readonly logger = createLogger('SeasonContainer');
+    private readonly host: ElementRef<HTMLElement> = inject(ElementRef);
 
     readonly seasons = input.required<Record<string, XtreamSerieEpisode[]>>();
     readonly seriesId = input.required<number>();
@@ -178,6 +182,16 @@ export class SeasonContainerComponent implements OnInit {
     selectSeason(seasonKey: string) {
         this.selectedSeason = seasonKey;
         this.seasonSelected.emit(seasonKey);
+    }
+
+    focusSeason(seasonKey: string): void {
+        this.selectSeason(seasonKey);
+        const lane = Array.from(
+            this.host.nativeElement.querySelectorAll<HTMLElement>(
+                '[data-season]'
+            )
+        ).find((el) => el.dataset['season'] === seasonKey);
+        lane?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
     selectEpisode(episode: XtreamSerieEpisode) {

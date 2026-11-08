@@ -1,127 +1,470 @@
-<mat-drawer-container class="main-container" autosize>
-    <!-- sidebar content -->
-    <mat-drawer
-        #drawer
-        mode="side"
-        opened
-        disableClose
-        class="mat-drawer"
-        appResizable
-        [minWidth]="200"
-        [maxWidth]="600"
-        [defaultWidth]="350"
-        storageKey="aurora_video_sidebar_width"
-        handlePosition="right"
-    >
-        @defer {
-            <app-sidebar [channels]="(channels$ | async)!" />
-        } @loading {
-            <p>Loading...</p>
-        } @placeholder {
-            <p>Loading...</p>
-        }
-    </mat-drawer>
-    <mat-drawer-content class="drawer-content">
-        @if (activeChannel$ | async; as activeChannel) {
-            <!-- toolbar with drawer icon -->
-            <app-toolbar
-                (toggleLeftDrawerClicked)="drawer.toggle()"
-                (filterClicked)="drawer.toggle()"
-                (toggleRightDrawerClicked)="drawerRight.toggle()"
-                (multiEpgClicked)="openMultiEpgView()"
-                (infoOverlayClicked)="toggleInfoOverlay()"
-                [activeChannel]="activeChannel"
-                [isLeftDrawerOpened]="drawer.opened"
-                (settingsClicked)="openSettings()"
-            />
-            @if (activeChannel.radio === 'true') {
-                <app-audio-player
-                    [url]="activeChannel.url"
-                    [icon]="activeChannel?.tvg?.logo!"
-                />
-            } @else {
-                <!-- video.js player -->
-                @if (playerSettings.player === 'videojs') {
-                    <app-vjs-player
-                        [options]="getVjsOptions(activeChannel)"
-                        [volume]="volume"
-                        [showCaptions]="playerSettings.showCaptions!"
-                        [class.hide-captions]="!playerSettings.showCaptions"
-                    />
-                }
-                <!-- default html player component -->
-                @if (playerSettings.player === 'html5') {
-                    <app-html-video-player
-                        [channel]="activeChannel"
-                        [volume]="volume"
-                        [showCaptions]="playerSettings.showCaptions!"
-                    />
-                }
-                <!-- Add ArtPlayer component -->
-                @if (playerSettings.player === 'artplayer') {
-                    <app-web-player-view
-                        [streamUrl]="
-                            activeChannel.url + (activeChannel.epgParams || '')
-                        "
-                        [streamHeaders]="streamHeaders"
-                    />
-                }
-                @if (playerSettings.player === 'mpv') {
-                    <div class="custom-player">
-                        <img
-                            src="./assets/images/custom-player.png"
-                            alt="external player"
-                        />
-                        <p>
-                            The channel is played in a separate window in the
-                            MPV player. (<a
-                                [routerLink]
-                                style="cursor: pointer"
-                                (click)="
-                                    openUrl(
-                                        'https://github.com/thomasmcintee/iptvmate/wiki/What-is-mpv-video-player-and-how-to-install-it-on-different-operating-systems%3F'
-                                    )
-                                "
-                                >Installation instructions</a
-                            >)
-                        </p>
-                    </div>
-                }
-                @if (playerSettings.player === 'vlc') {
-                    <div class="custom-player">
-                        <img
-                            src="./assets/images/custom-player.png"
-                            alt="external player"
-                        />
-                        <p>
-                            The channel is played in a separate window in VLC
-                            player. Please make sure that this player is
-                            installed in your system and the correct path is
-                            defined in the app settings.
-                        </p>
-                    </div>
-                }
-                <!-- channel overlay -->
-                <app-info-overlay
-                    [channel]="activeChannel"
-                    [epgProgram]="(epgProgram$ | async)!"
-                />
-
-                <!-- channel number overlay -->
-                @if (showChannelNumberOverlay) {
-                    <div class="channel-number-overlay">
-                        <div class="channel-number-display">
-                            {{ channelNumberInput }}
-                        </div>
-                    </div>
-                }
+<div
+    class="aurora-library"
+    [class.details-open]="browsing() && !!catalogDetail()"
+>
+    <nav class="library-rail" aria-label="Biblioteca AURORA">
+        <a class="library-brand" routerLink="/" title="Gerenciar listas IPTV"
+            ><img src="assets/aurora/aurora.svg" alt="AURORA"
+        /></a>
+        <div class="library-rail-links">
+            @for (item of catalogNavigation; track item.id) {
+                <button
+                    type="button"
+                    [class.active]="catalogSection() === item.id"
+                    [attr.aria-pressed]="catalogSection() === item.id"
+                    (click)="changeCatalogSection(item.id)"
+                >
+                    <mat-icon>{{ item.icon }}</mat-icon
+                    ><span>{{ item.label }}</span>
+                </button>
             }
+            <button type="button" [matMenuTriggerFor]="libraryMenu">
+                <mat-icon>menu</mat-icon><span>Menu</span>
+            </button>
+            <mat-menu #libraryMenu="matMenu">
+                <a mat-menu-item routerLink="/"
+                    ><mat-icon>playlist_play</mat-icon>Gerenciar listas</a
+                >
+                <button mat-menu-item (click)="openSettings()">
+                    <mat-icon>settings</mat-icon>Configurações de reprodução
+                </button>
+                @if (isDesktop) {
+                    <button mat-menu-item (click)="openMultiEpgView()">
+                        <mat-icon>calendar_view_week</mat-icon>Guia de
+                        programação
+                    </button>
+                }
+            </mat-menu>
+        </div>
+        <a routerLink="/" class="library-playlists"
+            ><mat-icon>playlist_play</mat-icon><span>Listas</span></a
+        >
+    </nav>
+    @if (browsing()) {
+        @if (catalogDetail(); as item) {
+            <main class="library-details">
+                <app-content-hero
+                    [layout]="
+                        catalogSection() === 'series' ? 'series' : 'movie'
+                    "
+                    [title]="catalogDetailTitle()"
+                    [posterUrl]="item.tvg?.logo"
+                    (backClicked)="catalogDetail.set(null)"
+                >
+                    <ng-container hero-tags
+                        ><span>{{ item.group?.title }}</span></ng-container
+                    >
+                    <ng-container hero-actions>
+                        @if (
+                            catalogSection() !== 'series' ||
+                            !catalogSeriesSeasons().length
+                        ) {
+                            <button
+                                class="play-btn"
+                                (click)="playCatalogChannel(item)"
+                            >
+                                <mat-icon>play_arrow</mat-icon>Assistir
+                            </button>
+                        }
+                        <button
+                            class="favorite-btn"
+                            (click)="toggleCatalogFavorite(item)"
+                        >
+                            <mat-icon>{{
+                                isCatalogFavorite(item)
+                                    ? 'star'
+                                    : 'star_outline'
+                            }}</mat-icon
+                            >{{
+                                isCatalogFavorite(item)
+                                    ? 'Remover favorito'
+                                    : 'Adicionar aos favoritos'
+                            }}
+                        </button>
+                    </ng-container>
+                    @for (
+                        season of catalogSeriesSeasons();
+                        track season.season
+                    ) {
+                        <section class="m3u-season">
+                            <h2>Temporada {{ season.season }}</h2>
+                            <div class="m3u-episodes">
+                                @for (
+                                    episode of season.episodes;
+                                    track episode.id
+                                ) {
+                                    <button
+                                        type="button"
+                                        (click)="playCatalogChannel(episode)"
+                                    >
+                                        <span class="m3u-episode-image"
+                                            ><mat-icon
+                                                >play_circle_outline</mat-icon
+                                            ></span
+                                        ><span>{{ episode.name }}</span>
+                                    </button>
+                                }
+                            </div>
+                        </section>
+                    }
+                </app-content-hero>
+            </main>
+        } @else {
+            <main class="library-catalog" data-test-id="aurora-catalog">
+                <header class="library-header">
+                    <div class="library-category">
+                        <label for="aurora-category"
+                            >Categorias
+                            <mat-icon>expand_circle_down</mat-icon></label
+                        >
+                        <select
+                            id="aurora-category"
+                            aria-label="Selecionar categoria"
+                            [value]="catalogCategory()"
+                            (change)="
+                                catalogCategory.set($any($event.target).value);
+                                catalogLimit.set(200)
+                            "
+                        >
+                            <option value="">Todas</option>
+                            @for (
+                                category of catalogCategories();
+                                track category
+                            ) {
+                                <option [value]="category">
+                                    {{ category }}
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    <label class="library-search"
+                        ><mat-icon>search</mat-icon
+                        ><input
+                            type="search"
+                            placeholder="Pesquisar"
+                            aria-label="Pesquisar no catálogo"
+                            [value]="catalogSearch()"
+                            (input)="
+                                catalogSearch.set($any($event.target).value);
+                                catalogLimit.set(200)
+                            "
+                    /></label>
+                </header>
+                <div class="library-body">
+                    <aside
+                        class="library-tools"
+                        aria-label="Organização do catálogo"
+                    >
+                        <button
+                            type="button"
+                            title="Ordenar por nome"
+                            aria-label="Ordenar por nome"
+                            [attr.aria-pressed]="catalogSorted()"
+                            (click)="catalogSorted.set(!catalogSorted())"
+                        >
+                            <mat-icon>sort_by_alpha</mat-icon>
+                        </button>
+                        <button
+                            type="button"
+                            title="Favoritos"
+                            aria-label="Mostrar favoritos"
+                            (click)="changeCatalogSection('favorites')"
+                        >
+                            <mat-icon>star</mat-icon>
+                        </button>
+                        <button
+                            type="button"
+                            title="Histórico"
+                            aria-label="Mostrar histórico"
+                            (click)="changeCatalogSection('recent')"
+                        >
+                            <mat-icon>history</mat-icon>
+                        </button>
+                    </aside>
+                    <section
+                        class="library-scroll"
+                        aria-label="Conteúdos da lista"
+                    >
+                        <div
+                            class="library-grid"
+                            [class.poster-grid]="
+                                catalogSection() === 'movies' ||
+                                catalogSection() === 'series'
+                            "
+                        >
+                            @for (
+                                channel of visibleCatalog();
+                                track channel.id
+                            ) {
+                                <article class="library-item">
+                                    <button
+                                        class="library-content"
+                                        type="button"
+                                        data-test-id="channel-item"
+                                        (click)="selectCatalogItem(channel)"
+                                        [title]="catalogItemTitle(channel)"
+                                    >
+                                        @if (channel.tvg?.logo) {
+                                            <img
+                                                [src]="channel.tvg.logo"
+                                                alt=""
+                                                loading="lazy"
+                                                (error)="
+                                                    $any(
+                                                        $event.target
+                                                    ).style.visibility =
+                                                        'hidden'
+                                                "
+                                            />
+                                        } @else {
+                                            <span class="library-placeholder"
+                                                ><mat-icon>{{
+                                                    catalogSection() === 'live'
+                                                        ? 'tv'
+                                                        : 'movie'
+                                                }}</mat-icon></span
+                                            >
+                                        }
+                                        <span class="library-title">{{
+                                            catalogItemTitle(channel)
+                                        }}</span>
+                                    </button>
+                                    <button
+                                        class="library-favorite"
+                                        type="button"
+                                        [attr.aria-label]="
+                                            (isCatalogFavorite(channel)
+                                                ? 'Remover favorito: '
+                                                : 'Adicionar favorito: ') +
+                                            channel.name
+                                        "
+                                        [attr.aria-pressed]="
+                                            isCatalogFavorite(channel)
+                                        "
+                                        (click)="toggleCatalogFavorite(channel)"
+                                    >
+                                        <mat-icon>{{
+                                            isCatalogFavorite(channel)
+                                                ? 'star'
+                                                : 'star_outline'
+                                        }}</mat-icon>
+                                    </button>
+                                    <button
+                                        class="library-more"
+                                        type="button"
+                                        [matMenuTriggerFor]="contentMenu"
+                                        [attr.aria-label]="
+                                            'Opções de ' + channel.name
+                                        "
+                                    >
+                                        <mat-icon>more_vert</mat-icon>
+                                    </button>
+                                    <mat-menu #contentMenu="matMenu">
+                                        <button
+                                            mat-menu-item
+                                            (click)="
+                                                playCatalogChannel(channel)
+                                            "
+                                        >
+                                            <mat-icon>play_arrow</mat-icon
+                                            >Reproduzir
+                                        </button>
+                                        <button
+                                            mat-menu-item
+                                            (click)="
+                                                toggleCatalogFavorite(channel)
+                                            "
+                                        >
+                                            <mat-icon>star_outline</mat-icon
+                                            >{{
+                                                isCatalogFavorite(channel)
+                                                    ? 'Remover favorito'
+                                                    : 'Adicionar favorito'
+                                            }}
+                                        </button>
+                                    </mat-menu>
+                                </article>
+                            } @empty {
+                                <div class="library-empty">
+                                    <mat-icon>video_library</mat-icon>
+                                    <h2>Nenhum conteúdo nesta seleção</h2>
+                                    <p>
+                                        Escolha outra categoria ou ajuste a
+                                        busca.
+                                    </p>
+                                </div>
+                            }
+                        </div>
+                        @if (
+                            visibleCatalog().length < filteredCatalog().length
+                        ) {
+                            <button
+                                class="library-load"
+                                type="button"
+                                (click)="catalogLimit.set(catalogLimit() + 200)"
+                            >
+                                Mostrar mais · {{ visibleCatalog().length }} de
+                                {{ filteredCatalog().length }}
+                            </button>
+                        }
+                    </section>
+                </div>
+            </main>
         }
-    </mat-drawer-content>
-    <!-- right sidebar content -->
-    <mat-drawer position="end" #drawerRight mode="side" disableClose>
-        @if (isDesktop) {
-            <app-epg-list />
-        }
-    </mat-drawer>
-</mat-drawer-container>
+    } @else {
+        <div class="library-player">
+            <button
+                type="button"
+                class="library-back"
+                (click)="browsing.set(true)"
+            >
+                <mat-icon>arrow_back</mat-icon
+                >{{
+                    catalogDetail()
+                        ? 'Voltar aos detalhes'
+                        : 'Voltar ao catálogo'
+                }}
+            </button>
+            <mat-drawer-container class="main-container" autosize>
+                <!-- sidebar content -->
+                <mat-drawer
+                    #drawer
+                    mode="side"
+                    opened
+                    disableClose
+                    class="mat-drawer"
+                    appResizable
+                    [minWidth]="200"
+                    [maxWidth]="600"
+                    [defaultWidth]="350"
+                    storageKey="aurora_video_sidebar_width"
+                    handlePosition="right"
+                >
+                    @defer {
+                        <app-sidebar [channels]="(channels$ | async)!" />
+                    } @loading {
+                        <p>Loading...</p>
+                    } @placeholder {
+                        <p>Loading...</p>
+                    }
+                </mat-drawer>
+                <mat-drawer-content class="drawer-content">
+                    @if (activeChannel$ | async; as activeChannel) {
+                        <!-- toolbar with drawer icon -->
+                        <app-toolbar
+                            (toggleLeftDrawerClicked)="drawer.toggle()"
+                            (filterClicked)="drawer.toggle()"
+                            (toggleRightDrawerClicked)="drawerRight.toggle()"
+                            (multiEpgClicked)="openMultiEpgView()"
+                            (infoOverlayClicked)="toggleInfoOverlay()"
+                            [activeChannel]="activeChannel"
+                            [isLeftDrawerOpened]="drawer.opened"
+                            (settingsClicked)="openSettings()"
+                        />
+                        @if (activeChannel.radio === 'true') {
+                            <app-audio-player
+                                [url]="activeChannel.url"
+                                [icon]="activeChannel?.tvg?.logo!"
+                            />
+                        } @else {
+                            <!-- video.js player -->
+                            @if (playerSettings.player === 'videojs') {
+                                <app-vjs-player
+                                    [options]="getVjsOptions(activeChannel)"
+                                    [volume]="volume"
+                                    [showCaptions]="
+                                        playerSettings.showCaptions!
+                                    "
+                                    [class.hide-captions]="
+                                        !playerSettings.showCaptions
+                                    "
+                                />
+                            }
+                            <!-- default html player component -->
+                            @if (playerSettings.player === 'html5') {
+                                <app-html-video-player
+                                    [channel]="activeChannel"
+                                    [volume]="volume"
+                                    [showCaptions]="
+                                        playerSettings.showCaptions!
+                                    "
+                                />
+                            }
+                            <!-- Add ArtPlayer component -->
+                            @if (playerSettings.player === 'artplayer') {
+                                <app-web-player-view
+                                    [streamUrl]="
+                                        activeChannel.url +
+                                        (activeChannel.epgParams || '')
+                                    "
+                                    [streamHeaders]="streamHeaders"
+                                />
+                            }
+                            @if (playerSettings.player === 'mpv') {
+                                <div class="custom-player">
+                                    <img
+                                        src="./assets/images/custom-player.png"
+                                        alt="external player"
+                                    />
+                                    <p>
+                                        The channel is played in a separate
+                                        window in the MPV player. (<a
+                                            [routerLink]
+                                            style="cursor: pointer"
+                                            (click)="
+                                                openUrl(
+                                                    'https://github.com/thomasmcintee/iptvmate/wiki/What-is-mpv-video-player-and-how-to-install-it-on-different-operating-systems%3F'
+                                                )
+                                            "
+                                            >Installation instructions</a
+                                        >)
+                                    </p>
+                                </div>
+                            }
+                            @if (playerSettings.player === 'vlc') {
+                                <div class="custom-player">
+                                    <img
+                                        src="./assets/images/custom-player.png"
+                                        alt="external player"
+                                    />
+                                    <p>
+                                        The channel is played in a separate
+                                        window in VLC player. Please make sure
+                                        that this player is installed in your
+                                        system and the correct path is defined
+                                        in the app settings.
+                                    </p>
+                                </div>
+                            }
+                            <!-- channel overlay -->
+                            <app-info-overlay
+                                [channel]="activeChannel"
+                                [epgProgram]="(epgProgram$ | async)!"
+                            />
+
+                            <!-- channel number overlay -->
+                            @if (showChannelNumberOverlay) {
+                                <div class="channel-number-overlay">
+                                    <div class="channel-number-display">
+                                        {{ channelNumberInput }}
+                                    </div>
+                                </div>
+                            }
+                        }
+                    }
+                </mat-drawer-content>
+                <!-- right sidebar content -->
+                <mat-drawer
+                    position="end"
+                    #drawerRight
+                    mode="side"
+                    disableClose
+                >
+                    @if (isDesktop) {
+                        <app-epg-list />
+                    }
+                </mat-drawer>
+            </mat-drawer-container>
+        </div>
+    }
+</div>

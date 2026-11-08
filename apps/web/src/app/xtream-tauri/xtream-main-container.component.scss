@@ -25,11 +25,13 @@
     display: flex;
     flex-direction: column;
     min-height: 0; // Important for proper flex behavior
+    min-width: 0;
+    padding: 24px 20px 0;
+    background: #12151b;
 }
 
 .content-header {
-    padding: 16px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+    padding: 0 0 22px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -51,6 +53,41 @@
 
 .header-left {
     min-width: 0;
+    .category-heading {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font:
+            700 26px/1.4 'Segoe UI',
+            sans-serif;
+        color: #e4e9ee;
+    }
+    .category-heading mat-icon {
+        width: 20px;
+        height: 20px;
+        font-size: 20px;
+    }
+    select {
+        display: block;
+        max-width: 400px;
+        width: 100%;
+        padding: 3px 0;
+        border: 0;
+        background: #12151b;
+        color: #aebac7;
+        font:
+            13px 'Segoe UI',
+            sans-serif;
+        cursor: pointer;
+        -webkit-app-region: no-drag;
+    }
+}
+.main-content.details-open {
+    padding: 0;
+}
+.scrollable-content.no-header {
+    border-radius: 0;
+    overflow: hidden;
 }
 
 .header-actions {
@@ -69,7 +106,18 @@
 }
 
 .category-search {
-    width: 240px;
+    width: clamp(260px, 32vw, 560px);
+    border-radius: 28px;
+    &:focus-within {
+        outline: 2px solid #73e0c6;
+    }
+    ::ng-deep .mat-mdc-text-field-wrapper {
+        background: #20262f;
+        border-radius: 28px;
+    }
+    ::ng-deep .mdc-notched-outline {
+        display: none;
+    }
 }
 
 @media (max-width: 900px) {
@@ -81,6 +129,8 @@
 .scrollable-content {
     flex: 1;
     overflow-y: auto;
+    background: #1b2028;
+    border-radius: 16px 16px 0 0;
 
     &.no-header {
         // When header is hidden, content starts from top

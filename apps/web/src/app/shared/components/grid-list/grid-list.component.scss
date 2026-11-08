@@ -8,7 +8,7 @@
 
 .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(146px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
     justify-content: start;
     align-content: start;
     align-items: start;
@@ -20,19 +20,19 @@
     mat-card {
         cursor: pointer;
         width: 100%;
-        max-width: 210px;
         min-width: 0;
         overflow: hidden;
-        background: #303239;
+        background: #252c36;
         color: #f3f6fa;
-        border-radius: 10px;
+        border-radius: 13px;
         border: 1px solid rgba(255, 255, 255, 0.055);
         box-shadow: none;
-        transition: transform 0.18s ease, border-color 0.18s ease,
+        transition:
+            transform 0.18s ease,
+            border-color 0.18s ease,
             box-shadow 0.18s ease;
 
         &:hover {
-            transform: translateY(-3px);
             border-color: rgba(115, 231, 206, 0.46);
             box-shadow: 0 12px 24px rgba(0, 0, 0, 0.27);
         }
@@ -105,18 +105,16 @@
 }
 
 .rating {
-    position: absolute;
-    top: 7px;
-    right: 7px;
+    position: static;
     z-index: 1;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     gap: 2px;
-    background: rgba(13, 17, 23, 0.83);
-    border: 1px solid rgba(255, 255, 255, 0.10);
+    background: transparent;
+    border: 0;
     border-radius: 6px;
-    padding: 3px 6px;
+    padding: 8px 10px 0;
     color: #ffdb75;
     font-size: 11px;
     font-weight: 700;
@@ -134,14 +132,18 @@
     .grid mat-card {
         background: #ffffff;
         color: #25303b;
-        border-color: rgba(10, 20, 30, 0.10);
+        border-color: rgba(10, 20, 30, 0.1);
     }
 
-    .rating { background: rgba(13, 17, 23, 0.84); }
+    .rating {
+        background: rgba(13, 17, 23, 0.84);
+    }
 }
 
 @media (min-width: 1500px) {
-    .grid { grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); }
+    .grid {
+        grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
+    }
 }
 
 @media (max-width: 800px) {

@@ -1,7 +1,7 @@
 import { Component, computed, inject, input, output } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIcon } from '@angular/material/icon';
-import { MatTooltip } from '@angular/material/tooltip';
+import { MatMenuModule } from '@angular/material/menu';
 import { ActivatedRoute, RouterLink, RouterLinkActive } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -17,7 +17,7 @@ import { NavigationItem } from './navigation.interface';
     selector: 'app-navigation',
     imports: [
         MatIcon,
-        MatTooltip,
+        MatMenuModule,
         RouterLink,
         RouterLinkActive,
         TranslatePipe,

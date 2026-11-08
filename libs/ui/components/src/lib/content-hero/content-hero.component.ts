@@ -18,6 +18,7 @@ import { NgxSkeletonLoaderComponent } from 'ngx-skeleton-loader';
 })
 export class ContentHeroComponent {
     readonly title = input<string>();
+    readonly layout = input<'movie' | 'series'>('movie');
     readonly description = input<string>();
     readonly posterUrl = input<string>();
     readonly backdropUrl = input<string>();

@@ -1,4 +1,5 @@
 ﻿import { Overlay } from '@angular/cdk/overlay';
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -14,11 +15,18 @@ import { ChannelActions } from 'm3u-state';
 describe('VideoPlayerComponent playlist navigation', () => {
     let component: VideoPlayerComponent;
     let data: { sendIpcEvent: jest.Mock };
-    let store: { select: jest.Mock; dispatch: jest.Mock };
+    let store: {
+        select: jest.Mock;
+        selectSignal: jest.Mock;
+        dispatch: jest.Mock;
+    };
     let route: {
         params: Observable<Record<string, string>>;
         queryParams: Observable<Record<string, string>>;
-        snapshot: { queryParams: Record<string, string> };
+        snapshot: {
+            queryParams: Record<string, string>;
+            params: Record<string, string>;
+        };
     };
     const channels = [
         { name: 'First', url: 'https://example.test/first.m3u8' },
@@ -29,12 +37,13 @@ describe('VideoPlayerComponent playlist navigation', () => {
         data = { sendIpcEvent: jest.fn() };
         store = {
             select: jest.fn().mockReturnValue(of(channels[0])),
+            selectSignal: jest.fn().mockReturnValue(signal([])),
             dispatch: jest.fn(),
         };
         route = {
             params: of({}),
             queryParams: of({}),
-            snapshot: { queryParams: {} },
+            snapshot: { queryParams: {}, params: {} },
         };
         TestBed.configureTestingModule({
             providers: [

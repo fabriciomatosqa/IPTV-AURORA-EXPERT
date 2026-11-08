@@ -60,6 +60,7 @@ export class VodDetailsRouteComponent implements OnInit, OnDestroy {
     readonly selectedItem = this.xtreamStore.selectedItem;
     readonly isLoadingDetails = this.xtreamStore.isLoadingDetails;
     readonly detailsError = this.xtreamStore.detailsError;
+    readonly showTrailer = signal(false);
 
     readonly hasPlaybackPosition = computed(() => {
         const vodId = this.route.snapshot.params.vodId;
@@ -98,7 +99,9 @@ export class VodDetailsRouteComponent implements OnInit, OnDestroy {
             if (this.detailsInitialized) return;
             const playlistId = this.xtreamStore.currentPlaylist()?.id;
             if (!playlistId) return;
-            this.logger.debug('Playlist now available, initializing VOD details');
+            this.logger.debug(
+                'Playlist now available, initializing VOD details'
+            );
             this.initializeVodDetails(playlistId);
             this.detailsInitialized = true;
         });
@@ -130,7 +133,7 @@ export class VodDetailsRouteComponent implements OnInit, OnDestroy {
                   vodItem.movie_data?.stream_id || (vodItem as any).stream_id
               );
 
-        this.logger.debug('playVod resolved ID', { id, vodItem });
+        this.logger.debug('playVod resolved ID', { id });
 
         const contentInfo = {
             playlistId: this.xtreamStore.currentPlaylist().id,
@@ -195,9 +198,11 @@ export class VodDetailsRouteComponent implements OnInit, OnDestroy {
 
     formatPosition(): string {
         const vodId = Number(this.route.snapshot.params.vodId);
-        const position = this.xtreamStore.playbackPositions().get(`vod_${vodId}`);
+        const position = this.xtreamStore
+            .playbackPositions()
+            .get(`vod_${vodId}`);
         if (!position) return '';
-        
+
         const date = new Date(0);
         date.setSeconds(position.positionSeconds);
         const timeString = date.toISOString().substr(11, 8);
@@ -234,7 +239,9 @@ export class VodDetailsRouteComponent implements OnInit, OnDestroy {
         const routeVodId = this.route.snapshot.params.vodId;
         const id = routeVodId
             ? Number(routeVodId)
-            : Number(vodItem.movie_data?.stream_id || (vodItem as any).stream_id);
+            : Number(
+                  vodItem.movie_data?.stream_id || (vodItem as any).stream_id
+              );
 
         const playlist = this.xtreamStore.currentPlaylist();
 

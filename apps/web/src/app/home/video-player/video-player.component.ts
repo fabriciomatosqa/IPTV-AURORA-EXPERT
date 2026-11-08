@@ -3,21 +3,26 @@ import { ComponentPortal } from '@angular/cdk/portal';
 import { AsyncPipe, CommonModule } from '@angular/common';
 import {
     Component,
+    computed,
     HostListener,
     Injector,
     OnDestroy,
     OnInit,
     effect,
     inject,
+    signal,
     viewChild,
 } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSidenavModule } from '@angular/material/sidenav';
+import { MatIcon } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { StorageMap } from '@ngx-pwa/local-storage';
 import {
     AudioPlayerComponent,
+    ContentHeroComponent,
     COMPONENT_OVERLAY_REF,
     EpgListComponent,
     HtmlVideoPlayerComponent,
@@ -33,6 +38,7 @@ import {
     selectActive,
     selectChannels,
     selectCurrentEpgProgram,
+    selectFavorites,
 } from 'm3u-state';
 import {
     Observable,
@@ -45,6 +51,8 @@ import {
     startWith,
     switchMap,
     take,
+    tap,
+    shareReplay,
 } from 'rxjs';
 import { DataService, PlaylistsService } from 'services';
 import {
@@ -68,11 +76,14 @@ import { WebPlayerViewComponent } from 'shared-portals';
     imports: [
         AsyncPipe,
         AudioPlayerComponent,
+        ContentHeroComponent,
         CommonModule,
         EpgListComponent,
         HtmlVideoPlayerComponent,
         InfoOverlayComponent,
         MatSidenavModule,
+        MatIcon,
+        MatMenuModule,
         ResizableDirective,
         RouterLink,
         SidebarComponent,
@@ -101,6 +112,180 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
 
     /** Channels list */
     channels$!: Observable<Channel[]>;
+
+    readonly browsing = signal(true);
+    readonly catalogChannels = signal<Channel[]>([]);
+    readonly catalogSection = signal('live');
+    readonly catalogSearch = signal('');
+    readonly catalogCategory = signal('');
+    readonly catalogLimit = signal(200);
+    readonly catalogSorted = signal(false);
+    readonly catalogFavorites = this.store.selectSignal(selectFavorites);
+    readonly catalogRecent = signal<string[]>([]);
+    readonly catalogDetail = signal<Channel | null>(null);
+    private episodeInfo(
+        channel: Channel
+    ): { title: string; season: number; episode: number } | null {
+        const match = /^(.*?)\s*[-–]?\s*S(\d{1,3})\s*E(\d{1,4})(?:\b|$)/i.exec(
+            channel.name || ''
+        );
+        return match
+            ? {
+                  title: match[1].trim(),
+                  season: Number(match[2]),
+                  episode: Number(match[3]),
+              }
+            : null;
+    }
+    catalogItemTitle(channel: Channel): string {
+        return this.catalogSection() === 'series'
+            ? this.episodeInfo(channel)?.title || channel.name
+            : channel.name;
+    }
+    readonly catalogDetailTitle = computed(() => {
+        const item = this.catalogDetail();
+        return item ? this.episodeInfo(item)?.title || item.name : '';
+    });
+    readonly catalogSeriesSeasons = computed(() => {
+        const selected = this.catalogDetail();
+        const identity = selected && this.episodeInfo(selected);
+        if (!selected || !identity || this.contentKind(selected) !== 'series') return [];
+        const seasons = new Map<number, Channel[]>();
+        for (const channel of this.catalogChannels()) {
+            const episode = this.episodeInfo(channel);
+            if (
+                episode?.title === identity.title &&
+                channel.group?.title === selected.group?.title
+            ) {
+                seasons.set(episode.season, [
+                    ...(seasons.get(episode.season) || []),
+                    channel,
+                ]);
+            }
+        }
+        return [...seasons.entries()]
+            .sort(([a], [b]) => a - b)
+            .map(([season, episodes]) => ({
+                season,
+                episodes: episodes.sort(
+                    (a, b) =>
+                        this.episodeInfo(a)!.episode -
+                        this.episodeInfo(b)!.episode
+                ),
+            }));
+    });
+
+    selectCatalogItem(channel: Channel): void {
+        if (this.contentKind(channel) === 'live')
+            this.playCatalogChannel(channel);
+        else this.catalogDetail.set(channel);
+    }
+    readonly catalogNavigation = [
+        { id: 'live', label: 'TV ao vivo', icon: 'tv' },
+        { id: 'series', label: 'Séries', icon: 'video_library' },
+        { id: 'movies', label: 'Filmes', icon: 'local_movies' },
+        { id: 'favorites', label: 'Favoritos', icon: 'star_outline' },
+        { id: 'recent', label: 'Histórico', icon: 'history' },
+    ];
+    private contentKind(channel: Channel): string {
+        // Xtream M3U Plus explicitly distinguishes these paths. Do not infer
+        // fictional series, ratings or metadata from a generic media extension.
+        try {
+            const path = new URL(channel.url).pathname;
+            if (/\/series\//i.test(path)) return 'series';
+            if (/\/movie\//i.test(path)) return 'movies';
+        } catch {
+            /* Invalid sources are handled at import. */
+        }
+        const group = channel.group?.title || '';
+        if (/^(séries|series)(?:\s|\||-|$)/i.test(group)) return 'series';
+        if (/^(filmes|movies|vod)(?:\s|\||-|$)/i.test(group)) return 'movies';
+        return 'live';
+    }
+    readonly sectionChannels = computed(() => {
+        const section = this.catalogSection();
+        const channels = this.catalogChannels();
+        if (section === 'favorites')
+            return channels.filter((c) => this.isCatalogFavorite(c));
+        if (section === 'recent') {
+            const byId = new Map(channels.map((c) => [c.id, c]));
+            return this.catalogRecent()
+                .map((id) => byId.get(id))
+                .filter((c): c is Channel => !!c);
+        }
+        const items = channels.filter((c) => this.contentKind(c) === section);
+        if (section !== 'series') return items;
+        const seen = new Set<string>();
+        return items.filter((channel) => {
+            const info = this.episodeInfo(channel);
+            if (!info) return true;
+            const key = `${channel.group?.title}\n${info.title}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+    });
+    readonly catalogCategories = computed(() => [
+        ...new Set(
+            this.sectionChannels().map((c) => c.group?.title || 'Sem categoria')
+        ),
+    ]);
+    readonly filteredCatalog = computed(() => {
+        const query = this.catalogSearch().trim().toLocaleLowerCase();
+        const category = this.catalogCategory();
+        const items = this.sectionChannels().filter(
+            (c) =>
+                (!category ||
+                    (c.group?.title || 'Sem categoria') === category) &&
+                (!query || c.name?.toLocaleLowerCase().includes(query))
+        );
+        return this.catalogSorted()
+            ? [...items].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
+            : items;
+    });
+    readonly visibleCatalog = computed(() =>
+        this.filteredCatalog().slice(0, this.catalogLimit())
+    );
+
+    changeCatalogSection(section: string): void {
+        this.catalogDetail.set(null);
+        this.catalogSection.set(section);
+        this.catalogCategory.set('');
+        this.catalogSearch.set('');
+        this.catalogLimit.set(200);
+        this.browsing.set(true);
+    }
+
+    isCatalogFavorite(channel: Channel): boolean {
+        return (
+            this.catalogFavorites().includes(channel.id) ||
+            this.catalogFavorites().includes(channel.url)
+        );
+    }
+
+    toggleCatalogFavorite(channel: Channel): void {
+        this.store.dispatch(FavoritesActions.updateFavorites({ channel }));
+    }
+
+    playCatalogChannel(channel: Channel): void {
+        this.catalogRecent.update((ids) =>
+            [channel.id, ...ids.filter((id) => id !== channel.id)].slice(0, 100)
+        );
+        try {
+            localStorage.setItem(
+                this.catalogHistoryKey(),
+                JSON.stringify(this.catalogRecent())
+            );
+        } catch {
+            /* Playback does not depend on storage quota. */
+        }
+        this.store.dispatch(ChannelActions.setActiveChannel({ channel }));
+        this.browsing.set(false);
+    }
+
+    private catalogHistoryKey(): string {
+        return `aurora-m3u-history:${this.activatedRoute.snapshot.params['id'] || 'temporary'}`;
+    }
 
     /** Current epg program */
     readonly epgProgram$ = this.store.select(selectCurrentEpgProgram);
@@ -155,16 +340,27 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
      * Sets video player and subscribes to channel list from the store
      */
     ngOnInit(): void {
+        try {
+            const history = JSON.parse(
+                localStorage.getItem(this.catalogHistoryKey()) || '[]'
+            );
+            if (Array.isArray(history))
+                this.catalogRecent.set(
+                    history.filter((id) => typeof id === 'string').slice(0, 100)
+                );
+        } catch {
+            /* A damaged history must not prevent startup. */
+        }
         this.applySettings();
         this.getPlaylistUrlAsParam();
 
         // Setup remote control channel change listener (Electron only)
         if (this.isDesktop && window.electron?.onChannelChange) {
-            const unsubscribe = window.electron.onChannelChange((data: {
-                direction: 'up' | 'down';
-            }) => {
-                this.handleRemoteChannelChange(data.direction);
-            });
+            const unsubscribe = window.electron.onChannelChange(
+                (data: { direction: 'up' | 'down' }) => {
+                    this.handleRemoteChannelChange(data.direction);
+                }
+            );
             if (typeof unsubscribe === 'function') {
                 this.unsubscribeRemoteChannelChange = unsubscribe;
             }
@@ -180,70 +376,77 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
             }
         }
 
-        this.channels$ = this.activatedRoute.params.pipe(
-            combineLatestWith(this.activatedRoute.queryParams),
-            switchMap(([params, queryParams]) => {
-                if (params['id']) {
-                    this.store.dispatch(
-                        PlaylistActions.setActivePlaylist({
-                            playlistId: params['id'],
-                        })
-                    );
-                    return this.playlistsService.getPlaylist(params['id']).pipe(
-                        map((playlist) => {
-                            // Set user agent if specified on playlist level
-                            if (playlist.userAgent) {
-                                window.electron?.setUserAgent(
-                                    playlist.userAgent,
-                                    'localhost'
-                                );
-                            }
+        this.channels$ = this.activatedRoute.params
+            .pipe(
+                combineLatestWith(this.activatedRoute.queryParams),
+                switchMap(([params, queryParams]) => {
+                    if (params['id']) {
+                        this.store.dispatch(
+                            PlaylistActions.setActivePlaylist({
+                                playlistId: params['id'],
+                            })
+                        );
+                        return this.playlistsService
+                            .getPlaylist(params['id'])
+                            .pipe(
+                                map((playlist) => {
+                                    // Set user agent if specified on playlist level
+                                    if (playlist.userAgent) {
+                                        window.electron?.setUserAgent(
+                                            playlist.userAgent,
+                                            'localhost'
+                                        );
+                                    }
 
-                            this.streamHeaders = {
-                                userAgent: playlist.userAgent,
-                                referrer: playlist.referrer,
-                                origin: playlist.origin,
-                            };
+                                    this.streamHeaders = {
+                                        userAgent: playlist.userAgent,
+                                        referrer: playlist.referrer,
+                                        origin: playlist.origin,
+                                    };
 
-                            this.store.dispatch(
-                                ChannelActions.setChannels({
-                                    channels: playlist.playlist.items,
+                                    this.store.dispatch(
+                                        ChannelActions.setChannels({
+                                            channels: playlist.playlist.items,
+                                        })
+                                    );
+
+                                    // Load favorites from the playlist
+                                    if (
+                                        playlist.favorites &&
+                                        playlist.favorites.length > 0
+                                    ) {
+                                        this.store.dispatch(
+                                            FavoritesActions.setFavorites({
+                                                channelIds: playlist.favorites,
+                                            })
+                                        );
+                                    } else {
+                                        // Clear favorites if playlist has none
+                                        this.store.dispatch(
+                                            FavoritesActions.setFavorites({
+                                                channelIds: [],
+                                            })
+                                        );
+                                    }
+
+                                    return playlist.playlist.items as Channel[];
                                 })
                             );
+                    } else if (queryParams['url']) {
+                        return this.store.select(selectChannels) as Observable<
+                            Channel[]
+                        >;
+                    }
 
-                            // Load favorites from the playlist
-                            if (
-                                playlist.favorites &&
-                                playlist.favorites.length > 0
-                            ) {
-                                this.store.dispatch(
-                                    FavoritesActions.setFavorites({
-                                        channelIds: playlist.favorites,
-                                    })
-                                );
-                            } else {
-                                // Clear favorites if playlist has none
-                                this.store.dispatch(
-                                    FavoritesActions.setFavorites({
-                                        channelIds: [],
-                                    })
-                                );
-                            }
-
-                            return playlist.playlist.items as Channel[];
-                        })
-                    );
-                } else if (queryParams['url']) {
-                    return this.store.select(selectChannels) as Observable<
-                        Channel[]
-                    >;
-                }
-
-                // Ensure switchMap always returns an observable
-                // (e.g. /iptv route without params/query).
-                return of([] as Channel[]);
-            })
-        );
+                    // Ensure switchMap always returns an observable
+                    // (e.g. /iptv route without params/query).
+                    return of([] as Channel[]);
+                })
+            )
+            .pipe(
+                tap((channels) => this.catalogChannels.set(channels)),
+                shareReplay({ bufferSize: 1, refCount: true })
+            );
 
         this.statusSubscription = combineLatest([
             this.channels$,
@@ -261,9 +464,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
             window.electron.updateRemoteControlStatus({
                 portal: 'm3u',
                 isLiveView: true,
-                channelName:
-                    activeChannel.name ??
-                    activeChannel.tvg?.name,
+                channelName: activeChannel.name ?? activeChannel.tvg?.name,
                 channelNumber: currentIndex >= 0 ? currentIndex + 1 : undefined,
                 epgTitle: (epgProgram as any)?.title,
                 epgStart: (epgProgram as any)?.start,
@@ -398,7 +599,8 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
         // Pass the active channel's tvg.id for highlighting
         this.activeChannel$.pipe(take(1)).subscribe((channel) => {
             if (channel) {
-                componentRef.instance.activeChannelId = (channel as Channel).tvg?.id || null;
+                componentRef.instance.activeChannelId =
+                    (channel as Channel).tvg?.id || null;
             }
         });
 
@@ -492,7 +694,9 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
         this.channels$
             .pipe(
                 take(1),
-                map((channels) => getChannelItemByNumber(channels, channelNumber))
+                map((channels) =>
+                    getChannelItemByNumber(channels, channelNumber)
+                )
             )
             .subscribe((channel) => {
                 if (channel) {

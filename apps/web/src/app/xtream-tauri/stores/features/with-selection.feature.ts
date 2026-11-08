@@ -57,10 +57,13 @@ export function withSelection() {
         withState<SelectionState>(initialSelectionState),
 
         withComputed((store) => {
-            const getItemDate = (item: any, categoryType: ContentType): number => {
+            const getItemDate = (
+                item: any,
+                categoryType: ContentType
+            ): number => {
                 const value =
                     categoryType === 'series'
-                        ? item.last_modified ?? item.added
+                        ? (item.last_modified ?? item.added)
                         : item.added;
                 return parseInt(value ?? '', 10) || 0;
             };
@@ -77,10 +80,16 @@ export function withSelection() {
 
                 return [...items].sort((a: any, b: any) => {
                     if (sortMode === 'date-desc') {
-                        return getItemDate(b, categoryType) - getItemDate(a, categoryType);
+                        return (
+                            getItemDate(b, categoryType) -
+                            getItemDate(a, categoryType)
+                        );
                     }
                     if (sortMode === 'date-asc') {
-                        return getItemDate(a, categoryType) - getItemDate(b, categoryType);
+                        return (
+                            getItemDate(a, categoryType) -
+                            getItemDate(b, categoryType)
+                        );
                     }
 
                     const titleA = a.title ?? a.name ?? '';
@@ -90,7 +99,10 @@ export function withSelection() {
                 });
             };
 
-            const filterBySearchTerm = (items: any[], searchTerm: string): any[] => {
+            const filterBySearchTerm = (
+                items: any[],
+                searchTerm: string
+            ): any[] => {
                 const normalized = searchTerm.trim().toLocaleLowerCase();
                 if (!normalized) {
                     return items;
@@ -197,7 +209,10 @@ export function withSelection() {
                             (item: any) =>
                                 Number(item.category_id) === categoryId
                         );
-                        if (categoryType === 'vod' || categoryType === 'series') {
+                        if (
+                            categoryType === 'vod' ||
+                            categoryType === 'series'
+                        ) {
                             filteredContent = filterBySearchTerm(
                                 filteredContent,
                                 searchTerm
@@ -210,6 +225,16 @@ export function withSelection() {
                         }
                     } else {
                         filteredContent = sortedContent();
+                        if (
+                            categoryType === 'vod' ||
+                            categoryType === 'series'
+                        ) {
+                            filteredContent = sortByMode(
+                                filterBySearchTerm(filteredContent, searchTerm),
+                                sortMode,
+                                categoryType
+                            );
+                        }
                     }
 
                     return filteredContent.slice(startIndex, endIndex);
@@ -234,6 +259,16 @@ export function withSelection() {
                               : storeAny.serialStreams?.() || [];
 
                     if (!categoryId) {
+                        if (
+                            categoryType === 'vod' ||
+                            categoryType === 'series'
+                        ) {
+                            return sortByMode(
+                                filterBySearchTerm(content, searchTerm),
+                                sortMode,
+                                categoryType
+                            );
+                        }
                         return sortedContent();
                     }
 
@@ -274,12 +309,18 @@ export function withSelection() {
                             (item: any) =>
                                 Number(item.category_id) === categoryId
                         );
-                        if (categoryType === 'vod' || categoryType === 'series') {
+                        if (
+                            categoryType === 'vod' ||
+                            categoryType === 'series'
+                        ) {
                             filtered = filterBySearchTerm(filtered, searchTerm);
                         }
                         totalItems = filtered.length;
                     } else {
-                        totalItems = content.length;
+                        totalItems =
+                            categoryType === 'vod' || categoryType === 'series'
+                                ? filterBySearchTerm(content, searchTerm).length
+                                : content.length;
                     }
 
                     return Math.ceil(totalItems / store.limit());

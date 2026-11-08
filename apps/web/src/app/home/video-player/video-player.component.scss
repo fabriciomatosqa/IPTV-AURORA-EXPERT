@@ -1,3 +1,400 @@
+.aurora-library {
+    display: flex;
+    height: 100%;
+    background: #12151b;
+    color: #e4e9ee;
+    font:
+        13px/1.4 'Segoe UI',
+        sans-serif;
+    button,
+    input,
+    select {
+        font: inherit;
+    }
+    button,
+    a,
+    select {
+        -webkit-app-region: no-drag;
+    }
+    button {
+        cursor: pointer;
+    }
+    button:focus-visible,
+    a:focus-visible,
+    select:focus-visible,
+    input:focus-visible {
+        outline: 2px solid #64dbc0;
+        outline-offset: 2px;
+    }
+}
+.aurora-library.details-open .library-rail {
+    display: none;
+}
+.library-rail {
+    width: 84px;
+    flex: 0 0 84px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: #171b22;
+    border-right: 1px solid #ffffff08;
+    padding: 18px 0;
+    box-sizing: border-box;
+    overflow-y: auto;
+    button,
+    a {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        border: 0;
+        background: transparent;
+        color: #a8b2c0;
+        text-decoration: none;
+        font-size: 11px;
+        padding: 12px 4px;
+        width: 76px;
+        box-sizing: border-box;
+        border-radius: 12px;
+    }
+    button.active {
+        color: #73e0c6;
+        background: #73e0c60d;
+    }
+    button:hover,
+    a:hover {
+        background: #ffffff09;
+    }
+    .library-brand {
+        padding: 0;
+        width: 36px;
+    }
+    .library-brand img {
+        width: 36px;
+        height: 36px;
+    }
+    .library-rail-links {
+        margin-block: auto;
+        padding-block: 20px;
+    }
+}
+.library-catalog {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 20px 0 18px;
+}
+.library-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 22px;
+}
+.library-category {
+    label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 26px;
+        font-weight: 700;
+    }
+    label mat-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+    }
+    select {
+        display: block;
+        max-width: 420px;
+        width: 100%;
+        background: #12151b;
+        color: #afbac7;
+        border: 0;
+        padding: 3px 0;
+        cursor: pointer;
+    }
+}
+.library-search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #20262f;
+    border: 1px solid #ffffff0c;
+    border-radius: 28px;
+    padding: 9px 16px;
+    width: min(44%, 560px);
+    box-sizing: border-box;
+    color: #a6b4c4;
+}
+.library-search input {
+    min-width: 0;
+    width: 100%;
+    color: #e4e9ee;
+    background: transparent;
+    border: 0;
+    outline: 0;
+}
+.library-body {
+    display: flex;
+    gap: 14px;
+    min-height: 0;
+    flex: 1;
+}
+.library-tools {
+    flex: 0 0 62px;
+    border-radius: 16px 16px 0 0;
+    padding: 12px 0;
+    background: #1b2028;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    gap: 8px;
+}
+.library-tools button {
+    border: 0;
+    border-radius: 20px;
+    background: #ffffff09;
+    color: #aebbc8;
+    width: 38px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+}
+.library-tools button[aria-pressed='true'] {
+    color: #73e0c6;
+    background: #73e0c614;
+}
+.library-scroll {
+    flex: 1;
+    min-width: 0;
+    overflow-y: auto;
+    border-radius: 16px 16px 0 0;
+    background: #1b2028;
+    padding: 16px;
+}
+.library-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+    gap: 6px 20px;
+    align-content: start;
+}
+.library-item {
+    min-width: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    border-radius: 10px;
+}
+.library-item:hover {
+    background: #ffffff07;
+}
+.library-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+    height: 52px;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    padding: 5px 4px;
+}
+.library-content img,
+.library-placeholder {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    border-radius: 7px;
+    flex: 0 0 40px;
+    background: #29343c;
+}
+.library-placeholder {
+    display: grid;
+    place-items: center;
+    color: #71ac9f;
+}
+.library-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.library-favorite,
+.library-more {
+    border: 0;
+    background: transparent;
+    color: #abb8c6;
+    width: 28px;
+    height: 36px;
+    flex: 0 0 28px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+}
+.library-favorite mat-icon,
+.library-more mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+}
+.library-favorite[aria-pressed='true'] {
+    color: #73e0c6;
+}
+.poster-grid {
+    grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
+    gap: 20px;
+    .library-item {
+        background: #252c36;
+        border-radius: 13px;
+        overflow: hidden;
+        align-items: stretch;
+    }
+    .library-content {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        height: auto;
+        padding: 0;
+        gap: 0;
+    }
+    .library-content img,
+    .library-placeholder {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 2/3;
+        object-fit: cover;
+        border-radius: 0;
+        flex: none;
+    }
+    .library-title {
+        font-size: 12px;
+        font-weight: 600;
+        white-space: normal;
+        min-height: 48px;
+        padding: 10px;
+        box-sizing: border-box;
+    }
+    .library-favorite,
+    .library-more {
+        position: absolute;
+        top: 5px;
+        background: #111820aa;
+        border-radius: 20px;
+        color: #fff;
+    }
+    .library-favorite {
+        left: 5px;
+    }
+    .library-more {
+        right: 5px;
+    }
+}
+.library-empty {
+    grid-column: 1/-1;
+    padding: 80px 20px;
+    text-align: center;
+    color: #9daaba;
+}
+.library-empty h2 {
+    font-size: 18px;
+}
+.library-load {
+    display: block;
+    padding: 10px 22px;
+    margin: 20px auto;
+    border: 1px solid #73e0c630;
+    border-radius: 20px;
+    color: #73e0c6;
+    background: transparent;
+}
+.library-player {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+}
+.library-details {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+.m3u-season h2 {
+    font:
+        600 21px 'Segoe UI',
+        sans-serif;
+}
+.m3u-episodes {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    padding-bottom: 24px;
+}
+.m3u-episodes button {
+    flex: 0 0 240px;
+    border: 0;
+    background: transparent;
+    color: white;
+    text-align: left;
+    padding: 0;
+    font-size: 13px;
+    cursor: pointer;
+}
+.m3u-episode-image {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 16/9;
+    background: #ffffff0b;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    color: #73e0c6;
+}
+.library-back {
+    height: 46px;
+    background: #171b22;
+    color: #d8e6e5;
+    border: 0;
+    width: 100%;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 0 16px;
+}
+.library-player .main-container {
+    top: 46px;
+}
+.library-player .drawer-content {
+    display: flex;
+    flex-direction: column;
+    > app-toolbar {
+        flex: 0 0 auto;
+    }
+    > app-vjs-player,
+    > app-html-video-player,
+    > app-web-player-view {
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+    }
+}
+::ng-deep .library-player app-vjs-player .video-js {
+    height: 100% !important;
+}
+@media (min-width: 1800px) {
+    .library-grid:not(.poster-grid) {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+}
+@media (max-width: 900px) {
+    .library-tools {
+        display: none;
+    }
+    .library-catalog {
+        padding: 18px 12px 0;
+    }
+}
+
 .main-container {
     position: absolute;
     top: 0;

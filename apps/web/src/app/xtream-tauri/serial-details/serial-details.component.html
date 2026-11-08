@@ -2,6 +2,7 @@
 @if (item?.info) {
     <!-- Hero Section with Backdrop -->
     <app-content-hero
+        layout="series"
         [title]="item.info?.name"
         [description]="item.info?.plot"
         [posterUrl]="item.info?.cover"
@@ -82,4 +83,3 @@
 } @else {
     <app-content-hero [isLoading]="true" (backClicked)="goBack()" />
 }
-

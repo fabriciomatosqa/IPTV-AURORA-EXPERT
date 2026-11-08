@@ -26,6 +26,42 @@
     background: var(--surface-bg);
     color: var(--text-primary);
 }
+.cast-section {
+    color: #eef3f5;
+}
+.cast-section h2 {
+    font:
+        600 21px 'Segoe UI',
+        sans-serif;
+    margin: 0 0 20px;
+}
+.cast-strip {
+    display: flex;
+    gap: 24px;
+    overflow-x: auto;
+    padding-bottom: 14px;
+}
+.cast-member {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    flex: 0 0 100px;
+    font:
+        12px/1.4 'Segoe UI',
+        sans-serif;
+    text-align: center;
+}
+.cast-avatar {
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: #ffffff20;
+    width: 44px;
+    height: 44px;
+    color: #d2e9e3;
+    font-size: 18px;
+}
 
 // Dark theme overrides - cinematic dark mode
 :host-context(.dark-theme) {

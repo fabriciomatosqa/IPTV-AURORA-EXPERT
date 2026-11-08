@@ -15,3 +15,6 @@
 .navigation-sidebar {
     border-right: 1px solid #333;
 }
+.detail-open .navigation-sidebar {
+    display: none;
+}

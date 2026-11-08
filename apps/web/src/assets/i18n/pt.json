@@ -1,7 +1,14 @@
 {
     "CLOSE": "Fechar",
+    "DOWNLOADS": {
+        "TITLE": "Downloads",
+        "DOWNLOAD": "Baixar",
+        "PLAY_LOCAL": "Reproduzir download",
+        "STATUS": { "DOWNLOADING": "Baixando" }
+    },
     "PLAYLISTS": "Playlists",
     "HOME": {
+        "FILTER_AND_SORT": "Filtrar e ordenar",
         "TITLE": "IPTV AURORA EXPERT",
         "SUBTITLE": "Por favor, selecione uma playlist da lista ou adicione uma nova playlist",
         "TABS": {
@@ -203,6 +210,7 @@
         "OPEN_MULTI_EPG": "Abrir visualização Multi-EPG"
     },
     "EPG": {
+        "NO_PROGRAM_INFO": "Programação não disponível",
         "TITLE": "Guia Eletrônico de Programação",
         "NEXT_DAY": "Próximo dia",
         "PREVIOUS_DAY": "Dia anterior",

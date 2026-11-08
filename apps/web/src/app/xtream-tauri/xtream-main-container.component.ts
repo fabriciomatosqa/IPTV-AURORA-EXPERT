@@ -1,6 +1,6 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatButton, MatIconButton } from '@angular/material/button';
+import { MatIconButton } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
@@ -9,13 +9,11 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ActivatedRoute, Router, RouterOutlet } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { PlaylistSwitcherComponent, ResizableDirective } from 'components';
 import { XtreamCategory } from 'shared-interfaces';
 import {
     CategoryManagementDialogComponent,
     CategoryManagementDialogData,
 } from './category-management-dialog/category-management-dialog.component';
-import { CategoryViewComponent } from './category-view/category-view.component';
 import { XtreamStore } from './stores/xtream.store';
 import { XtreamCategorySortMode } from './stores/features/with-selection.feature';
 
@@ -26,17 +24,13 @@ const XTREAM_CATEGORY_SORT_STORAGE_KEY = 'xtream-category-sort-mode';
     templateUrl: './xtream-main-container.component.html',
     styleUrls: ['./xtream-main-container.component.scss', './sidebar.scss'],
     imports: [
-        CategoryViewComponent,
         FormsModule,
-        MatButton,
         MatFormFieldModule,
         MatIcon,
         MatIconButton,
         MatInputModule,
         MatMenuModule,
         MatTooltipModule,
-        PlaylistSwitcherComponent,
-        ResizableDirective,
         RouterOutlet,
         TranslateModule,
     ],
@@ -73,7 +67,9 @@ export class XtreamMainContainerComponent implements OnInit {
     });
 
     ngOnInit(): void {
-        const savedSortMode = localStorage.getItem(XTREAM_CATEGORY_SORT_STORAGE_KEY);
+        const savedSortMode = localStorage.getItem(
+            XTREAM_CATEGORY_SORT_STORAGE_KEY
+        );
         if (
             savedSortMode === 'date-desc' ||
             savedSortMode === 'date-asc' ||
@@ -101,12 +97,27 @@ export class XtreamMainContainerComponent implements OnInit {
         });
     }
 
+    selectCategoryById(value: string): void {
+        if (!value) {
+            this.xtreamStore.setSelectedItem(null);
+            this.xtreamStore.setSelectedCategory(null);
+            this.router.navigate(['.'], { relativeTo: this.route });
+            return;
+        }
+        const category = this.categories().find(
+            (c) => String((c as any).category_id ?? c.id) === value
+        );
+        if (category) this.categoryClicked(category);
+    }
+
     getContentLabel(): string {
         const selectedCategoryId = this.xtreamStore.selectedCategoryId();
 
         // When no category is selected, show "Recently Added"
         if (selectedCategoryId === null || selectedCategoryId === undefined) {
-            const recentlyAddedLabel = this.translateService.instant('PORTALS.SIDEBAR.RECENTLY_ADDED');
+            const recentlyAddedLabel = this.translateService.instant(
+                'PORTALS.SIDEBAR.RECENTLY_ADDED'
+            );
 
             // Show page number when viewing recently added (not detail view)
             if (
