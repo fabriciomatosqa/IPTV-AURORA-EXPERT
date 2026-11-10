@@ -503,3 +503,138 @@ body:not(.dark-theme) .mat-mdc-menu-item:hover {
         transition: none;
     }
 }
+
+
+/* The playlist manager/header is part of the same experience, not a separate
+   black/grey screen. Keep all header drag regions and button hitboxes. */
+body {
+    app-header .modern-header {
+        background: linear-gradient(105deg, var(--aurora-rail), var(--aurora-sidebar));
+        color: var(--aurora-text);
+        border-bottom-color: var(--aurora-line);
+    }
+
+    app-header.home-header .modern-header,
+    app-header .modern-header::before {
+        background: var(--aurora-glow), var(--aurora-rail);
+    }
+
+    app-header .aurora-name,
+    app-header .search-icon {
+        color: var(--aurora-accent);
+    }
+
+    app-header .brand-block,
+    app-header .search-container {
+        background: var(--aurora-card);
+        border-color: var(--aurora-line);
+        box-shadow: 0 3px 16px var(--aurora-shadow);
+    }
+
+    app-header .brand-block:hover,
+    app-header .search-container:focus-within {
+        background: var(--aurora-card-hover);
+        border-color: var(--aurora-line-strong);
+    }
+
+    app-header .brand-text .title,
+    app-header.home-header .brand-text .title {
+        color: var(--aurora-text);
+        background: none;
+        -webkit-text-fill-color: currentColor;
+        text-shadow: none;
+    }
+
+    app-header .search-input {
+        color: var(--aurora-text);
+    }
+
+    app-header .search-input::placeholder {
+        color: var(--aurora-muted);
+    }
+
+    app-header .logo-pulse img {
+        filter: drop-shadow(0 0 8px rgba(86, 216, 249, .30));
+    }
+
+    app-header .quick-filter-btn,
+    app-header .add-playlist-btn {
+        color: var(--aurora-accent) !important;
+        border-color: var(--aurora-line-strong) !important;
+        background: var(--aurora-active) !important;
+    }
+
+    app-recent-playlists,
+    app-recent-playlists .playlists-list {
+        color: var(--aurora-text);
+        background: var(--aurora-bg);
+    }
+
+    app-recent-playlists mat-list-item {
+        border: 1px solid transparent;
+    }
+
+    app-recent-playlists mat-list-item:hover {
+        background: var(--aurora-card-hover) !important;
+        border-color: var(--aurora-line);
+    }
+
+    app-recent-playlists .meta,
+    app-recent-playlists .mdc-list-item__secondary-text {
+        color: var(--aurora-muted) !important;
+    }
+}
+
+/* Keep the emblem and ambient light still. The live-dot sports status already
+   has its own explicit reduced-motion fallback in its feature stylesheet. */
+body app-header.home-header .modern-header::before,
+body app-header .logo-pulse::before {
+    animation: none;
+}
+
+/* Scoreboards use a true light palette: changing only card backgrounds would
+   leave white score glyphs unreadable in a white card. */
+body:not(.dark-theme) {
+    app-sports-directory .match-score strong,
+    app-sports-directory .match-team strong,
+    app-sports-directory .match-competition strong,
+    app-sports-directory .match-footer span,
+    app-sports-directory .sports-heading h1,
+    app-sports-directory .sports-channels h2,
+    app-sports-directory .f1-standing strong,
+    app-sports-directory .f1-race-card h2,
+    app-sports-directory .f1-race-card h3,
+    app-sports-directory .sports-search input,
+    app-sports-directory .sports-shortcuts button,
+    app-sports-directory .sports-chip {
+        color: var(--aurora-text);
+    }
+
+    app-sports-directory .sports-empty h2,
+    app-sports-directory .match-score span,
+    app-sports-directory .f1-standing > b,
+    app-sports-directory .f1-info mat-icon {
+        color: var(--aurora-accent);
+    }
+
+    app-sports-directory .sports-shortcuts button,
+    app-sports-directory .f1-sessions > span,
+    app-sports-directory .f1-standing {
+        background: var(--aurora-card);
+        border-color: var(--aurora-line);
+        color: var(--aurora-text);
+    }
+
+    app-sports-directory .match-state:not(.live),
+    app-sports-directory .match-state.finished {
+        background: var(--aurora-input);
+        color: var(--aurora-text);
+    }
+
+    .aurora-home .home-select-wrap option {
+        color: var(--aurora-text);
+        background: var(--aurora-card);
+    }
+}
+
+/* Never add a decorative layer over a running player or video controls. */
