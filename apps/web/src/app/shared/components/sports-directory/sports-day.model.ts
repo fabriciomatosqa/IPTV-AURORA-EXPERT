@@ -76,6 +76,8 @@ export function selectFootballCardFixtures(
         return { games: verified, publicCalendar: false };
     // "Ao Vivo" can still show independently verified public scores, but
     // never represent any IPTV channel as confirmed without an EPG match.
-    const limited = candidates.slice(0, publicLimit);
+    const limited = (liveOnly
+        ? candidates.filter(match => match.state === 'live')
+        : candidates).slice(0, publicLimit);
     return { games: limited, publicCalendar: limited.length > 0 };
 }
