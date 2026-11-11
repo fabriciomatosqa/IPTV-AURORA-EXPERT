@@ -70,8 +70,8 @@ export function parseSportsBroadcasts(
         if (!Number.isFinite(start) || !Number.isFinite(stop) ||
             stop <= start || stop < now - 3 * 86400000 || start > now + 14 * 86400000)
             continue;
-        const title = String(program.title || '').trim();
-        const details = String(program.description || program.desc || '').trim();
+        const title = String(program.title || '').trim().slice(0, 180);
+        const details = String(program.description || program.desc || '').trim().slice(0, 750);
         // A named fixture is football evidence even when the EPG omits the league.
         // Merely naming ESPN or SporTV is never evidence.
         const fixture = sportsGuideHasFixture({ title, details });
