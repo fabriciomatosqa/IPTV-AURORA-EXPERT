@@ -54,7 +54,8 @@
         }
     </div>
 
-    @if (selectedSport() === 'Automobilismo') {
+    @if (selectedSport() === 'Automobilismo' && (selectedTab() === '__games__' ||
+        selectedTab() === 'comp:f1' || selectedTab() === 'f1')) {
         @if (selectedTab() === 'f1' && f1Open()) {
             <section class="championship-page" data-test-id="f1-championship">
                 <div class="championship-header">
@@ -160,203 +161,253 @@
                 </button>
             </section>
         }
-    } @else {
-        @if (showingPublicCalendar()) {
-            <div class="sports-public-notice" data-test-id="sports-public-calendar-notice">
-                <mat-icon>info</mat-icon>
-                <div><strong>Calendário esportivo — transmissões não confirmadas</strong>
-                    <p>Estes jogos vêm de resultados públicos. Sua playlist ainda não forneceu
-                    programação suficiente para confirmar os canais. Nenhum botão Assistir
-                    será mostrado sem correspondência real no EPG.</p>
-                </div>
+    }
+    @if (showingPublicCalendar()) {
+        <div class="sports-public-notice" data-test-id="sports-public-calendar-notice">
+            <mat-icon>info</mat-icon>
+            <div><strong>Calendário esportivo · transmissão não confirmada</strong>
+                <p>Resultados públicos aparecem separados dos canais identificados no EPG.
+                    O botão Assistir só aparece com canal verificado na playlist.</p>
             </div>
-        }
-        <div data-test-id="sports-games" class="sports-day-list">
-            @for (day of groupedGames(); track day.key) {
-                <section class="sports-day" [attr.data-sports-day]="day.key">
-                    <button type="button" class="sports-day-heading"
-                        [attr.aria-expanded]="!collapsedDays().has(day.key)"
-                        (click)="toggleDay(day.key)">
-                        <span><mat-icon>calendar_month</mat-icon>{{ day.title }}</span>
-                        <span class="sports-day-count">{{ day.games.length }}
-                            {{ day.games.length === 1 ? 'partida' : 'partidas' }}
-                            <mat-icon>{{ collapsedDays().has(day.key) ? 'expand_more' : 'expand_less' }}</mat-icon>
-                        </span>
-                    </button>
-                    @if (!collapsedDays().has(day.key)) {
-                        <div class="sports-match-grid">
-                            @for (match of day.games; track match.id) {
-                                <article class="match-card" [class.is-live]="match.state === 'live'"
-                                    data-test-id="sports-match">
-                                    <div class="match-top">
-                                        <div class="match-competition">
-                                            @if (match.logo) { <img [src]="match.logo" alt="" loading="lazy" /> }
-                                            @else { <mat-icon>{{ iconFor(selectedSport()) }}</mat-icon> }
-                                            <div><strong>{{ match.competition }}</strong>
-                                                <small>{{ selectedSport() }}</small></div>
-                                        </div>
-                                        <span class="match-state" [class.live]="match.state === 'live'"
-                                            [class.finished]="match.state === 'finished'">
-                                            @if (match.state === 'live') { <span class="live-dot"></span> }
-                                            {{ status(match) }}
-                                        </span>
-                                    </div>
-                                    <div class="match-fixture">
-                                        <div class="match-team">
-                                            @if (match.home.logo) {
-                                                <img [src]="match.home.logo" [alt]="match.home.name" loading="lazy" />
-                                            } @else { <div class="team-placeholder"><mat-icon>shield</mat-icon></div> }
-                                            <strong>{{ match.home.name }}</strong>
-                                        </div>
-                                        <div class="match-score">
-                                            @if (match.state !== 'scheduled' && match.home.score != null && match.away.score != null) {
-                                                <strong>{{ match.home.score }} : {{ match.away.score }}</strong>
-                                            } @else { <strong>×</strong> }
-                                            <span>{{ displayTime(match.kickoff) }}</span>
-                                            @if (match.state === 'live') { <small>{{ match.clock }}</small> }
-                                        </div>
-                                        <div class="match-team">
-                                            @if (match.away.logo) {
-                                                <img [src]="match.away.logo" [alt]="match.away.name" loading="lazy" />
-                                            } @else { <div class="team-placeholder"><mat-icon>shield</mat-icon></div> }
-                                            <strong>{{ match.away.name }}</strong>
-                                        </div>
-                                    </div>
-                                    <footer class="match-footer">
-                                        <span><mat-icon>calendar_today</mat-icon>{{ displayTime(match.kickoff) }}</span>
-                                        <div class="match-actions">
-                                            @if (selectedSport() === 'Futebol' && !linkedBroadcasts(match).length) {
-                                                <small><mat-icon>info</mat-icon>Transmissão IPTV não confirmada</small>
-                                            }
-                                            @if (watchableBroadcasts(match).length) {
-                                                <button type="button" class="match-watch"
-                                                    (click)="watch.emit(watchableBroadcasts(match)[0].channel.id)">
-                                                    <mat-icon>play_arrow</mat-icon>
-                                                    {{ match.state === 'finished' ? 'Assistir reprise' : 'Assistir agora' }}
-                                                </button>
-                                                @if (watchableBroadcasts(match).length > 1) {
-                                                    <button type="button" class="match-expand"
-                                                        [attr.aria-expanded]="expandedChannels().has(match.id)"
-                                                        [attr.aria-label]="'Mostrar ' + watchableBroadcasts(match).length + ' canais'"
-                                                        (click)="toggleChannels(match.id)">
-                                                        {{ watchableBroadcasts(match).length }} canais
-                                                        <mat-icon>{{ expandedChannels().has(match.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
-                                                    </button>
-                                                }
-                                            } @else if (linkedBroadcasts(match).length) {
-                                                <small><mat-icon>live_tv</mat-icon>
-                                                    {{ match.state === 'scheduled' ? 'Transmissão prevista: ' : 'Canal identificado: ' }}
-                                                    {{ linkedBroadcasts(match)[0].channel.name }}
-                                                </small>
-                                            }
-                                            @if (selectedSport() === 'Futebol' && (match.state === 'live' || match.state === 'finished')) {
-                                                <button type="button" class="match-expand"
-                                                    [attr.aria-expanded]="expandedTimelines().has(match.id)"
-                                                    (click)="toggleTimeline(match)">
-                                                    <mat-icon>format_list_bulleted</mat-icon> Minuto a minuto
-                                                    <mat-icon>{{ expandedTimelines().has(match.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
-                                                </button>
-                                            }
-                                        </div>
-                                    </footer>
-                                    @if (expandedChannels().has(match.id)) {
-                                        <div class="match-channel-list">
-                                            @for (airing of watchableBroadcasts(match); track airing.channel.id) {
-                                                <button type="button" (click)="watch.emit(airing.channel.id)">
-                                                    <mat-icon>play_circle</mat-icon>{{ airing.channel.name }}
-                                                </button>
-                                            }
-                                        </div>
-                                    }
-                                    @if (expandedTimelines().has(match.id)) {
-                                        <div class="match-timeline" [attr.aria-label]="'Acontecimentos de ' + match.home.name + ' e ' + match.away.name">
-                                            @if (timelineLoading().has(match.id) && !timelineEvents().has(match.id)) {
-                                                <p>Carregando acontecimentos…</p>
-                                            } @else {
-                                                @for (event of timelineEvents().get(match.id) || []; track event.id) {
-                                                    <div class="match-timeline-row">
-                                                        <strong>{{ event.minute || '—' }}</strong>
-                                                        <mat-icon>{{ event.icon }}</mat-icon>
-                                                        <div><b>{{ event.title }}</b>
-                                                            @if (event.team) { <small>{{ event.team }}</small> }
-                                                            <p>{{ event.description }}</p>
+        </div>
+    }
+
+    <div class="sports-competition-list" data-test-id="sports-games">
+        @for (section of catalogSections(); track section.key) {
+            <section class="sports-competition-section" [attr.data-sports-competition]="section.key">
+                <div class="sports-competition-heading">
+                    <mat-icon>{{ iconFor(selectedSport()) }}</mat-icon>
+                    <h2>{{ section.title }}</h2>
+                    <span>{{ section.competitions.length }}
+                        {{ section.competitions.length === 1 ? 'competição' : 'competições' }}</span>
+                </div>
+                @for (competition of section.competitions; track competition.key) {
+                    <section class="sports-event-competition">
+                        @if (competition.title !== section.title) {
+                            <h3 class="sports-competition-subheading">
+                                <mat-icon>emoji_events</mat-icon>{{ competition.title }}
+                            </h3>
+                        }
+                        @for (day of competition.days; track day.key) {
+                            <section class="sports-day" [attr.data-sports-day]="day.key">
+                                <button type="button" class="sports-day-heading"
+                                    [attr.aria-expanded]="!collapsedDays().has(section.key + competition.key + day.key)"
+                                    (click)="toggleDay(section.key + competition.key + day.key)">
+                                    <span><mat-icon>calendar_month</mat-icon>{{ day.title }}</span>
+                                    <span class="sports-day-count">
+                                        {{ day.cards.length }}
+                                        {{ day.cards.length === 1 ? 'evento' : 'eventos' }}
+                                        <mat-icon>{{ collapsedDays().has(section.key + competition.key + day.key) ? 'expand_more' : 'expand_less' }}</mat-icon>
+                                    </span>
+                                </button>
+                                @if (!collapsedDays().has(section.key + competition.key + day.key)) {
+                                    <div class="sports-match-grid">
+                                        @for (card of day.cards; track card.id) {
+                                            @if (card.match; as match) {
+                                                <article class="match-card" [class.is-live]="match.state === 'live'"
+                                                    data-test-id="sports-match">
+                                                    <div class="match-top">
+                                                        <div class="match-competition">
+                                                            @if (match.logo) { <img [src]="match.logo" alt="" loading="lazy" /> }
+                                                            @else { <mat-icon>{{ iconFor(selectedSport()) }}</mat-icon> }
+                                                            <div><strong>{{ match.competition }}</strong><small>{{ selectedSport() }}</small></div>
+                                                        </div>
+                                                        <span class="match-state" [class.live]="match.state === 'live'"
+                                                            [class.finished]="match.state === 'finished'">
+                                                            @if (match.state === 'live') { <span class="live-dot"></span> }
+                                                            {{ status(match) }}
+                                                        </span>
+                                                    </div>
+                                                    <div class="match-fixture">
+                                                        <div class="match-team">
+                                                            <div class="team-emblem">
+                                                                <div class="team-placeholder"><mat-icon>shield</mat-icon></div>
+                                                                @if (teamLogo(match.home.name, match.home.logo); as logo) {
+                                                                    <img [src]="logo" [alt]="'Escudo ' + match.home.name" loading="lazy"
+                                                                        (error)="$any($event.target).style.display='none'" />
+                                                                }
+                                                            </div>
+                                                            <strong>{{ match.home.name }}</strong>
+                                                        </div>
+                                                        <div class="match-score">
+                                                            @if (match.state !== 'scheduled' && match.home.score != null && match.away.score != null) {
+                                                                <strong>{{ match.home.score }} : {{ match.away.score }}</strong>
+                                                            } @else { <strong>×</strong> }
+                                                            <span>{{ displayTime(match.kickoff) }}</span>
+                                                            @if (match.state === 'live') { <small>{{ match.clock }}</small> }
+                                                        </div>
+                                                        <div class="match-team">
+                                                            <div class="team-emblem">
+                                                                <div class="team-placeholder"><mat-icon>shield</mat-icon></div>
+                                                                @if (teamLogo(match.away.name, match.away.logo); as logo) {
+                                                                    <img [src]="logo" [alt]="'Escudo ' + match.away.name" loading="lazy"
+                                                                        (error)="$any($event.target).style.display='none'" />
+                                                                }
+                                                            </div>
+                                                            <strong>{{ match.away.name }}</strong>
                                                         </div>
                                                     </div>
-                                                } @empty {
-                                                    <p>Minuto a minuto indisponível para esta partida na fonte consultada.</p>
-                                                }
+                                                    <footer class="match-footer">
+                                                        <span><mat-icon>calendar_today</mat-icon>{{ displayTime(match.kickoff) }}</span>
+                                                        <div class="match-actions">
+                                                            @if (selectedSport() === 'Futebol' && !linkedBroadcasts(match).length) {
+                                                                <small><mat-icon>info</mat-icon>Transmissão IPTV não confirmada</small>
+                                                            }
+                                                            @if (watchableBroadcasts(match).length) {
+                                                                <button type="button" class="match-watch"
+                                                                    (click)="watch.emit(watchableBroadcasts(match)[0].channel.id)">
+                                                                    <mat-icon>play_arrow</mat-icon>
+                                                                    {{ match.state === 'finished' ? 'Assistir reprise' : 'Assistir agora' }}
+                                                                </button>
+                                                            }
+                                                            @if (linkedBroadcasts(match).length) {
+                                                                <button type="button" class="match-expand"
+                                                                    [attr.aria-expanded]="expandedChannels().has(match.id)"
+                                                                    (click)="toggleChannels(match.id)">
+                                                                    <mat-icon>live_tv</mat-icon> Todos os canais ({{ linkedBroadcasts(match).length }})
+                                                                    <mat-icon>{{ expandedChannels().has(match.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
+                                                                </button>
+                                                            }
+                                                            @if (selectedSport() === 'Futebol' && (match.state === 'live' || match.state === 'finished')) {
+                                                                <button type="button" class="match-expand"
+                                                                    [attr.aria-expanded]="expandedTimelines().has(match.id)"
+                                                                    (click)="toggleTimeline(match)">
+                                                                    <mat-icon>format_list_bulleted</mat-icon> Minuto a minuto
+                                                                    <mat-icon>{{ expandedTimelines().has(match.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
+                                                                </button>
+                                                            }
+                                                        </div>
+                                                    </footer>
+                                                    @if (expandedChannels().has(match.id)) {
+                                                        <div class="match-channel-list">
+                                                            @for (airing of linkedBroadcasts(match); track airing.channel.id) {
+                                                                <button type="button" (click)="watch.emit(airing.channel.id)">
+                                                                    <mat-icon>play_circle</mat-icon>{{ airing.channel.name }}
+                                                                </button>
+                                                            }
+                                                        </div>
+                                                    }
+                                                    @if (expandedTimelines().has(match.id)) {
+                                                        <div class="match-timeline">
+                                                            @if (timelineLoading().has(match.id) && !timelineEvents().has(match.id)) {
+                                                                <p>Carregando acontecimentos…</p>
+                                                            } @else {
+                                                                @for (event of timelineEvents().get(match.id) || []; track event.id) {
+                                                                    <div class="match-timeline-row">
+                                                                        <strong>{{ event.minute || '—' }}</strong>
+                                                                        <mat-icon>{{ event.icon }}</mat-icon>
+                                                                        <div><b>{{ event.title }}</b>
+                                                                            @if (event.team) { <small>{{ event.team }}</small> }
+                                                                            <p>{{ event.description }}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                } @empty { <p>Minuto a minuto indisponível nesta fonte.</p> }
+                                                            }
+                                                        </div>
+                                                    }
+                                                </article>
+                                            } @else if (card.guide; as guide) {
+                                                <article class="match-card guide-fixture-card"
+                                                    [class.is-live]="groupStatus(guide) === 'AO VIVO'"
+                                                    data-test-id="sports-guide-fixture">
+                                                    <div class="match-top">
+                                                        <div class="match-competition">
+                                                            <mat-icon>{{ iconFor(selectedSport()) }}</mat-icon>
+                                                            <div><strong>{{ guide.competition.competition }}</strong>
+                                                                <small>{{ selectedSport() }}</small></div>
+                                                        </div>
+                                                        <span class="match-state" [class.live]="groupStatus(guide) === 'AO VIVO'"
+                                                            [class.finished]="groupStatus(guide) === 'ENCERRADO'">
+                                                            {{ groupStatus(guide) }}
+                                                        </span>
+                                                    </div>
+                                                    @if (guide.home && guide.away) {
+                                                        <div class="match-fixture">
+                                                            <div class="match-team">
+                                                                <div class="team-emblem">
+                                                                    <div class="team-placeholder"><mat-icon>shield</mat-icon></div>
+                                                                    @if (teamLogo(guide.home); as logo) {
+                                                                        <img [src]="logo" [alt]="'Escudo ' + guide.home" loading="lazy"
+                                                                            (error)="$any($event.target).style.display='none'"/>
+                                                                    }
+                                                                </div>
+                                                                <strong>{{ guide.home }}</strong>
+                                                            </div>
+                                                            <div class="match-score"><strong>×</strong>
+                                                                <span>{{ displayTime(guide.start) }}</span></div>
+                                                            <div class="match-team">
+                                                                <div class="team-emblem">
+                                                                    <div class="team-placeholder"><mat-icon>shield</mat-icon></div>
+                                                                    @if (teamLogo(guide.away); as logo) {
+                                                                        <img [src]="logo" [alt]="'Escudo ' + guide.away" loading="lazy"
+                                                                            (error)="$any($event.target).style.display='none'"/>
+                                                                    }
+                                                                </div>
+                                                                <strong>{{ guide.away }}</strong>
+                                                            </div>
+                                                        </div>
+                                                    } @else {
+                                                        <div class="guide-event-title">
+                                                            @if (guide.grandPrix) { <strong>{{ guide.grandPrix }}</strong> }
+                                                            @else { <strong>{{ guide.title }}</strong> }
+                                                            @if (guide.session) {
+                                                                <span><mat-icon>timer</mat-icon>{{ guide.session }}</span>
+                                                            }
+                                                        </div>
+                                                    }
+                                                    <footer class="match-footer">
+                                                        <span><mat-icon>schedule</mat-icon>{{ displayTime(guide.start) }}</span>
+                                                        <div class="match-actions">
+                                                            @if (groupWatchable(guide).length) {
+                                                                <button type="button" class="match-watch"
+                                                                    (click)="watch.emit(groupWatchable(guide)[0].channel.id)">
+                                                                    <mat-icon>play_arrow</mat-icon> Assistir
+                                                                </button>
+                                                            }
+                                                            <button type="button" class="match-expand"
+                                                                [attr.aria-expanded]="expandedChannels().has(guide.id)"
+                                                                (click)="toggleChannels(guide.id)">
+                                                                <mat-icon>live_tv</mat-icon> Todos os canais ({{ guide.channels.length }})
+                                                                <mat-icon>{{ expandedChannels().has(guide.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
+                                                            </button>
+                                                        </div>
+                                                    </footer>
+                                                    @if (expandedChannels().has(guide.id)) {
+                                                        <div class="match-channel-list">
+                                                            @for (airing of guide.channels; track airing.channel.id) {
+                                                                <button type="button" (click)="watch.emit(airing.channel.id)">
+                                                                    <mat-icon>play_circle</mat-icon>
+                                                                    {{ airing.channel.name }}
+                                                                    @if (airing.replay) { <small>REPRISE</small> }
+                                                                </button>
+                                                            }
+                                                        </div>
+                                                    }
+                                                </article>
                                             }
-                                        </div>
-                                    }
-                                </article>
-                            }
-                        </div>
-                    }
-                </section>
-            } @empty {
+                                        }
+                                    </div>
+                                }
+                            </section>
+                        }
+                    </section>
+                }
+            </section>
+        } @empty {
+            @if (selectedSport() !== 'Automobilismo' || !nextF1Race()) {
                 <div class="sports-empty">
                     <mat-icon>sports</mat-icon>
                     @if (loading() || loadingScores()) { <h2>Consultando a programação e os jogos…</h2> }
-                    @else if (selectedTab() === '__live__') {
-                        <h2>Nenhuma partida ao vivo com transmissão identificada</h2>
-                        <p>Somente jogos vinculados aos canais desta playlist aparecem aqui.</p>
-                    } @else {
-                        <h2>Nenhuma partida confirmada na programação da playlist</h2>
-                        <p>Verifique se os canais possuem guia EPG com o nome das equipes. Não exibimos jogos externos sem transmissão identificada.</p>
-                    }
+                    @else { <h2>Nenhum evento encontrado nesta categoria</h2>
+                        <p>Verifique a programação EPG ou a disponibilidade da fonte esportiva.</p> }
                 </div>
             }
-        </div>
-        @if (displayedGames().length < visibleGames().length) {
-            <button type="button" class="sports-load-more" (click)="maxVisible.update(n => n + 50)">
-                Mostrar mais partidas · {{ displayedGames().length }} de {{ visibleGames().length }}
-            </button>
         }
-    }
-
-    @if (visibleBroadcasts().length && !f1Open()) {
-        <section class="sports-broadcasts" data-test-id="sports-broadcasts">
-            <h2><mat-icon>live_tv</mat-icon> Transmissões identificadas na programação</h2>
-            <p>Somente programas esportivos encontrados no guia (EPG) dos canais desta playlist.</p>
-            @for (day of groupedBroadcasts(); track day.key) {
-                <div class="sports-day">
-                    <button type="button" class="sports-day-heading"
-                        [attr.aria-expanded]="!collapsedDays().has('guide:' + day.key)"
-                        (click)="toggleDay('guide:' + day.key)">
-                        <span><mat-icon>calendar_month</mat-icon>{{ day.title }}</span>
-                        <span class="sports-day-count">{{ day.broadcasts.length }}
-                            {{ day.broadcasts.length === 1 ? 'transmissão' : 'transmissões' }}
-                            <mat-icon>{{ collapsedDays().has('guide:' + day.key) ? 'expand_more' : 'expand_less' }}</mat-icon>
-                        </span>
-                    </button>
-                    @if (!collapsedDays().has('guide:' + day.key)) {
-                        <div class="sports-broadcast-grid">
-                            @for (broadcast of day.broadcasts; track broadcast.id) {
-                                <article class="sports-broadcast-card">
-                                    <div>
-                                        <small>{{ broadcast.competition }}</small>
-                                        <span class="broadcast-status"
-                                            [class.broadcast-live]="broadcastStatus(broadcast) === 'AO VIVO'"
-                                            [class.broadcast-replay]="broadcastStatus(broadcast) === 'REPRISE'">
-                                            {{ broadcastStatus(broadcast) }}
-                                        </span>
-                                    </div>
-                                    <h3>{{ broadcast.title }}</h3>
-                                    <p>{{ displayTime(broadcast.start) }}</p>
-                                    @if (broadcast.start <= now() && broadcast.stop > now()) {
-                                        <button type="button" (click)="watch.emit(broadcast.channel.id)">
-                                            <mat-icon>play_arrow</mat-icon> Assistir {{ broadcast.channel.name }}
-                                        </button>
-                                    } @else {
-                                        <p>Canal previsto: {{ broadcast.channel.name }}</p>
-                                    }
-                                </article>
-                            }
-                        </div>
-                    }
-                </div>
-            }
-        </section>
+    </div>
+    @if (displayedGames().length < visibleGames().length || hasMoreGuideGroups()) {
+        <button type="button" class="sports-load-more" (click)="maxVisible.update(n => n + 50)">
+            Mostrar mais eventos
+        </button>
     }
 
     @if (selectedSources().length && !f1Open()) {

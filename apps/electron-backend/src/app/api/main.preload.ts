@@ -238,6 +238,7 @@ contextBridge.exposeInMainWorld('electron', {
         ipcRenderer.invoke('FETCH_EPG', { url: urls }),
     getAuroraSportsFeed: (request: { kind: 'scoreboard'; league: string; startDate?: string; endDate?: string } |
         { kind: 'timeline'; league: string; eventId: string } |
+        { kind: 'teamBadge'; team: string } |
         { kind: 'f1'; resource: 'races' | 'drivers' | 'teams'; year: number }) =>
         ipcRenderer.invoke('AURORA_SPORTS_FEED', request),
     getChannelPrograms: (channelId: string) =>

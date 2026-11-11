@@ -130,34 +130,6 @@
     .match-card {padding:13px;}
 }
 
-.sports-broadcasts {margin-top:26px; border-radius:17px; border:1px solid #445b60;
-    background:#17242c; padding:21px;}
-.sports-broadcasts h2 {font-size:18px; display:flex; align-items:center; gap:10px;}
-.sports-broadcasts h2 mat-icon {color:#75e5d5;}
-.sports-broadcasts>p {color:#9eafbc; font-size:12px;}
-.sports-broadcast-grid {display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:11px;}
-.sports-broadcast-card {background:#22303a; border:1px solid #ffffff1a; border-radius:13px;
-    padding:15px; display:flex; flex-direction:column; gap:12px; min-width:0;}
-.sports-broadcast-card>div {display:flex; justify-content:space-between; align-items:center; gap:10px;}
-.sports-broadcast-card small {font-size:11px; color:#9de5d8;}
-.sports-broadcast-card h3 {font-size:16px; margin:0; overflow-wrap:anywhere;}
-.sports-broadcast-card p {font-size:12px; color:#afbec9;margin:0;}
-.broadcast-status {font-weight:800;font-size:10px;color:#b2bed2;padding:5px;border-radius:7px;background:#363e49;}
-.broadcast-live {background:#1e5847;color:#9bf5d2;}
-.broadcast-replay {background:#48325f;color:#ddb7ff;}
-.sports-broadcast-card button {display:flex;align-items:center;gap:8px; padding:10px;
-    border:1px solid #5c9e92; border-radius:9px;background:#225149;color:#a3ffec;
-    cursor:pointer;font:600 12px 'Segoe UI',sans-serif; margin-top:auto;}
-.sports-broadcast-card button:hover {background:#2a665a;}
-
-.match-watch-channels {display:flex;flex-wrap:wrap;gap:6px;}
-.match-watch-channels button {display:flex;gap:5px;align-items:center;border:1px solid #4e9b8f;
-    border-radius:9px;padding:7px 8px;background:#205449;color:#9cfbe7;
-    cursor:pointer;font:600 11px 'Segoe UI',sans-serif;}
-.match-watch-channels button:hover {background:#2a6a5d;}
-.match-watch-channels mat-icon {font-size:15px;width:16px;height:16px;}
-
-
 /* Every date uses the same header and responsive Aurora match-card grid. */
 .sports-day-list { display:flex; flex-direction:column; gap:23px; }
 .sports-day { min-width:0; }
@@ -201,7 +173,6 @@
     .match-actions { justify-content:flex-start; }
 }
 
-.sports-broadcasts .sports-day { margin-top:15px; }
 
 .sports-public-notice {
     display:flex;align-items:flex-start;gap:12px;padding:13px 16px;
@@ -211,3 +182,42 @@
 .sports-public-notice>mat-icon {color:#8be1cf;flex:none;}
 .sports-public-notice strong {font-size:13px;}
 .sports-public-notice p {font-size:12px;line-height:1.5;color:#aebfbc;margin:6px 0 0;}
+
+
+/* Sport → competition → chronological date → fixture/session → channels */
+.sports-competition-list { display:flex; flex-direction:column; gap:28px; }
+.sports-competition-section {
+    min-width:0; padding:16px; border:1px solid #31564f; border-radius:17px;
+    background:linear-gradient(140deg,#142726,#17202c 70%);
+}
+.sports-competition-heading {
+    display:flex; flex-wrap:wrap; align-items:center; gap:10px;
+    padding:3px 2px 13px; border-bottom:1px solid #436560; margin-bottom:15px;
+}
+.sports-competition-heading mat-icon {color:#79dfd2;}
+.sports-competition-heading h2 {font:700 19px 'Segoe UI',sans-serif;color:#eaf8f4;margin:0;flex:1;}
+.sports-competition-heading>span {font-size:11px;color:#93b7ae;}
+.sports-event-competition {margin:12px 0 18px;}
+.sports-competition-subheading {
+    display:flex;align-items:center;gap:8px;font:650 15px 'Segoe UI',sans-serif;
+    color:#bdeae3;margin:12px 0;
+}
+.sports-competition-subheading mat-icon {font-size:18px;width:20px;height:20px;color:#80dbcb;}
+.sports-event-competition .sports-day {margin:12px 0 16px;}
+.team-emblem {width:52px;height:52px;position:relative;flex:none;}
+.team-emblem .team-placeholder {position:absolute;inset:0;display:grid;place-items:center;}
+.team-emblem>img {position:absolute;inset:0;width:52px;height:52px;object-fit:contain;
+    background:#1b2730;border-radius:50%;padding:2px;}
+.guide-fixture-card {border-color:#49695e;}
+.guide-event-title {display:flex;flex-direction:column;align-items:center;gap:10px;
+    min-height:108px;justify-content:center;text-align:center;padding:15px 5px;}
+.guide-event-title strong {font-size:16px;color:#e6f5f1;}
+.guide-event-title span {display:flex;align-items:center;gap:5px;
+    font-size:13px;font-weight:700;color:#90e5d6;}
+.guide-event-title mat-icon {font-size:18px;width:18px;height:18px;}
+.sports-match-grid {grid-template-columns:repeat(auto-fit,minmax(min(100%,345px),1fr));}
+.sports-competition-section .match-card {padding:16px;}
+@media(max-width:720px) {
+    .sports-competition-section {padding:10px;}
+    .sports-competition-heading h2 {font-size:16px;}
+}

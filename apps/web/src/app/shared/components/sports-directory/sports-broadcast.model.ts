@@ -49,13 +49,21 @@ export function footballLeaguesFromGuide(broadcasts: readonly SportsBroadcast[])
         if (/copa do mundo|world cup|fifa/.test(text)) leagues.add('fifa.world');
         if (/premier league|ingles|english/.test(text)) leagues.add('eng.1');
         if (/la liga|laliga|espanhol|spanish/.test(text)) leagues.add('esp.1');
-        if (/champions league|liga dos campeoes/.test(text)) leagues.add('uefa.champions');
+        if (/champions league|liga dos campeoes/.test(text)) {
+            if (/feminin|women|womens/.test(text)) leagues.add('uefa.wchampions');
+            else leagues.add('uefa.champions');
+        }
+        if (/europa league|liga europa/.test(text)) leagues.add('uefa.europa');
+        if (/bundesliga|alemao/.test(text)) leagues.add('ger.1');
+        if (/serie a italiana|italiano/.test(text)) leagues.add('ita.1');
+        if (/ligue 1|frances/.test(text)) leagues.add('fra.1');
     }
     // Team-only guide titles give no reliable competition. Search the compact,
     // date-scoped allowlist rather than downloading whole seasons.
     return leagues.size ? [...leagues] :
         ['bra.1', 'bra.2', 'conmebol.libertadores', 'conmebol.sudamericana',
-            'fifa.world', 'eng.1', 'esp.1', 'uefa.champions'];
+            'fifa.world', 'eng.1', 'esp.1', 'uefa.champions','uefa.wchampions',
+            'uefa.europa','ger.1','ita.1','fra.1'];
 }
 
 export function parseSportsBroadcasts(

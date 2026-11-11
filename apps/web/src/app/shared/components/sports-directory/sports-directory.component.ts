@@ -7,7 +7,9 @@ import {
     parseSportsScoreboard, parseSportsTimeline, SportsMatch, SportsTimelineEvent, sportsMatchLabel,
 } from './sports-feed.model';
 
-import { distinctSportsChannels, groupSportsMatchesByDay, groupSportsBroadcastsByDay, selectFootballCardFixtures } from './sports-day.model';
+import { distinctSportsChannels, groupSportsMatchesByDay, selectFootballCardFixtures } from './sports-day.model';
+import { buildSportsCatalog, classifySportsCompetition, groupSportsGuideEvents,
+    sportText, SportsGuideCard } from './sports-catalog.model';
 
 type Tab = { key: string; name: string };
 const SPORTS: { name: SportName; icon: string }[] = [
@@ -33,6 +35,11 @@ const LEAGUES: Record<string, Tab[]> = {
         { key: 'eng.1', name: 'Premier League' },
         { key: 'esp.1', name: 'La Liga' },
         { key: 'uefa.champions', name: 'Champions League' },
+        { key: 'uefa.wchampions', name: 'Champions League Feminina' },
+        { key: 'uefa.europa', name: 'Liga Europa' },
+        { key: 'ger.1', name: 'Bundesliga' },
+        { key: 'ita.1', name: 'Campeonato Italiano' },
+        { key: 'fra.1', name: 'Campeonato Francês' },
     ],
     'Basquete': [{ key: 'nba', name: 'NBA' }, { key: 'wnba', name: 'WNBA' }],
     'Futebol Americano': [{ key: 'nfl', name: 'NFL' }],
@@ -41,6 +48,21 @@ const LEAGUES: Record<string, Tab[]> = {
     'Automobilismo': [{ key: 'f1', name: 'Fórmula 1' }],
 };
 const SCORED_SPORTS = new Set(['Futebol','Basquete','Futebol Americano','Beisebol','Hóquei']);
+const FOOTBALL_TABS: Tab[] = [
+    {key:'comp:bra-a',name:'Brasileiro Série A'},
+    {key:'comp:bra-b',name:'Brasileiro Série B'},
+    {key:'comp:libertadores',name:'Libertadores'},
+    {key:'comp:fifa',name:'FIFA'},
+    {key:'comp:europe',name:'Europeus'},
+    {key:'comp:other',name:'Outros campeonatos'},
+];
+const MOTOR_TABS: Tab[] = [
+    {key:'comp:f1',name:'Fórmula 1'},
+    {key:'comp:motogp',name:'MotoGP'},
+    {key:'comp:stockcar',name:'Stock Car'},
+    {key:'comp:indy',name:'INDY'},
+    {key:'comp:motor-other',name:'Outras competições'},
+];
 
 @Component({
     selector: 'app-sports-directory',
@@ -75,6 +97,8 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
     readonly expandedTimelines = signal<ReadonlySet<string>>(new Set());
     readonly timelineLoading = signal<ReadonlySet<string>>(new Set());
     readonly timelineEvents = signal<ReadonlyMap<string, SportsTimelineEvent[]>>(new Map());
+    readonly teamBadges = signal<ReadonlyMap<string,string>>(new Map());
+    private badgeRequested = new Set<string>();
     private lastGuideSignature = '';
     private destroyed = false;
     private readonly requestedLeagues = new Map<string, number>();
@@ -105,6 +129,25 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
             // watch links).  It must not remain permanently blank.
             void this.refresh();
         });
+        effect(() => {
+            if (this.selectedSport() !== 'Futebol') return;
+            const cards = this.visibleGuideGroups();
+            const api = window.electron?.getAuroraSportsFeed;
+            if (!api) return;
+            // On-demand, limited lookup. No IPTV URL, token or channel name is sent.
+            let budget = 28;
+            for (const card of cards) {
+                for (const name of [card.home,card.away]) {
+                    if (!name || !budget || this.badgeRequested.size >= 48 ||
+                        this.teamLogo(name)) continue;
+                    const key = sportText(name);
+                    if (this.badgeRequested.has(key)) continue;
+                    this.badgeRequested.add(key);
+                    budget--;
+                    void this.resolveTeamBadge(name);
+                }
+            }
+        });
     }
     currentYear(): number { return new Date().getFullYear(); }
     readonly sports = computed(() => {
@@ -117,26 +160,18 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
     );
     readonly tabs = computed<Tab[]>(() => {
         const sport = this.selectedSport();
-        this.scoreEvents(); // register a reactive dependency when the scoreboard finishes loading
+        if (sport === 'Futebol' || sport === 'Automobilismo')
+            return [
+                {key:'__live__',name:'Ao Vivo'},
+                {key:'__games__',name: sport === 'Automobilismo' ? 'Eventos' : 'Jogos'},
+                ...(sport === 'Futebol' ? FOOTBALL_TABS : MOTOR_TABS),
+            ];
         const registered = LEAGUES[sport] || [];
-        const actual = this.availableSources().map(source => ({
-            key: 'source:' + source.id, name: source.competition,
-        }));
-        const dedup = new Map<string, Tab>();
-        // Only list leagues with public fixtures or matching playlist metadata.
-        for (const tab of registered) {
-            if (tab.key === 'f1' || this.scoreEvents().some(m =>
-                m.sport === sport && m.league === tab.key))
-                dedup.set(tab.name.toLocaleLowerCase(), tab);
-        }
-        for (const tab of actual) {
-            const title = tab.name.toLocaleLowerCase();
-            if (!dedup.has(title)) dedup.set(title, tab);
-        }
         return [
-            { key: '__live__', name: 'Ao Vivo' },
-            { key: '__games__', name: sport === 'Automobilismo' ? 'Eventos' : 'Jogos' },
-            ...Array.from(dedup.values()),
+            {key:'__live__',name:'Ao Vivo'},
+            {key:'__games__',name:'Jogos'},
+            ...registered.filter(tab => this.scoreEvents().some(m =>
+                m.sport === sport && m.league === tab.key)),
         ];
     });
     readonly visibleGames = computed(() => {
@@ -147,7 +182,7 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
         const sorted = this.scoreEvents().filter(match => {
             if (match.sport !== sport) return false;
             if (tab === '__live__' && match.state !== 'live') return false;
-            if (tab !== '__games__' && tab !== '__live__' &&
+            if (tab !== '__games__' && tab !== '__live__' && !tab.startsWith('comp:') &&
                 (tab.startsWith('source:')
                     ? !this.linkedBroadcasts(match).some(b => {
                         const source = this.availableSources().find(s => s.id === tab.slice(7));
@@ -195,12 +230,67 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
             (sport !== 'Futebol' || sportsGuideHasFixture(item) && !used.has(item.id)) &&
             item.stop >= now - 3 * 86400000 &&
             (tab === '__games__' ||
-                tab === '__live__' && sportsBroadcastStatus(item,now) === 'AO VIVO' ||
+                tab.startsWith('comp:') ||
+                tab === '__live__' && (item.start <= now && item.stop > now) ||
                 (!!tabCompetition && this.normalized(item.competition) === this.normalized(tabCompetition))) &&
             words.every(w => this.normalized(item.title + ' ' + item.channel.name).includes(w))
-        ).sort((a,b) => a.start - b.start).slice(0,80);
+        ).sort((a,b) => a.start - b.start).slice(0,300);
     });
-    readonly groupedBroadcasts = computed(() => groupSportsBroadcastsByDay(this.visibleBroadcasts()));
+    readonly guideGroups = computed(() =>
+        groupSportsGuideEvents(this.visibleBroadcasts(), this.selectedSport()));
+    readonly visibleGuideGroups = computed(() =>
+        this.guideGroups().slice(0, this.maxVisible()));
+    readonly catalogSections = computed(() => {
+        const sport = this.selectedSport();
+        const tab = this.selectedTab();
+        return buildSportsCatalog(this.displayedGames(),this.visibleGuideGroups(),sport)
+            .filter(section=>!tab.startsWith('comp:') ||
+                section.key===tab.slice(5));
+    });
+    readonly groupedBroadcasts = computed(() => this.catalogSections());
+    readonly hasMoreGuideGroups = computed(() =>
+        this.guideGroups().length > this.visibleGuideGroups().length);
+    teamLogo(name: string, source = ''): string {
+        if (source) return source;
+        const key = sportText(name);
+        const events = this.scoreEvents();
+        for (const match of events) {
+            if (sportText(match.home.name) === key && match.home.logo) return match.home.logo;
+            if (sportText(match.away.name) === key && match.away.logo) return match.away.logo;
+        }
+        return this.teamBadges().get(key) || '';
+    }
+    badgeLookupName(name: string): string {
+        const alias: Record<string,string> = {
+            psg:'Paris Saint Germain','bayern de munique':'Bayern Munich',
+            'inter milan':'Inter Milan','man city':'Manchester City',
+            'man united':'Manchester United',
+        };
+        return alias[sportText(name)] || name;
+    }
+    private async resolveTeamBadge(name: string): Promise<void> {
+        try {
+            const response = await window.electron?.getAuroraSportsFeed?.({
+                kind:'teamBadge', team:this.badgeLookupName(name),
+            });
+            const logo = (response?.data as {logo?:string} | undefined)?.logo || '';
+            if (this.destroyed || !logo) return;
+            this.teamBadges.update(old => new Map(old).set(sportText(name),logo));
+        } catch { /* Keep the branded shield placeholder; never break the card. */ }
+    }
+    groupWatchable(group: SportsGuideCard): SportsBroadcast[] {
+        const now = this.now();
+        return group.channels.filter(c => c.start<=now && c.stop>now);
+    }
+    groupStatus(group: SportsGuideCard): string {
+        const now = this.now();
+        return group.replay ? 'REPRISE'
+            : group.start<=now && group.stop>now ? 'AO VIVO'
+            : group.start>now ? 'AGENDADO' : 'ENCERRADO';
+    }
+    groupLabel(group: SportsGuideCard): string {
+        return group.grandPrix || group.title;
+    }
     broadcastStatus(item: SportsBroadcast): string { return sportsBroadcastStatus(item, this.now()); }
     readonly nextF1Race = computed(() =>
         this.f1Races().find(race => (race.hasTime ? race.date :
