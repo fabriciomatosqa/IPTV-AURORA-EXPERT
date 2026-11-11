@@ -42,4 +42,20 @@ describe('Android sports feed desktop adapter', () => {
         expect(standings[0].team).toBe('Equipe');
         expect(standings[0].points).toBe(120.5);
     });
+
+    it('parses only real provider timeline events and removes duplicates', () => {
+        const { parseSportsTimeline } = require('./sports-feed.model');
+        const goals = {id:'goal-12',clock:{displayValue:"12'"},
+            type:{text:'Goal'},text:'Goal scored by player',team:{name:'Casa'}};
+        const entries = parseSportsTimeline({
+            keyEvents:[goals,{id:'yellow-25',clock:{displayValue:"25'"},
+                type:{text:'Yellow Card'},text:'Yellow Card player'}],
+            plays:[goals,{id:'other',text:'Commentary, no verified match event'}],
+        });
+        expect(entries).toHaveLength(2);
+        expect(entries.map((e: {title:string})=>e.title)).toEqual(['Gol','Cartão amarelo']);
+        expect(entries[0].team).toBe('Casa');
+        expect(parseSportsTimeline({})).toEqual([]);
+    });
+
 });
