@@ -54,7 +54,8 @@
         }
     </div>
 
-    @if (selectedSport() === 'Automobilismo') {
+    @if (selectedSport() === 'Automobilismo' && (selectedTab() === '__games__' ||
+        selectedTab() === 'comp:f1' || selectedTab() === 'f1')) {
         @if (selectedTab() === 'f1' && f1Open()) {
             <section class="championship-page" data-test-id="f1-championship">
                 <div class="championship-header">
