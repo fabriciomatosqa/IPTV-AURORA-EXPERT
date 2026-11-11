@@ -1,0 +1,37 @@
+import type { SportsMatch } from './sports-feed.model';
+import type { SportsBroadcast } from './sports-broadcast.model';
+
+export interface SportsDayGroup {
+    key: string;
+    title: string;
+    games: SportsMatch[];
+}
+
+/** Identical heading and card grid for every date, in the user's local timezone. */
+export function groupSportsMatchesByDay(matches: readonly SportsMatch[]): SportsDayGroup[] {
+    const days = new Map<string, SportsDayGroup>();
+    for (const match of [...matches].sort((a, b) => a.kickoff - b.kickoff)) {
+        const date = new Date(match.kickoff);
+        const key = [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'),
+            String(date.getDate()).padStart(2, '0')].join('-');
+        let group = days.get(key);
+        if (!group) {
+            const title = new Intl.DateTimeFormat('pt-BR', {
+                weekday: 'long', day: 'numeric', month: 'long',
+            }).format(date).toLocaleUpperCase('pt-BR');
+            group = { key, title, games: [] };
+            days.set(key, group);
+        }
+        group.games.push(match);
+    }
+    return [...days.values()];
+}
+
+/** One button per actual channel, even if its EPG repeats the same fixture. */
+export function distinctSportsChannels(items: readonly SportsBroadcast[]): SportsBroadcast[] {
+    const byChannel = new Map<string, SportsBroadcast>();
+    for (const item of items) {
+        if (!byChannel.has(item.channel.id)) byChannel.set(item.channel.id, item);
+    }
+    return [...byChannel.values()];
+}
