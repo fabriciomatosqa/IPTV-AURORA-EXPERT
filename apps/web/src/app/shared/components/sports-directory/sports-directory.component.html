@@ -236,7 +236,7 @@
                                                     {{ linkedBroadcasts(match)[0].channel.name }}
                                                 </small>
                                             }
-                                            @if (match.state === 'live' || match.state === 'finished') {
+                                            @if (selectedSport() === 'Futebol' && (match.state === 'live' || match.state === 'finished')) {
                                                 <button type="button" class="match-expand"
                                                     [attr.aria-expanded]="expandedTimelines().has(match.id)"
                                                     (click)="toggleTimeline(match)">
