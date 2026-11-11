@@ -7,7 +7,7 @@ import {
     parseSportsScoreboard, parseSportsTimeline, SportsMatch, SportsTimelineEvent, sportsMatchLabel,
 } from './sports-feed.model';
 
-import { distinctSportsChannels, groupSportsMatchesByDay, groupSportsBroadcastsByDay } from './sports-day.model';
+import { distinctSportsChannels, groupSportsMatchesByDay, groupSportsBroadcastsByDay, selectFootballCardFixtures } from './sports-day.model';
 
 type Tab = { key: string; name: string };
 const SPORTS: { name: SportName; icon: string }[] = [
@@ -101,7 +101,9 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
             this.allScores.clear();
             this.requestedLeagues.clear();
             this.scoreEvents.set([]);
-            if (rows.length) void this.refresh();
+            // Even an empty guide should display a public calendar (without
+            // watch links).  It must not remain permanently blank.
+            void this.refresh();
         });
     }
     currentYear(): number { return new Date().getFullYear(); }
@@ -123,10 +125,8 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
         const dedup = new Map<string, Tab>();
         // Only list leagues with public fixtures or matching playlist metadata.
         for (const tab of registered) {
-            if (tab.key === 'f1' || (sport === 'Futebol'
-                ? this.scoreEvents().some(m => m.league === tab.key &&
-                    (this.matchLinks().get(m.id)?.length || 0) > 0)
-                : this.scoreEvents().some(m => m.league === tab.key)))
+            if (tab.key === 'f1' || this.scoreEvents().some(m =>
+                m.sport === sport && m.league === tab.key))
                 dedup.set(tab.name.toLocaleLowerCase(), tab);
         }
         for (const tab of actual) {
@@ -146,7 +146,6 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
         const now = this.now();
         const sorted = this.scoreEvents().filter(match => {
             if (match.sport !== sport) return false;
-            if (sport === 'Futebol' && !this.matchLinks().get(match.id)?.length) return false;
             if (tab === '__live__' && match.state !== 'live') return false;
             if (tab !== '__games__' && tab !== '__live__' &&
                 (tab.startsWith('source:')
@@ -161,8 +160,17 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
             const name = this.normalized(match.home.name + ' ' + match.away.name + ' ' + match.competition);
             return words.every(w => name.includes(w));
         }).sort((a,b) => a.kickoff - b.kickoff);
-        return sorted;
+        if (sport !== 'Futebol') return sorted;
+        const verified = new Set([...this.matchLinks().entries()]
+            .filter(([, channels]) => channels.length > 0).map(([id]) => id));
+        return selectFootballCardFixtures(sorted, verified, tab === '__live__').games;
     });
+    readonly showingPublicCalendar = computed(() =>
+        this.selectedSport() === 'Futebol' &&
+        this.visibleGames().length > 0 && !this.visibleGames().some(
+            match => (this.matchLinks().get(match.id)?.length || 0) > 0
+        )
+    );
     readonly displayedGames = computed(() => this.visibleGames().slice(0, this.maxVisible()));
     readonly groupedGames = computed(() => groupSportsMatchesByDay(this.displayedGames()));
     readonly matchLinks = computed(() => {
@@ -329,20 +337,33 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
         if (sport === 'Futebol') {
             const fixtures = this.broadcasts().filter(b =>
                 b.sport === 'Futebol' && sportsGuideHasFixture(b));
-            // No verified fixture titles in this IPTV guide means NO scoreboard
-            // calls and NO unrelated fixtures in the UI.
-            if (!fixtures.length) {
-                this.scoreEvents.set([]);
-                this.loadingScores.set(false);
-                return;
-            }
-            const chosen = new Set(footballLeaguesFromGuide(fixtures));
-            leagues = leagues.filter(item => chosen.has(item.key));
             const dateStamp = (date: number) => new Date(date).toISOString()
                 .slice(0, 10).replace(/-/g, '');
-            // Pad the guide dates to account for timezone differences at midnight.
-            startDate = dateStamp(Math.min(...fixtures.map(b => b.start)) - 86400000);
-            endDate = dateStamp(Math.max(...fixtures.map(b => b.start)) + 86400000);
+            if (fixtures.length) {
+                const chosen = new Set(footballLeaguesFromGuide(fixtures));
+                leagues = leagues.filter(item => chosen.has(item.key));
+                // Only fetch a bounded window around the EPG broadcasts.
+                startDate = dateStamp(Math.min(...fixtures.map(b => b.start)) - 86400000);
+                endDate = dateStamp(Math.max(...fixtures.map(b => b.start)) + 86400000);
+            } else {
+                // Without named fixtures there is no way to certify a broadcast.
+                // A small public calendar is still useful, but is labelled as
+                // UNCONFIRMED and never exposes an IPTV watch action.
+                const current = Date.now();
+                // Include the forthcoming fortnight; short five-day spans
+                // may be empty during international breaks and holidays.
+                startDate = dateStamp(current - 3 * 86400000);
+                endDate = dateStamp(current + 14 * 86400000);
+                const sources = this.availableSources().map(x =>
+                    this.normalized(x.title + ' ' + x.competition)).join(' ');
+                const filtered = leagues.filter(x => {
+                    if (!sources || /esportes|sportv|espn|premiere|sports?/.test(sources))
+                        return true;
+                    return this.normalized(x.name).split(' ').some(word =>
+                        word.length > 3 && sources.includes(word));
+                });
+                if (filtered.length) leagues = filtered;
+            }
         }
         if (!leagues.length) return;
         this.loadingScores.set(true);

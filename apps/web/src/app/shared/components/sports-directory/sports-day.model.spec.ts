@@ -27,4 +27,35 @@ describe('Aurora sports dated layout', () => {
         ] as SportsBroadcast[];
         expect(distinctSportsChannels(rows).map(x => x.channel.id)).toEqual(['12','13']);
     });
+
+    it('shows public cards without a guide, without marking them as IPTV confirmed', () => {
+        const { selectFootballCardFixtures } = require('./sports-day.model');
+        const result = selectFootballCardFixtures(
+            [match('public1',10,19),match('public2',11,18)],
+            new Set<string>(), false
+        );
+        expect(result.publicCalendar).toBe(true);
+        expect(result.games.map((m: SportsMatch) => m.id)).toEqual(['public1','public2']);
+    });
+    it('keeps public live results visible but does not invent a channel', () => {
+        const { selectFootballCardFixtures } = require('./sports-day.model');
+        const candidate = [{...match('live',10,20), state: 'live' as const}];
+        const result = selectFootballCardFixtures(candidate,new Set<string>(),true);
+        expect(result.games).toEqual(candidate);
+        expect(result.publicCalendar).toBe(true);
+    });
+    it('prefers confirmed playlist matches instead of mixing unrelated public games', () => {
+        const { selectFootballCardFixtures } = require('./sports-day.model');
+        const result = selectFootballCardFixtures(
+            [match('external',10,18),match('confirmed',10,19)],
+            new Set(['confirmed']),false
+        );
+        expect(result.publicCalendar).toBe(false);
+        expect(result.games.map((m: SportsMatch) => m.id)).toEqual(['confirmed']);
+    });
+    it('limits unrelated public results per tab to prevent large render cost', () => {
+        const { selectFootballCardFixtures } = require('./sports-day.model');
+        const candidates = Array.from({length:100},(_,index)=>match('item'+index,10,19));
+        expect(selectFootballCardFixtures(candidates,new Set<string>(),false,12).games).toHaveLength(12);
+    });
 });

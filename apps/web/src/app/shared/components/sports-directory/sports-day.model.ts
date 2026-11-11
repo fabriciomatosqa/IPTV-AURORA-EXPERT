@@ -59,3 +59,37 @@ export function groupSportsBroadcastsByDay(broadcasts: readonly SportsBroadcast[
     }
     return [...byDay.values()];
 }
+
+/**
+ * When the IPTV guide identifies no fixture, keep a small, clearly-labelled
+ * public calendar rather than an empty sports page. This NEVER confirms an IPTV
+ * channel: only linked fixtures may show an Assistir button.
+ */
+export function selectFootballCardFixtures(
+    candidates: readonly SportsMatch[],
+    confirmedIds: ReadonlySet<string>,
+    liveOnly: boolean,
+    publicLimit = 36,
+): { games: SportsMatch[]; publicCalendar: boolean } {
+    const verified = candidates.filter(match => confirmedIds.has(match.id));
+    if (verified.length)
+        return { games: verified, publicCalendar: false };
+    // "Ao Vivo" can still show independently verified public scores, but
+    // never represent any IPTV channel as confirmed without an EPG match.
+    const eligible = liveOnly
+        ? candidates.filter(match => match.state === 'live')
+        : candidates;
+    const upcoming = eligible.filter(match =>
+        match.state === 'live' || match.kickoff >= Date.now() - 2 * 3600000);
+    const history = eligible.filter(match =>
+        match.state !== 'live' && match.kickoff < Date.now() - 2 * 3600000);
+    // Prioritize today's live/upcoming fixtures over historic scores, but
+    // sort cards back into the same chronological day sections afterwards.
+    const upcomingCount = Math.min(publicLimit, upcoming.length);
+    const historyCount = Math.min(history.length, publicLimit - upcomingCount);
+    const limited = [
+        ...(historyCount ? history.slice(-historyCount) : []),
+        ...upcoming.slice(0, upcomingCount),
+    ].sort((a,b) => a.kickoff - b.kickoff);
+    return { games: limited, publicCalendar: limited.length > 0 };
+}
