@@ -20,6 +20,7 @@ export interface SportsGuideProgram {
 export interface SportsBroadcast {
     id: string;
     title: string;
+    details: string;
     sport: SportName;
     competition: string;
     start: number;
@@ -27,6 +28,37 @@ export interface SportsBroadcast {
     replay: boolean;
     channel: SportsGuideChannel;
 }
+/** A program must name both sides of a fixture before it can trigger
+ * scoreboard discovery. Generic football shows do not prove a match exists. */
+export function sportsGuideHasFixture(program: Pick<SportsBroadcast, 'title' | 'details'>): boolean {
+    const text = program.title + ' ' + program.details;
+    return /[\\p{L}0-9]{2,}(?:[\\p{L}0-9 .'-]{0,60})\\s+(?:x|×|vs\\.?)\\s+[\\p{L}0-9]{2,}/iu.test(text);
+}
+
+export function footballLeaguesFromGuide(broadcasts: readonly SportsBroadcast[]): string[] {
+    const fixtures = broadcasts.filter(b => b.sport === 'Futebol' && sportsGuideHasFixture(b));
+    if (!fixtures.length) return [];
+    const leagues = new Set<string>();
+    for (const b of fixtures) {
+        const text = (b.competition + ' ' + b.title + ' ' + b.details).normalize('NFD')
+            .replace(/[\\u0300-\\u036f]/g, '').toLowerCase();
+        if (/(brasileir|brasileir[a-z]*o|campeonato brasileiro|serie a)/.test(text) &&
+            /serie\\s*a|brasileir[a-z]*o\\s*(?:betano)?/.test(text)) leagues.add('bra.1');
+        if (/serie\\s*b|brasileiro\\s*b/.test(text)) leagues.add('bra.2');
+        if (/libertadores/.test(text)) leagues.add('conmebol.libertadores');
+        if (/sul.americana|sudamericana/.test(text)) leagues.add('conmebol.sudamericana');
+        if (/copa do mundo|world cup|fifa/.test(text)) leagues.add('fifa.world');
+        if (/premier league|ingles|english/.test(text)) leagues.add('eng.1');
+        if (/la liga|laliga|espanhol|spanish/.test(text)) leagues.add('esp.1');
+        if (/champions league|liga dos campeoes/.test(text)) leagues.add('uefa.champions');
+    }
+    // Team-only guide titles give no reliable competition. Search the compact,
+    // date-scoped allowlist rather than downloading whole seasons.
+    return leagues.size ? [...leagues] :
+        ['bra.1', 'bra.2', 'conmebol.libertadores', 'conmebol.sudamericana',
+            'fifa.world', 'eng.1', 'esp.1', 'uefa.champions'];
+}
+
 export function parseSportsBroadcasts(
     channel: SportsGuideChannel, programmes: readonly SportsGuideProgram[], now = Date.now()
 ): SportsBroadcast[] {
@@ -37,17 +69,21 @@ export function parseSportsBroadcasts(
         const stop = Number(program.stop_timestamp) > 1e9 ?
             Number(program.stop_timestamp) * 1000 : Date.parse(program.stop || program.end || '');
         if (!Number.isFinite(start) || !Number.isFinite(stop) ||
-            stop <= start || stop < now - 2 * 3600000 || start > now + 14 * 86400000)
+            stop <= start || stop < now - 3 * 86400000 || start > now + 14 * 86400000)
             continue;
         const title = String(program.title || '').trim();
-        // Never infer a match solely from a channel named ESPN or SporTV.
+        const details = String(program.description || program.desc || '').trim();
+        // A named fixture is football evidence even when the EPG omits the league.
+        // Merely naming ESPN or SporTV is never evidence.
         const detected = identifySport(title) ||
             identifySport(String(program.category || '')) ||
-            identifySport(String(program.description || program.desc || ''));
+            identifySport(details) ||
+            (sportsGuideHasFixture({ title, details })
+                ? { sport: 'Futebol' as SportName, competition: 'Futebol' } : null);
         if (!detected || detected.sport === 'Outros esportes') continue;
         valid.push({
             id: channel.id + ':' + start + ':' + title,
-            title,
+            title, details,
             sport: detected.sport,
             competition: detected.competition,
             start, stop,
@@ -86,7 +122,7 @@ export function confirmedMatchBroadcasts(
         const timeDiff = airing.start - match.kickoff;
         if (!airing.replay && Math.abs(timeDiff)>120*60000) return false;
         if (airing.replay && (timeDiff<0 || timeDiff>7*86400000)) return false;
-        const description = ' ' + normalize(airing.title) + ' ';
+        const description = ' ' + normalize(airing.title + ' ' + airing.details) + ' ';
         // Both distinct opponents must appear, not just a named broadcaster.
         return uniqueHome.some(word=>description.includes(' '+word+' ')) &&
                uniqueAway.some(word=>description.includes(' '+word+' '));
