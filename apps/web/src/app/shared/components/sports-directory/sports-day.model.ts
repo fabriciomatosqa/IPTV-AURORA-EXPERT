@@ -35,3 +35,27 @@ export function distinctSportsChannels(items: readonly SportsBroadcast[]): Sport
     }
     return [...byChannel.values()];
 }
+
+export interface SportsBroadcastDay {
+    key: string;
+    title: string;
+    broadcasts: SportsBroadcast[];
+}
+
+export function groupSportsBroadcastsByDay(broadcasts: readonly SportsBroadcast[]): SportsBroadcastDay[] {
+    const byDay = new Map<string, SportsBroadcastDay>();
+    for (const broadcast of [...broadcasts].sort((a, b) => a.start - b.start)) {
+        const date = new Date(broadcast.start);
+        const key = [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'),
+            String(date.getDate()).padStart(2, '0')].join('-');
+        let group = byDay.get(key);
+        if (!group) {
+            group = { key, title: new Intl.DateTimeFormat('pt-BR', {
+                weekday: 'long', day: 'numeric', month: 'long',
+            }).format(date).toLocaleUpperCase('pt-BR'), broadcasts: [] };
+            byDay.set(key, group);
+        }
+        group.broadcasts.push(broadcast);
+    }
+    return [...byDay.values()];
+}
