@@ -157,7 +157,21 @@ export function parseSportsTimeline(raw: unknown): SportsTimelineEvent[] {
         const key = String(event.id || '') || [minute, normalized, teamName].join(':');
         if (seen.has(key)) continue;
         seen.add(key);
-        result.push({ id:key, minute, title, description:description.slice(0,300),
+        // Translate common provider labels without fabricating any action.
+        const translated = description
+            .replace(/yellow card/gi, 'cartão amarelo')
+            .replace(/red card/gi, 'cartão vermelho')
+            .replace(/own goal/gi, 'gol contra')
+            .replace(/goal scored by/gi, 'gol marcado por')
+            .replace(/substitution/gi, 'substituição')
+            .replace(/penalty kick/gi, 'cobrança de pênalti')
+            .replace(/video assistant referee/gi, 'árbitro de vídeo');
+        const participants = array(event.participants).map(participant =>
+            String(object(object(participant).athlete).displayName || '').trim()
+        ).filter(Boolean);
+        const names = participants.filter(name => !translated.toLowerCase().includes(name.toLowerCase()));
+        result.push({ id:key, minute, title,
+            description: (translated + (names.length ? ' · ' + names.join(', ') : '')).slice(0,300),
             team:teamName, icon, order });
     }
     return result.sort((a,b) => a.order - b.order).slice(0,150);
