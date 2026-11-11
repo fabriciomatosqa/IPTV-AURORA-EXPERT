@@ -202,3 +202,12 @@
 }
 
 .sports-broadcasts .sports-day { margin-top:15px; }
+
+.sports-public-notice {
+    display:flex;align-items:flex-start;gap:12px;padding:13px 16px;
+    margin:0 0 16px;border:1px solid #4c625f;border-radius:12px;
+    background:#1a3030;color:#d7eee7;
+}
+.sports-public-notice>mat-icon {color:#8be1cf;flex:none;}
+.sports-public-notice strong {font-size:13px;}
+.sports-public-notice p {font-size:12px;line-height:1.5;color:#aebfbc;margin:6px 0 0;}
