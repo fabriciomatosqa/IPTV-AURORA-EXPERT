@@ -23,7 +23,7 @@ function rememberGuide(key: string, items: SportsBroadcast[]): void {
     imports: [SportsDirectoryComponent],
     template: `<app-sports-directory
         [sources]="sportsCategories()"
-        [loading]="isLoading()"
+        [loading]="isLoading() || epgScanning()"
         [broadcasts]="broadcasts()"
         (watch)="watchBroadcast($event)"
         (chosen)="openCompetition($event)" />`,
@@ -36,6 +36,7 @@ export class SportsPageComponent {
     private readonly stalker = inject(StalkerStore, { optional: true });
     readonly provider = this.route.snapshot.data['provider'] as 'xtream' | 'stalker';
     readonly broadcasts = signal<SportsBroadcast[]>([]);
+    readonly epgScanning = signal(false);
     private epgRequestedFor = '';
     private epgGeneration = 0;
 
@@ -84,6 +85,7 @@ export class SportsPageComponent {
                     this.epgRequestedFor = 'xtream:' + key;
                     this.epgGeneration++;
                     this.broadcasts.set([]);
+                    this.epgScanning.set(false);
                     if (playlist && content.length) void this.loadXtreamSportsEpg('xtream:' + key);
                 }
             } else {
@@ -94,6 +96,7 @@ export class SportsPageComponent {
                     this.epgRequestedFor = 'stalker:' + key;
                     this.epgGeneration++;
                     this.broadcasts.set([]);
+                    this.epgScanning.set(false);
                     if (playlist && content.length) void this.loadStalkerSportsEpg('stalker:' + key);
                 }
             }
@@ -104,9 +107,11 @@ export class SportsPageComponent {
         const store = this.xtream;
         if (!store) return;
         const generation = ++this.epgGeneration;
+        this.epgScanning.set(true);
         const cached = sportsGuideCache.get(cacheKey);
         if (cached && Date.now() - cached.checked < SPORTS_GUIDE_TTL) {
             this.broadcasts.set(cached.items);
+            this.epgScanning.set(false);
             return;
         }
         const sportsIds = new Set(this.sportsCategories().filter(category =>
@@ -136,11 +141,12 @@ export class SportsPageComponent {
             for (const item of batch) results.push(...item);
             // Stream discovered fixtures progressively; do not retain the entire
             // provider guide in the view while scanning more channels.
-            this.broadcasts.set(results.slice());
+            // Avoid repeated score-provider lookups before the guide index is complete.
         }
         if (generation === this.epgGeneration) {
             rememberGuide(cacheKey, results);
             this.broadcasts.set(results);
+            this.epgScanning.set(false);
         }
     }
 
@@ -148,9 +154,11 @@ export class SportsPageComponent {
         const store = this.stalker;
         if (!store) return;
         const generation = ++this.epgGeneration;
+        this.epgScanning.set(true);
         const cached = sportsGuideCache.get(cacheKey);
         if (cached && Date.now() - cached.checked < SPORTS_GUIDE_TTL) {
             this.broadcasts.set(cached.items);
+            this.epgScanning.set(false);
             return;
         }
         const channels = store.itvChannels().filter(item =>
@@ -173,11 +181,12 @@ export class SportsPageComponent {
             }));
             if (generation !== this.epgGeneration) return;
             for (const rows of batch) results.push(...rows);
-            this.broadcasts.set(results.slice());
+            // Avoid repeated score-provider lookups before the guide index is complete.
         }
         if (generation === this.epgGeneration) {
             rememberGuide(cacheKey, results);
             this.broadcasts.set(results);
+            this.epgScanning.set(false);
         }
     }
 
