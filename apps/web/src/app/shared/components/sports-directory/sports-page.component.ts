@@ -139,9 +139,8 @@ export class SportsPageComponent {
             }));
             if (generation !== this.epgGeneration) return;
             for (const item of batch) results.push(...item);
-            // Stream discovered fixtures progressively; do not retain the entire
-            // provider guide in the view while scanning more channels.
-            // Avoid repeated score-provider lookups before the guide index is complete.
+            // Publish the index only once: intermediate batches would trigger
+            // redundant scoreboard requests and inflate memory usage.
         }
         if (generation === this.epgGeneration) {
             rememberGuide(cacheKey, results);
