@@ -32,7 +32,7 @@ const cache = new Map<string, SportsResponse>();
 const inflight = new Map<string, Promise<SportsResponse>>();
 
 function validDates(start?: string, end?: string): boolean {
-    if (!start || !end || !/^\\d{8}$/.test(start) || !/^\\d{8}$/.test(end)) return false;
+    if (!start || !end || !/^\d{8}$/.test(start) || !/^\d{8}$/.test(end)) return false;
     const parse = (value: string) => Date.parse(value.slice(0, 4) + '-' +
         value.slice(4, 6) + '-' + value.slice(6, 8) + 'T00:00:00Z');
     const from = parse(start), to = parse(end);
@@ -59,7 +59,7 @@ function endpoint(request: SportsRequest): { url: string; ttl: number } | null {
     }
     if (request?.kind === 'timeline') {
         const league = typeof request.league === 'string' ? LEAGUES[request.league] : null;
-        if (!league || !/^\\d{1,15}$/.test(String(request.eventId || ''))) return null;
+        if (!league || !/^\d{1,15}$/.test(String(request.eventId || ''))) return null;
         return {
             url: `https://site.api.espn.com/apis/site/v2/sports/${league.sport}/${league.slug}/summary?event=${request.eventId}`,
             ttl: 90 * 1000,
