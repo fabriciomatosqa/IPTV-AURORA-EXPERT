@@ -101,7 +101,9 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
             this.allScores.clear();
             this.requestedLeagues.clear();
             this.scoreEvents.set([]);
-            if (rows.length) void this.refresh();
+            // Even an empty guide should display a public calendar (without
+            // watch links).  It must not remain permanently blank.
+            void this.refresh();
         });
     }
     currentYear(): number { return new Date().getFullYear(); }
@@ -164,7 +166,7 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
         return selectFootballCardFixtures(sorted, verified, tab === '__live__').games;
     });
     readonly showingPublicCalendar = computed(() =>
-        this.selectedSport() === 'Futebol' && this.selectedTab() !== '__live__' &&
+        this.selectedSport() === 'Futebol' &&
         this.visibleGames().length > 0 && !this.visibleGames().some(
             match => (this.matchLinks().get(match.id)?.length || 0) > 0
         )
