@@ -114,8 +114,10 @@ export interface SportsTimelineEvent {
 export function parseSportsTimeline(raw: unknown): SportsTimelineEvent[] {
     const data = object(raw);
     const competition = object(array(object(data.header).competitions)[0]);
-    const candidates = [
-        ...array(data.keyEvents),
+    // Soccer keyEvents are curated. Avoid turning routine play commentary
+    // (e.g. a goal kick) into a fabricated scoring event.
+    const verified = array(data.keyEvents);
+    const candidates = verified.length ? verified : [
         ...array(data.plays),
         ...array(data.scoringPlays),
         ...array(data.details),
@@ -132,6 +134,8 @@ export function parseSportsTimeline(raw: unknown): SportsTimelineEvent[] {
         if (!description) continue;
         const category = String(kind.text || kind.description || kind.name || '') + ' ' + description;
         const normalized = category.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        if (/goal kick|goalkeeper|shot off target|missed attempt/.test(normalized) &&
+            !/goal scored|scored a goal/.test(normalized)) continue;
         let title = '', icon = 'info';
         if (/own goal|gol contra/.test(normalized)) { title = 'Gol contra'; icon = 'sports_soccer'; }
         else if (/penalty|penalti/.test(normalized) && /goal|gol|scor/.test(normalized)) {
