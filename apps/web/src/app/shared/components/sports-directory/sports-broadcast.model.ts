@@ -42,9 +42,8 @@ export function footballLeaguesFromGuide(broadcasts: readonly SportsBroadcast[])
     for (const b of fixtures) {
         const text = (b.competition + ' ' + b.title + ' ' + b.details).normalize('NFD')
             .replace(/[\\u0300-\\u036f]/g, '').toLowerCase();
-        if (/(brasileir|brasileir[a-z]*o|campeonato brasileiro|serie a)/.test(text) &&
-            /serie\\s*a|brasileir[a-z]*o\\s*(?:betano)?/.test(text)) leagues.add('bra.1');
         if (/serie\\s*b|brasileiro\\s*b/.test(text)) leagues.add('bra.2');
+        else if (/serie\\s*a|brasileir[a-z]*o|campeonato brasileiro/.test(text)) leagues.add('bra.1');
         if (/libertadores/.test(text)) leagues.add('conmebol.libertadores');
         if (/sul.americana|sudamericana/.test(text)) leagues.add('conmebol.sudamericana');
         if (/copa do mundo|world cup|fifa/.test(text)) leagues.add('fifa.world');
@@ -75,17 +74,19 @@ export function parseSportsBroadcasts(
         const details = String(program.description || program.desc || '').trim();
         // A named fixture is football evidence even when the EPG omits the league.
         // Merely naming ESPN or SporTV is never evidence.
+        const fixture = sportsGuideHasFixture({ title, details });
         const detected = identifySport(title) ||
             identifySport(String(program.category || '')) ||
-            identifySport(details) ||
-            (sportsGuideHasFixture({ title, details })
-                ? { sport: 'Futebol' as SportName, competition: 'Futebol' } : null);
-        if (!detected || detected.sport === 'Outros esportes') continue;
+            identifySport(details);
+        const verified = fixture && (!detected || detected.sport === 'Outros esportes')
+            ? { sport: 'Futebol' as SportName, competition: 'Futebol' }
+            : detected;
+        if (!verified || verified.sport === 'Outros esportes') continue;
         valid.push({
             id: channel.id + ':' + start + ':' + title,
             title, details,
-            sport: detected.sport,
-            competition: detected.competition,
+            sport: verified.sport,
+            competition: verified.competition,
             start, stop,
             replay: /\b(reprise|replay|repeti[cç][aã]o)\b/i.test(title),
             channel,
