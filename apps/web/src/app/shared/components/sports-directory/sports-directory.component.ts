@@ -180,7 +180,8 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
         const selectedTitle = (LEAGUES[sport] || []).find(t => t.key === tab)?.name ||
             this.availableSources().find(e => 'source:' + e.id === tab)?.competition || '';
         const tabCompetition = selectedTitle ? identifySport(selectedTitle)?.competition || selectedTitle : '';
-        const used = new Set([...this.matchLinks().values()].flatMap(group => group.map(x => x.id)));
+        const used = new Set([...this.matchLinks().values()].reduce((all: string[], group) =>
+            all.concat(group.map(x => x.id)), []));
         return this.broadcasts().filter(item =>
             item.sport === sport &&
             (sport !== 'Futebol' || sportsGuideHasFixture(item) && !used.has(item.id)) &&
@@ -367,7 +368,8 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
                 this.allScores.set(row.key,row.matches);
                 if (row.checked) this.requestedLeagues.set(row.key,row.checked);
             }
-            this.scoreEvents.set([...this.allScores.values()].flat());
+            this.scoreEvents.set([...this.allScores.values()].reduce(
+                (all: SportsMatch[], group) => all.concat(group), []));
             this.staleScores.set(results.some(r => r.stale));
             this.scoreChecked.set(Math.max(...results.map(r => r.checked),0));
         } finally {
