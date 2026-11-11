@@ -184,7 +184,7 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
         return this.broadcasts().filter(item =>
             item.sport === sport &&
             (sport !== 'Futebol' || sportsGuideHasFixture(item) && !used.has(item.id)) &&
-            item.stop >= now - 2 * 3600000 &&
+            item.stop >= now - 3 * 86400000 &&
             (tab === '__games__' ||
                 tab === '__live__' && sportsBroadcastStatus(item,now) === 'AO VIVO' ||
                 (!!tabCompetition && this.normalized(item.competition) === this.normalized(tabCompetition))) &&
