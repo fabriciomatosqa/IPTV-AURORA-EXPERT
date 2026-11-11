@@ -1,11 +1,13 @@
-import { SportsBroadcast, sportsBroadcastStatus, confirmedMatchBroadcasts } from './sports-broadcast.model';
-import { Component, computed, input, OnDestroy, OnInit, output, signal } from '@angular/core';
+import { SportsBroadcast, sportsBroadcastStatus, confirmedMatchBroadcasts, footballLeaguesFromGuide, sportsGuideHasFixture } from './sports-broadcast.model';
+import { Component, computed, effect, input, OnDestroy, OnInit, output, signal } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { identifySport, organizeSports, SportName, SportsSource } from './sports-directory.model';
 import {
     F1Race, F1Standing, parseF1Calendar, parseF1Standings,
-    parseSportsScoreboard, SportsMatch, sportsMatchLabel,
+    parseSportsScoreboard, parseSportsTimeline, SportsMatch, SportsTimelineEvent, sportsMatchLabel,
 } from './sports-feed.model';
+
+import { distinctSportsChannels, groupSportsMatchesByDay } from './sports-day.model';
 
 type Tab = { key: string; name: string };
 const SPORTS: { name: SportName; icon: string }[] = [
@@ -68,6 +70,13 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
     readonly f1Races = signal<F1Race[]>([]);
     readonly f1Drivers = signal<F1Standing[]>([]);
     readonly f1Teams = signal<F1Standing[]>([]);
+    readonly collapsedDays = signal<ReadonlySet<string>>(new Set());
+    readonly expandedChannels = signal<ReadonlySet<string>>(new Set());
+    readonly expandedTimelines = signal<ReadonlySet<string>>(new Set());
+    readonly timelineLoading = signal<ReadonlySet<string>>(new Set());
+    readonly timelineEvents = signal<ReadonlyMap<string, SportsTimelineEvent[]>>(new Map());
+    private lastGuideSignature = '';
+    private destroyed = false;
     private readonly requestedLeagues = new Map<string, number>();
     private readonly allScores = new Map<string, SportsMatch[]>();
     private refreshTimer?: ReturnType<typeof setInterval>;
@@ -80,6 +89,21 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
         { id: 'next', label: 'Próxima corrida' },
         { id: 'calendar', label: 'Calendário' },
     ];
+    constructor() {
+        effect(() => {
+            // Refetch football scores only when a new IPTV guide index is ready.
+            // Never populate the page from an unrestricted league calendar.
+            if (this.selectedSport() !== 'Futebol') return;
+            const rows = this.broadcasts();
+            const signature = rows.map(row => row.id).join('|');
+            if (this.lastGuideSignature === signature) return;
+            this.lastGuideSignature = signature;
+            this.allScores.clear();
+            this.requestedLeagues.clear();
+            this.scoreEvents.set([]);
+            if (rows.length) void this.refresh();
+        });
+    }
     currentYear(): number { return new Date().getFullYear(); }
     readonly sports = computed(() => {
         const available = new Set(organizeSports(this.sources()).map(section => section.title));
@@ -99,7 +123,10 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
         const dedup = new Map<string, Tab>();
         // Only list leagues with public fixtures or matching playlist metadata.
         for (const tab of registered) {
-            if (tab.key === 'f1' || this.allScores.get(tab.key)?.length)
+            if (tab.key === 'f1' || (sport === 'Futebol'
+                ? this.scoreEvents().some(m => m.league === tab.key &&
+                    (this.matchLinks().get(m.id)?.length || 0) > 0)
+                : this.allScores.get(tab.key)?.length))
                 dedup.set(tab.name.toLocaleLowerCase(), tab);
         }
         for (const tab of actual) {
@@ -119,8 +146,16 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
         const now = this.now();
         const sorted = this.scoreEvents().filter(match => {
             if (match.sport !== sport) return false;
+            if (sport === 'Futebol' && !this.matchLinks().get(match.id)?.length) return false;
             if (tab === '__live__' && match.state !== 'live') return false;
-            if (tab !== '__games__' && tab !== '__live__' && match.league !== tab) return false;
+            if (tab !== '__games__' && tab !== '__live__' &&
+                (tab.startsWith('source:')
+                    ? !this.linkedBroadcasts(match).some(b => {
+                        const source = this.availableSources().find(s => s.id === tab.slice(7));
+                        return !!source && this.normalized(b.title + ' ' + b.details + ' ' + b.competition)
+                            .includes(this.normalized(source.competition));
+                    })
+                    : match.league !== tab)) return false;
             if (tab === '__games__' && (match.kickoff < now - 3 * 86400000 ||
                 match.kickoff > now + 15 * 86400000)) return false;
             const name = this.normalized(match.home.name + ' ' + match.away.name + ' ' + match.competition);
@@ -129,10 +164,11 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
         return sorted;
     });
     readonly displayedGames = computed(() => this.visibleGames().slice(0, this.maxVisible()));
+    readonly groupedGames = computed(() => groupSportsMatchesByDay(this.displayedGames()));
     readonly matchLinks = computed(() => {
         const broadcasts = this.broadcasts();
         return new Map(this.scoreEvents().map(match =>
-            [match.id,confirmedMatchBroadcasts(match,broadcasts)] as const
+            [match.id,distinctSportsChannels(confirmedMatchBroadcasts(match,broadcasts))] as const
         ));
     });
     linkedBroadcasts(match: SportsMatch): SportsBroadcast[] {
@@ -144,8 +180,10 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
         const selectedTitle = (LEAGUES[sport] || []).find(t => t.key === tab)?.name ||
             this.availableSources().find(e => 'source:' + e.id === tab)?.competition || '';
         const tabCompetition = selectedTitle ? identifySport(selectedTitle)?.competition || selectedTitle : '';
+        const used = new Set([...this.matchLinks().values()].flatMap(group => group.map(x => x.id)));
         return this.broadcasts().filter(item =>
             item.sport === sport &&
+            (sport !== 'Futebol' || sportsGuideHasFixture(item) && !used.has(item.id)) &&
             item.stop >= now - 2 * 3600000 &&
             (tab === '__games__' ||
                 tab === '__live__' && sportsBroadcastStatus(item,now) === 'AO VIVO' ||
@@ -179,11 +217,16 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
         this.refreshTimer = setInterval(() => {
             this.now.set(Date.now());
             if (SCORED_SPORTS.has(this.selectedSport())) void this.refresh();
-        }, 120000);
+            for (const match of this.scoreEvents()) {
+                if (match.state === 'live' && this.expandedTimelines().has(match.id))
+                    void this.fetchTimeline(match, true);
+            }
+        }, 60000);
     }
     ngOnDestroy(): void {
         if (this.refreshTimer) clearInterval(this.refreshTimer);
         this.loadVersion++;
+        this.destroyed = true;
     }
     private normalized(value: string): string {
         return String(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'')
@@ -206,6 +249,63 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
         if (key === 'f1') void this.refreshF1();
     }
     status(match: SportsMatch): string { return sportsMatchLabel(match); }
+    toggleDay(key: string): void {
+        this.collapsedDays.update(current => {
+            const next = new Set(current);
+            if (next.has(key)) next.delete(key); else next.add(key);
+            return next;
+        });
+    }
+    toggleChannels(id: string): void {
+        this.expandedChannels.update(current => {
+            const next = new Set(current);
+            if (next.has(id)) next.delete(id); else next.add(id);
+            return next;
+        });
+    }
+    watchableBroadcasts(match: SportsMatch): SportsBroadcast[] {
+        const now = this.now();
+        return distinctSportsChannels(this.linkedBroadcasts(match).filter(b =>
+            b.start <= now && b.stop > now &&
+            (match.state === 'live' && !b.replay || match.state === 'finished' && b.replay)
+        ));
+    }
+    toggleTimeline(match: SportsMatch): void {
+        this.expandedTimelines.update(current => {
+            const next = new Set(current);
+            if (next.has(match.id)) next.delete(match.id); else next.add(match.id);
+            return next;
+        });
+        if (this.expandedTimelines().has(match.id) && !this.timelineEvents().has(match.id))
+            void this.fetchTimeline(match);
+    }
+    private async fetchTimeline(match: SportsMatch, force = false): Promise<void> {
+        if (this.timelineLoading().has(match.id) ||
+            !force && this.timelineEvents().has(match.id)) return;
+        const api = window.electron?.getAuroraSportsFeed;
+        const eventId = match.id.split(':').slice(1).join(':');
+        if (!api || !/^\\d{1,15}$/.test(eventId)) return;
+        this.timelineLoading.update(current => new Set([...current, match.id]));
+        try {
+            const response = await api({ kind: 'timeline', league: match.league, eventId });
+            if (this.destroyed) return;
+            const events = response.data ? parseSportsTimeline(response.data) : [];
+            this.timelineEvents.update(current => {
+                const next = new Map(current);
+                next.delete(match.id);
+                next.set(match.id, events);
+                if (next.size > 40) next.delete(next.keys().next().value!);
+                return next;
+            });
+        } catch {
+            if (!this.destroyed) this.timelineEvents.update(current =>
+                new Map(current).set(match.id, []));
+        } finally {
+            this.timelineLoading.update(current => {
+                const next = new Set(current); next.delete(match.id); return next;
+            });
+        }
+    }
     displayTime(time: number): string {
         return new Date(time).toLocaleTimeString('pt-BR',{ hour:'2-digit',minute:'2-digit' });
     }
@@ -222,29 +322,53 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
             await this.refreshF1();
             return;
         }
-        const leagues = (LEAGUES[sport] || []).filter(x => x.key !== 'f1');
+        let leagues = (LEAGUES[sport] || []).filter(x => x.key !== 'f1');
+        let startDate: string | undefined, endDate: string | undefined;
+        if (sport === 'Futebol') {
+            const fixtures = this.broadcasts().filter(b =>
+                b.sport === 'Futebol' && sportsGuideHasFixture(b));
+            // No verified fixture titles in this IPTV guide means NO scoreboard
+            // calls and NO unrelated fixtures in the UI.
+            if (!fixtures.length) {
+                this.scoreEvents.set([]);
+                this.loadingScores.set(false);
+                return;
+            }
+            const chosen = new Set(footballLeaguesFromGuide(fixtures));
+            leagues = leagues.filter(item => chosen.has(item.key));
+            const dateStamp = (date: number) => new Date(date).toISOString()
+                .slice(0, 10).replace(/-/g, '');
+            // Pad the guide dates to account for timezone differences at midnight.
+            startDate = dateStamp(Math.min(...fixtures.map(b => b.start)) - 86400000);
+            endDate = dateStamp(Math.max(...fixtures.map(b => b.start)) + 86400000);
+        }
         if (!leagues.length) return;
         this.loadingScores.set(true);
         try {
-            // Load a small, explicitly allowlisted set of leagues. The main process
-            // caches results; only public league IDs are ever transmitted.
             const results = await Promise.all(leagues.map(async item => {
-                const last = this.requestedLeagues.get(item.key) || 0;
-                if (!force && Date.now() - last < 120000 && this.allScores.has(item.key))
-                    return { key:item.key, matches:this.allScores.get(item.key)!, stale:false, checked:last };
-                const response = await api({kind:'scoreboard',league:item.key});
-                const matches = response.data ? parseSportsScoreboard(response.data,item.key,sport) : [];
-                return {key:item.key, matches, stale:response.stale, checked:response.checked};
+                const key = item.key + ':' + (startDate || '') + ':' + (endDate || '');
+                const last = this.requestedLeagues.get(key) || 0;
+                if (!force && Date.now() - last < 60000 && this.allScores.has(key))
+                    return { key, matches: this.allScores.get(key)!, stale: false, checked: last };
+                try {
+                    const response = await api({kind:'scoreboard',league:item.key,startDate,endDate});
+                    const matches = response.data ? parseSportsScoreboard(response.data,item.key,sport) : [];
+                    return {key, matches, stale:response.stale, checked:response.checked};
+                } catch {
+                    return {key, matches:this.allScores.get(key) || [], stale:true, checked:last};
+                }
             }));
-            if (version !== this.loadVersion) return;
+            if (version !== this.loadVersion || this.destroyed) return;
+            // Only retain current guide/date scope. Never merge old playlist fixtures.
+            const activeKeys = new Set(results.map(r => r.key));
+            for (const key of this.allScores.keys()) if (!activeKeys.has(key)) this.allScores.delete(key);
             for (const row of results) {
                 this.allScores.set(row.key,row.matches);
                 if (row.checked) this.requestedLeagues.set(row.key,row.checked);
             }
-            this.scoreEvents.set(Array.from(this.allScores.values())
-                .reduce((all: SportsMatch[], group) => all.concat(group), []));
-            this.staleScores.set(results.some(r=>r.stale));
-            this.scoreChecked.set(Math.max(...results.map(r=>r.checked),0));
+            this.scoreEvents.set([...this.allScores.values()].flat());
+            this.staleScores.set(results.some(r => r.stale));
+            this.scoreChecked.set(Math.max(...results.map(r => r.checked),0));
         } finally {
             if (version === this.loadVersion) this.loadingScores.set(false);
         }
