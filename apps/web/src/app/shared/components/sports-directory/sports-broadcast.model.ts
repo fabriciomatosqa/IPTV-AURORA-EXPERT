@@ -32,7 +32,7 @@ export interface SportsBroadcast {
  * scoreboard discovery. Generic football shows do not prove a match exists. */
 export function sportsGuideHasFixture(program: Pick<SportsBroadcast, 'title' | 'details'>): boolean {
     const text = program.title + ' ' + program.details;
-    return /[\\p{L}0-9]{2,}(?:[\\p{L}0-9 .'-]{0,60})\\s+(?:x|×|vs\\.?)\\s+[\\p{L}0-9]{2,}/iu.test(text);
+    return /[\p{L}0-9]{2,}(?:[\p{L}0-9 .'-]{0,60})\s+(?:x|×|vs\.?)\s+[\p{L}0-9]{2,}/iu.test(text);
 }
 
 export function footballLeaguesFromGuide(broadcasts: readonly SportsBroadcast[]): string[] {
@@ -41,9 +41,9 @@ export function footballLeaguesFromGuide(broadcasts: readonly SportsBroadcast[])
     const leagues = new Set<string>();
     for (const b of fixtures) {
         const text = (b.competition + ' ' + b.title + ' ' + b.details).normalize('NFD')
-            .replace(/[\\u0300-\\u036f]/g, '').toLowerCase();
-        if (/serie\\s*b|brasileiro\\s*b/.test(text)) leagues.add('bra.2');
-        else if (/serie\\s*a|brasileir[a-z]*o|campeonato brasileiro/.test(text)) leagues.add('bra.1');
+            .replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        if (/serie\s*b|brasileiro\s*b/.test(text)) leagues.add('bra.2');
+        else if (/serie\s*a|brasileir[a-z]*o|campeonato brasileiro/.test(text)) leagues.add('bra.1');
         if (/libertadores/.test(text)) leagues.add('conmebol.libertadores');
         if (/sul.americana|sudamericana/.test(text)) leagues.add('conmebol.sudamericana');
         if (/copa do mundo|world cup|fifa/.test(text)) leagues.add('fifa.world');
