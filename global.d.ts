@@ -114,6 +114,7 @@ declare global {
             autoUpdatePlaylists: (playlists: Playlist[]) => Promise<Playlist[]>;
             getAuroraSportsFeed?: (request: { kind: 'scoreboard'; league: string; startDate?: string; endDate?: string } |
                 { kind: 'timeline'; league: string; eventId: string } |
+        { kind: 'teamBadge'; team: string } |
                 { kind: 'f1'; resource: 'races' | 'drivers' | 'teams'; year: number }) =>
                 Promise<{ data: unknown | null; checked: number; stale: boolean }>;
             fetchEpg: (
