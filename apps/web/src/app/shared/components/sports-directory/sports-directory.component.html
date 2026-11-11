@@ -43,7 +43,8 @@
 
     <div class="sports-meta">
         <span><mat-icon>update</mat-icon>
-            @if (loadingScores()) { Atualizando resultados… }
+            @if (loading()) { Verificando a programação IPTV… }
+            @else if (loadingScores()) { Atualizando resultados… }
             @else if (staleScores()) { Fonte indisponível · dados anteriores podem estar desatualizados }
             @else if (!scoreAvailable()) { Resultados externos indisponíveis nesta execução }
             @else { Resultados públicos separados da programação IPTV }
@@ -282,7 +283,7 @@
             } @empty {
                 <div class="sports-empty">
                     <mat-icon>sports</mat-icon>
-                    @if (loadingScores()) { <h2>Consultando a programação e os jogos…</h2> }
+                    @if (loading() || loadingScores()) { <h2>Consultando a programação e os jogos…</h2> }
                     @else if (selectedTab() === '__live__') {
                         <h2>Nenhuma partida ao vivo com transmissão identificada</h2>
                         <p>Somente jogos vinculados aos canais desta playlist aparecem aqui.</p>
