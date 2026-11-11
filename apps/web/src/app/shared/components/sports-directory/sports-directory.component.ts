@@ -7,7 +7,7 @@ import {
     parseSportsScoreboard, parseSportsTimeline, SportsMatch, SportsTimelineEvent, sportsMatchLabel,
 } from './sports-feed.model';
 
-import { distinctSportsChannels, groupSportsMatchesByDay } from './sports-day.model';
+import { distinctSportsChannels, groupSportsMatchesByDay, groupSportsBroadcastsByDay } from './sports-day.model';
 
 type Tab = { key: string; name: string };
 const SPORTS: { name: SportName; icon: string }[] = [
@@ -191,6 +191,7 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
             words.every(w => this.normalized(item.title + ' ' + item.channel.name).includes(w))
         ).sort((a,b) => a.start - b.start).slice(0,80);
     });
+    readonly groupedBroadcasts = computed(() => groupSportsBroadcastsByDay(this.visibleBroadcasts()));
     broadcastStatus(item: SportsBroadcast): string { return sportsBroadcastStatus(item, this.now()); }
     readonly nextF1Race = computed(() =>
         this.f1Races().find(race => (race.hasTime ? race.date :
