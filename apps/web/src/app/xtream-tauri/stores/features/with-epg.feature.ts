@@ -108,7 +108,7 @@ export function withEpg() {
                 /**
                  * Load EPG for a specific channel (for preview)
                  */
-                async loadChannelEpg(streamId: number): Promise<EpgItem[]> {
+                async loadChannelEpg(streamId: number, count = 1): Promise<EpgItem[]> {
                     const credentials = getCredentialsFromStore();
                     if (!credentials) {
                         return [];
@@ -118,7 +118,7 @@ export function withEpg() {
                         return await apiService.getShortEpg(
                             credentials,
                             streamId,
-                            1
+                            Math.max(1, Math.min(12, Math.floor(count)))
                         );
                     } catch (error) {
                         logger.error('Error loading channel EPG', error);

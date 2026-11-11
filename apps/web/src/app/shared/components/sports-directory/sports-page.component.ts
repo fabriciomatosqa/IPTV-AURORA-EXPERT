@@ -7,13 +7,23 @@ import { XtreamStore } from '../../../xtream-tauri/stores/xtream.store';
 import { SportsDirectoryComponent } from './sports-directory.component';
 import { SportsSource } from './sports-directory.model';
 
+// Short-lived playlist-scoped guide index avoids rescanning all channels whenever
+// a user leaves and returns to the Sports tab.
+const sportsGuideCache = new Map<string, { checked: number; items: SportsBroadcast[] }>();
+const SPORTS_GUIDE_TTL = 15 * 60 * 1000;
+function rememberGuide(key: string, items: SportsBroadcast[]): void {
+    sportsGuideCache.set(key, { checked: Date.now(), items });
+    if (sportsGuideCache.size > 6)
+        sportsGuideCache.delete(sportsGuideCache.keys().next().value!);
+}
+
 @Component({
     selector: 'app-sports-page',
     standalone: true,
     imports: [SportsDirectoryComponent],
     template: `<app-sports-directory
         [sources]="sportsCategories()"
-        [loading]="isLoading()"
+        [loading]="isLoading() || epgScanning()"
         [broadcasts]="broadcasts()"
         (watch)="watchBroadcast($event)"
         (chosen)="openCompetition($event)" />`,
@@ -26,6 +36,7 @@ export class SportsPageComponent {
     private readonly stalker = inject(StalkerStore, { optional: true });
     readonly provider = this.route.snapshot.data['provider'] as 'xtream' | 'stalker';
     readonly broadcasts = signal<SportsBroadcast[]>([]);
+    readonly epgScanning = signal(false);
     private epgRequestedFor = '';
     private epgGeneration = 0;
 
@@ -70,40 +81,53 @@ export class SportsPageComponent {
                 const playlist = this.xtream?.currentPlaylist();
                 const content = this.xtream?.liveStreams() || [];
                 const key = String(playlist?.id || '') + ':' + content.length;
-                if (playlist && content.length && this.epgRequestedFor !== key) {
-                    this.epgRequestedFor = key;
-                    void this.loadXtreamSportsEpg();
+                if (this.epgRequestedFor !== 'xtream:' + key) {
+                    this.epgRequestedFor = 'xtream:' + key;
+                    this.epgGeneration++;
+                    this.broadcasts.set([]);
+                    this.epgScanning.set(false);
+                    if (playlist && content.length) void this.loadXtreamSportsEpg('xtream:' + key);
                 }
             } else {
                 const playlist = this.stalker?.currentPlaylist();
                 const content = this.stalker?.itvChannels() || [];
                 const key = String(playlist?._id || '') + ':' + content.length;
-                if (playlist && content.length && this.epgRequestedFor !== key) {
-                    this.epgRequestedFor = key;
-                    void this.loadStalkerSportsEpg();
+                if (this.epgRequestedFor !== 'stalker:' + key) {
+                    this.epgRequestedFor = 'stalker:' + key;
+                    this.epgGeneration++;
+                    this.broadcasts.set([]);
+                    this.epgScanning.set(false);
+                    if (playlist && content.length) void this.loadStalkerSportsEpg('stalker:' + key);
                 }
             }
         });
     }
 
-    private async loadXtreamSportsEpg(): Promise<void> {
+    private async loadXtreamSportsEpg(cacheKey: string): Promise<void> {
         const store = this.xtream;
         if (!store) return;
         const generation = ++this.epgGeneration;
+        this.epgScanning.set(true);
+        const cached = sportsGuideCache.get(cacheKey);
+        if (cached && Date.now() - cached.checked < SPORTS_GUIDE_TTL) {
+            this.broadcasts.set(cached.items);
+            this.epgScanning.set(false);
+            return;
+        }
         const sportsIds = new Set(this.sportsCategories().filter(category =>
             !!identifySport(category.title)
         ).map(category => category.id));
         const candidates = store.liveStreams().filter(stream =>
             sportsIds.has(String(stream.category_id)) ||
             !!identifySport(stream.name)
-        ).slice(0,30);
+        ).slice(0,80);
         const results: SportsBroadcast[] = [];
         for (let index=0; index<candidates.length; index+=6) {
             const batch = await Promise.all(candidates.slice(index,index+6).map(async item => {
                 const id = Number(item.xtream_id ?? item.stream_id);
                 if (!Number.isFinite(id) || id < 0) return [];
                 try {
-                    const epg = await store.loadChannelEpg(id);
+                    const epg = await store.loadChannelEpg(id, 12);
                     return parseSportsBroadcasts({
                         id: String(id), name:item.name,logo:item.stream_icon,
                     }, epg.map(x => ({
@@ -115,17 +139,30 @@ export class SportsPageComponent {
             }));
             if (generation !== this.epgGeneration) return;
             for (const item of batch) results.push(...item);
+            // Publish the index only once: intermediate batches would trigger
+            // redundant scoreboard requests and inflate memory usage.
         }
-        if (generation === this.epgGeneration) this.broadcasts.set(results);
+        if (generation === this.epgGeneration) {
+            rememberGuide(cacheKey, results);
+            this.broadcasts.set(results);
+            this.epgScanning.set(false);
+        }
     }
 
-    private async loadStalkerSportsEpg(): Promise<void> {
+    private async loadStalkerSportsEpg(cacheKey: string): Promise<void> {
         const store = this.stalker;
         if (!store) return;
         const generation = ++this.epgGeneration;
+        this.epgScanning.set(true);
+        const cached = sportsGuideCache.get(cacheKey);
+        if (cached && Date.now() - cached.checked < SPORTS_GUIDE_TTL) {
+            this.broadcasts.set(cached.items);
+            this.epgScanning.set(false);
+            return;
+        }
         const channels = store.itvChannels().filter(item =>
             !!identifySport(item.o_name || item.name || '')
-        ).slice(0,24);
+        ).slice(0,60);
         const results: SportsBroadcast[] = [];
         for (let i=0; i<channels.length; i+=6) {
             const batch=await Promise.all(channels.slice(i,i+6).map(async channel => {
@@ -143,8 +180,13 @@ export class SportsPageComponent {
             }));
             if (generation !== this.epgGeneration) return;
             for (const rows of batch) results.push(...rows);
+            // Avoid repeated score-provider lookups before the guide index is complete.
         }
-        if (generation === this.epgGeneration) this.broadcasts.set(results);
+        if (generation === this.epgGeneration) {
+            rememberGuide(cacheKey, results);
+            this.broadcasts.set(results);
+            this.epgScanning.set(false);
+        }
     }
 
     watchBroadcast(id: string): void {

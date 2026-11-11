@@ -34,4 +34,25 @@ describe('Sports guide links never guess broadcasters', () => {
             {title:'NBA',start:'2025-01-01T10:00:00Z',stop:'2025-01-01T12:00:00Z'},
         ],now)).toEqual([]);
     });
+
+    it('detects a team-only programme and never assigns a sports broadcaster by channel name alone', () => {
+        const rows = parseSportsBroadcasts({ id:'1',name:'ESPN HD' },[
+            {title:'Corinthians x Palmeiras',start:'2026-11-08T19:00:00Z',
+                stop:'2026-11-08T21:00:00Z'},
+            {title:'Debate esportivo',start:'2026-11-08T19:00:00Z',
+                stop:'2026-11-08T21:00:00Z'},
+        ],now);
+        expect(rows).toHaveLength(1);
+        expect(rows[0].sport).toBe('Futebol');
+        expect(rows[0].channel.id).toBe('1');
+    });
+    it('keeps league B separate from league A in programme-driven discovery', () => {
+        const { footballLeaguesFromGuide } = require('./sports-broadcast.model');
+        const rows = parseSportsBroadcasts({id:'1',name:'Premiere'},[
+            {title:'Brasileirão Série B Remo x Vila Nova',
+                start:'2026-11-08T19:00:00Z',stop:'2026-11-08T21:00:00Z'},
+        ],now);
+        expect(footballLeaguesFromGuide(rows)).toEqual(['bra.2']);
+    });
+
 });

@@ -5,7 +5,8 @@ import { ipcMain } from 'electron';
  * names reach the network. No IPTV URLs, credentials or channel names are sent.
  */
 export type SportsRequest =
-    | { kind: 'scoreboard'; league: string }
+    | { kind: 'scoreboard'; league: string; startDate?: string; endDate?: string }
+    | { kind: 'timeline'; league: string; eventId: string }
     | { kind: 'f1'; resource: 'races' | 'drivers' | 'teams'; year: number };
 
 const LEAGUES: Record<string, { sport: string; slug: string; season?: boolean }> = {
@@ -30,16 +31,38 @@ type SportsResponse = { data: unknown | null; checked: number; stale: boolean };
 const cache = new Map<string, SportsResponse>();
 const inflight = new Map<string, Promise<SportsResponse>>();
 
+function validDates(start?: string, end?: string): boolean {
+    if (!start || !end || !/^\d{8}$/.test(start) || !/^\d{8}$/.test(end)) return false;
+    const parse = (value: string) => Date.parse(value.slice(0, 4) + '-' +
+        value.slice(4, 6) + '-' + value.slice(6, 8) + 'T00:00:00Z');
+    const from = parse(start), to = parse(end);
+    return Number.isFinite(from) && Number.isFinite(to) &&
+        new Date(from).toISOString().slice(0, 10).replace(/-/g, '') === start &&
+        new Date(to).toISOString().slice(0, 10).replace(/-/g, '') === end &&
+        to >= from && to - from <= 20 * 86400000;
+}
+
 function endpoint(request: SportsRequest): { url: string; ttl: number } | null {
     if (request?.kind === 'scoreboard') {
         const league = typeof request.league === 'string' ? LEAGUES[request.league] : null;
         if (!league) return null;
+        const from = request.startDate, to = request.endDate;
+        if ((from || to) && !validDates(from, to)) return null;
+        const scoped = !!(from && to);
         const year = new Date().getUTCFullYear();
-        const season = league.season ? `&dates=${year}` : '';
-        const limit = league.season ? 500 : 100;
+        const dates = scoped ? `&dates=${from}-${to}` : league.season ? `&dates=${year}` : '';
+        const limit = scoped ? 100 : league.season ? 500 : 100;
         return {
-            url: `https://site.api.espn.com/apis/site/v2/sports/${league.sport}/${league.slug}/scoreboard?limit=${limit}${season}`,
-            ttl: league.season ? 6 * 60 * 60 * 1000 : 2 * 60 * 1000,
+            url: `https://site.api.espn.com/apis/site/v2/sports/${league.sport}/${league.slug}/scoreboard?limit=${limit}${dates}`,
+            ttl: scoped ? 2 * 60 * 1000 : league.season ? 6 * 60 * 60 * 1000 : 2 * 60 * 1000,
+        };
+    }
+    if (request?.kind === 'timeline') {
+        const league = typeof request.league === 'string' ? LEAGUES[request.league] : null;
+        if (!league || !/^\d{1,15}$/.test(String(request.eventId || ''))) return null;
+        return {
+            url: `https://site.api.espn.com/apis/site/v2/sports/${league.sport}/${league.slug}/summary?event=${request.eventId}`,
+            ttl: 90 * 1000,
         };
     }
     if (request?.kind === 'f1') {
@@ -84,6 +107,9 @@ export function registerSportsEvents(): void {
                 const data = await fetchJson(config.url);
                 const result = { data, checked: Date.now(), stale: false };
                 cache.set(config.url, result);
+                // Bound the in-memory cache; a long session must not retain
+                // every date range or match summary ever requested.
+                if (cache.size > 120) cache.delete(cache.keys().next().value!);
                 return result;
             } catch {
                 // Preserve the last known verified response and identify it as stale.

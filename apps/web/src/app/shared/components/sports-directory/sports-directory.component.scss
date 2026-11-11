@@ -156,3 +156,49 @@
     cursor:pointer;font:600 11px 'Segoe UI',sans-serif;}
 .match-watch-channels button:hover {background:#2a6a5d;}
 .match-watch-channels mat-icon {font-size:15px;width:16px;height:16px;}
+
+
+/* Every date uses the same header and responsive Aurora match-card grid. */
+.sports-day-list { display:flex; flex-direction:column; gap:23px; }
+.sports-day { min-width:0; }
+.sports-day-heading {
+    width:100%; display:flex; align-items:center; justify-content:space-between; gap:14px;
+    padding:13px 16px; margin:0 0 12px; border:1px solid #42605e;
+    border-radius:13px; background:linear-gradient(100deg,#183b39,#1c2530);
+    color:#e8f8f5; font:700 14px 'Segoe UI',sans-serif; cursor:pointer; text-align:left;
+}
+.sports-day-heading:hover { border-color:#83decd; }
+.sports-day-heading>span { display:flex; align-items:center; gap:9px; }
+.sports-day-heading>span:first-child { text-transform:uppercase; letter-spacing:.05em; }
+.sports-day-heading mat-icon { color:#82e9d5; font-size:20px; width:22px; height:22px; }
+.sports-day-count { white-space:nowrap; color:#b0c6c7; font-size:12px; font-weight:600; }
+.match-actions { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:7px; }
+.match-actions button,.match-channel-list button {
+    display:inline-flex; align-items:center; gap:5px; border:1px solid #496b68;
+    border-radius:9px; padding:8px 10px; background:#24313c; color:#d3e9e5;
+    cursor:pointer; font:600 11px 'Segoe UI',sans-serif;
+}
+.match-actions button:hover,.match-channel-list button:hover { border-color:#78e6d0; background:#28433f; }
+.match-actions button.match-watch { border-color:#5fbdae; color:#a2ffea; background:#195344; }
+.match-actions button.match-watch:hover { background:#216a57; }
+.match-actions small { display:flex; align-items:center; gap:5px; color:#b3c7cc; font-size:11px; }
+.match-actions mat-icon,.match-channel-list mat-icon { font-size:17px; width:17px; height:17px; }
+.match-channel-list { display:flex; flex-wrap:wrap; gap:7px; padding-top:13px; margin-top:12px;
+    border-top:1px solid #ffffff17; }
+.match-timeline { padding:12px 2px 0; margin-top:12px; border-top:1px solid #ffffff20; }
+.match-timeline>p { font-size:12px; color:#a9b9c4; margin:6px 0; }
+.match-timeline-row { display:grid; grid-template-columns:38px 22px minmax(0,1fr);
+    align-items:flex-start; gap:10px; padding:9px 4px; border-bottom:1px solid #ffffff12; }
+.match-timeline-row>strong { font-size:12px; color:#8cebd6; }
+.match-timeline-row>mat-icon { font-size:19px; color:#79dcc8; width:20px; height:20px; }
+.match-timeline-row div { min-width:0; overflow-wrap:anywhere; }
+.match-timeline-row b { font-size:12px; color:#ecf5f8; }
+.match-timeline-row small { display:block; color:#7fdcc6; font-size:11px; margin-top:2px; }
+.match-timeline-row p { font-size:11px; line-height:1.45; color:#b6c5ce; margin:4px 0 0; }
+@media (max-width:600px) {
+    .sports-day-heading { padding:10px; font-size:12px; }
+    .sports-day-count { font-size:10px; }
+    .match-actions { justify-content:flex-start; }
+}
+
+.sports-broadcasts .sports-day { margin-top:15px; }
