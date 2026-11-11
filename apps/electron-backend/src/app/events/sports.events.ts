@@ -7,6 +7,7 @@ import { ipcMain } from 'electron';
 export type SportsRequest =
     | { kind: 'scoreboard'; league: string; startDate?: string; endDate?: string }
     | { kind: 'timeline'; league: string; eventId: string }
+    | { kind: 'teamBadge'; team: string }
     | { kind: 'f1'; resource: 'races' | 'drivers' | 'teams'; year: number };
 
 const LEAGUES: Record<string, { sport: string; slug: string; season?: boolean }> = {
@@ -30,6 +31,23 @@ const LEAGUES: Record<string, { sport: string; slug: string; season?: boolean }>
 type SportsResponse = { data: unknown | null; checked: number; stale: boolean };
 const cache = new Map<string, SportsResponse>();
 const inflight = new Map<string, Promise<SportsResponse>>();
+let nextBadgeRequest = Promise.resolve();
+let badgeCooldown = 0;
+
+function safeBadge(raw: unknown, team: string): { logo: string } {
+    const list = (raw as { teams?: unknown })?.teams;
+    if (!Array.isArray(list)) return { logo: '' };
+    const normalize = (s: string) => String(s || '').normalize('NFD')
+        .replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+    const target = normalize(team);
+    const found = list.find((item: unknown) => {
+        const entry = item as { strTeam?: string; strSport?: string };
+        return normalize(entry.strTeam || '') === target &&
+            (!entry.strSport || /soccer|football/i.test(entry.strSport));
+    }) as { strBadge?: string } | undefined;
+    const url = String(found?.strBadge || '');
+    return { logo: /^https:\/\/(?:www\.|r2\.)?thesportsdb\.com\/images\//.test(url) ? url : '' };
+}
 
 function validDates(start?: string, end?: string): boolean {
     if (!start || !end || !/^\d{8}$/.test(start) || !/^\d{8}$/.test(end)) return false;
@@ -55,6 +73,15 @@ function endpoint(request: SportsRequest): { url: string; ttl: number } | null {
         return {
             url: `https://site.api.espn.com/apis/site/v2/sports/${league.sport}/${league.slug}/scoreboard?limit=${limit}${dates}`,
             ttl: scoped ? 2 * 60 * 1000 : league.season ? 6 * 60 * 60 * 1000 : 2 * 60 * 1000,
+        };
+    }
+    if (request?.kind === 'teamBadge') {
+        const name = typeof request.team === 'string' ? request.team.trim() : '';
+        if (!name || name.length > 55 ||
+            !/^[\p{L}\p{N} .'-]+$/u.test(name)) return null;
+        return {
+            url: 'https://www.thesportsdb.com/api/v1/json/123/searchteams.php?t=' + encodeURIComponent(name),
+            ttl: 24 * 60 * 60 * 1000,
         };
     }
     if (request?.kind === 'timeline') {
@@ -104,12 +131,24 @@ export function registerSportsEvents(): void {
 
         const task = (async (): Promise<SportsResponse> => {
             try {
-                const data = await fetchJson(config.url);
+                // TheSportsDB shared free tier has a 30/minute limit.
+                // Serialize badge requests at <= 24/min, without slowing scores.
+                let data: unknown;
+                if (request.kind === 'teamBadge') {
+                    const run = nextBadgeRequest.then(async () => {
+                        const delay = Math.max(0, badgeCooldown - Date.now());
+                        if (delay) await new Promise(resolve => setTimeout(resolve, delay));
+                        badgeCooldown = Date.now() + 2500;
+                        return safeBadge(await fetchJson(config.url), request.team);
+                    });
+                    nextBadgeRequest = run.then(() => undefined, () => undefined);
+                    data = await run;
+                } else data = await fetchJson(config.url);
                 const result = { data, checked: Date.now(), stale: false };
                 cache.set(config.url, result);
                 // Bound the in-memory cache; a long session must not retain
                 // every date range or match summary ever requested.
-                if (cache.size > 120) cache.delete(cache.keys().next().value!);
+                if (cache.size > 160) cache.delete(cache.keys().next().value!);
                 return result;
             } catch {
                 // Preserve the last known verified response and identify it as stale.
