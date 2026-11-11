@@ -350,8 +350,10 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
                 // A small public calendar is still useful, but is labelled as
                 // UNCONFIRMED and never exposes an IPTV watch action.
                 const current = Date.now();
-                startDate = dateStamp(current - 86400000);
-                endDate = dateStamp(current + 4 * 86400000);
+                // Include the forthcoming fortnight; short five-day spans
+                // may be empty during international breaks and holidays.
+                startDate = dateStamp(current - 3 * 86400000);
+                endDate = dateStamp(current + 14 * 86400000);
                 const sources = this.availableSources().map(x =>
                     this.normalized(x.title + ' ' + x.competition)).join(' ');
                 const filtered = leagues.filter(x => {
