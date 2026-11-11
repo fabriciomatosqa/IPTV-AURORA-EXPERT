@@ -164,6 +164,10 @@ export function groupSportsGuideEvents(broadcasts: readonly SportsBroadcast[],
             broadcast.competition);
         const grandPrix = sport === 'Automobilismo'
             ? identifyGrandPrix(broadcast.title + ' ' + broadcast.details) : '';
+        // Series (F1 / MotoGP / INDY) > Grand Prix > day > session > channels.
+        if (sport === 'Automobilismo')
+            comp.competition = grandPrix === 'Grande Prêmio / evento'
+                ? 'Outros eventos da série' : grandPrix;
         const session = sport === 'Automobilismo'
             ? identifyMotorSession(broadcast.title) : '';
         const participants = teams
