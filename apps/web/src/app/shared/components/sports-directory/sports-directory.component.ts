@@ -133,7 +133,8 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
             let budget = 28;
             for (const card of cards) {
                 for (const name of [card.home,card.away]) {
-                    if (!name || !budget || this.teamLogo(name)) continue;
+                    if (!name || !budget || this.badgeRequested.size >= 48 ||
+                        this.teamLogo(name)) continue;
                     const key = sportText(name);
                     if (this.badgeRequested.has(key)) continue;
                     this.badgeRequested.add(key);
