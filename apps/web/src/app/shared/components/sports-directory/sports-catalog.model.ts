@@ -72,16 +72,19 @@ export function classifySportsCompetition(sport: SportName, title: string,
             ligue1: has(text, /ligue 1|campeonato frances/),
         };
         const isEurope = Object.values(europe).some(Boolean) ||
-            ['uefa.champions','eng.1','esp.1'].includes(league);
+            ['uefa.champions','uefa.wchampions','uefa.europa','eng.1','esp.1',
+                'ger.1','ita.1','fra.1'].includes(league);
         if (isEurope) {
-            const women = has(text, /feminin|women|womens|women s/);
-            const competition = europe.champions || league === 'uefa.champions'
+            const women = league === 'uefa.wchampions' ||
+                has(text, /feminin|women|womens|women s/);
+            const competition = europe.champions || league === 'uefa.champions' ||
+                league === 'uefa.wchampions'
                 ? women ? 'Liga dos Campeões Feminina' : 'Liga dos Campeões'
-                : europe.europa ? 'Liga Europa'
+                : europe.europa || league === 'uefa.europa' ? 'Liga Europa'
                 : europe.premier || league === 'eng.1' ? 'Premier League'
                 : europe.laliga || league === 'esp.1' ? 'La Liga'
-                : europe.bundesliga ? 'Bundesliga'
-                : europe.seriea ? 'Campeonato Italiano' : 'Campeonato Francês';
+                : europe.bundesliga || league === 'ger.1' ? 'Bundesliga'
+                : europe.seriea || league === 'ita.1' ? 'Campeonato Italiano' : 'Campeonato Francês';
             return { section: 'europe', sectionTitle: 'Campeonatos europeus', rank: 4, competition };
         }
         if (league === 'conmebol.sudamericana' || has(text, /sul americana|sudamericana/))
