@@ -59,3 +59,20 @@ export function groupSportsBroadcastsByDay(broadcasts: readonly SportsBroadcast[
     }
     return [...byDay.values()];
 }
+
+/**
+ * When the IPTV guide identifies no fixture, keep a small, clearly-labelled
+ * public calendar rather than an empty sports page. This NEVER confirms an IPTV
+ * channel: only linked fixtures may show an Assistir button.
+ */
+export function selectFootballCardFixtures(
+    candidates: readonly SportsMatch[],
+    confirmedIds: ReadonlySet<string>,
+    liveOnly: boolean,
+    publicLimit = 36,
+): { games: SportsMatch[]; publicCalendar: boolean } {
+    const verified = candidates.filter(match => confirmedIds.has(match.id));
+    if (verified.length || liveOnly)
+        return { games: verified, publicCalendar: false };
+    return { games: candidates.slice(0, publicLimit), publicCalendar: candidates.length > 0 };
+}
