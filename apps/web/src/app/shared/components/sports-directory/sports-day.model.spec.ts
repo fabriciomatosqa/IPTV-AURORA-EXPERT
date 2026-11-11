@@ -39,7 +39,7 @@ describe('Aurora sports dated layout', () => {
     });
     it('keeps public live results visible but does not invent a channel', () => {
         const { selectFootballCardFixtures } = require('./sports-day.model');
-        const candidate = [match('live',10,20)];
+        const candidate = [{...match('live',10,20), state: 'live' as const}];
         const result = selectFootballCardFixtures(candidate,new Set<string>(),true);
         expect(result.games).toEqual(candidate);
         expect(result.publicCalendar).toBe(true);
