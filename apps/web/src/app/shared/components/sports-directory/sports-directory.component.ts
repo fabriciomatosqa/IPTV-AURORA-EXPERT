@@ -126,7 +126,7 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
             if (tab.key === 'f1' || (sport === 'Futebol'
                 ? this.scoreEvents().some(m => m.league === tab.key &&
                     (this.matchLinks().get(m.id)?.length || 0) > 0)
-                : this.allScores.get(tab.key)?.length))
+                : this.scoreEvents().some(m => m.league === tab.key)))
                 dedup.set(tab.name.toLocaleLowerCase(), tab);
         }
         for (const tab of actual) {
