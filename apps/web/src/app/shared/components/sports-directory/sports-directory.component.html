@@ -47,7 +47,7 @@
             @else if (loadingScores()) { Atualizando resultados… }
             @else if (staleScores()) { Fonte indisponível · dados anteriores podem estar desatualizados }
             @else if (!scoreAvailable()) { Resultados externos indisponíveis nesta execução }
-            @else { Resultados públicos separados da programação IPTV }
+            @else { Transmissões confirmadas pelo EPG · calendário público identificado separadamente }
         </span>
         @if (scoreChecked() && selectedSport() !== 'Automobilismo') {
             <small>Consulta: {{ displayTime(scoreChecked()) }}</small>
@@ -161,6 +161,16 @@
             </section>
         }
     } @else {
+        @if (showingPublicCalendar()) {
+            <div class="sports-public-notice" data-test-id="sports-public-calendar-notice">
+                <mat-icon>info</mat-icon>
+                <div><strong>Calendário esportivo — transmissões não confirmadas</strong>
+                    <p>Estes jogos vêm de resultados públicos. Sua playlist ainda não forneceu
+                    programação suficiente para confirmar os canais. Nenhum botão Assistir
+                    será mostrado sem correspondência real no EPG.</p>
+                </div>
+            </div>
+        }
         <div data-test-id="sports-games" class="sports-day-list">
             @for (day of groupedGames(); track day.key) {
                 <section class="sports-day" [attr.data-sports-day]="day.key">
@@ -215,6 +225,9 @@
                                     <footer class="match-footer">
                                         <span><mat-icon>calendar_today</mat-icon>{{ displayTime(match.kickoff) }}</span>
                                         <div class="match-actions">
+                                            @if (selectedSport() === 'Futebol' && !linkedBroadcasts(match).length) {
+                                                <small><mat-icon>info</mat-icon>Transmissão IPTV não confirmada</small>
+                                            }
                                             @if (watchableBroadcasts(match).length) {
                                                 <button type="button" class="match-watch"
                                                     (click)="watch.emit(watchableBroadcasts(match)[0].channel.id)">
