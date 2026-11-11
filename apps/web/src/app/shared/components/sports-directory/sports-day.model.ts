@@ -76,8 +76,19 @@ export function selectFootballCardFixtures(
         return { games: verified, publicCalendar: false };
     // "Ao Vivo" can still show independently verified public scores, but
     // never represent any IPTV channel as confirmed without an EPG match.
-    const limited = (liveOnly
+    const eligible = liveOnly
         ? candidates.filter(match => match.state === 'live')
-        : candidates).slice(0, publicLimit);
+        : candidates;
+    const upcoming = eligible.filter(match =>
+        match.state === 'live' || match.kickoff >= Date.now() - 2 * 3600000);
+    const history = eligible.filter(match =>
+        match.state !== 'live' && match.kickoff < Date.now() - 2 * 3600000);
+    // Prioritize today's live/upcoming fixtures over historic scores, but
+    // sort cards back into the same chronological day sections afterwards.
+    const recentLimit = upcoming.length ? Math.min(6, publicLimit) : publicLimit;
+    const limited = [
+        ...history.slice(-recentLimit),
+        ...upcoming.slice(0, Math.max(0,publicLimit - Math.min(history.length,recentLimit))),
+    ].sort((a,b) => a.kickoff - b.kickoff).slice(0,publicLimit);
     return { games: limited, publicCalendar: limited.length > 0 };
 }
