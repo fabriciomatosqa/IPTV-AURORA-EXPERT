@@ -284,7 +284,7 @@ export class SportsDirectoryComponent implements OnInit, OnDestroy {
             !force && this.timelineEvents().has(match.id)) return;
         const api = window.electron?.getAuroraSportsFeed;
         const eventId = match.id.split(':').slice(1).join(':');
-        if (!api || !/^\\d{1,15}$/.test(eventId)) return;
+        if (!api || !/^\d{1,15}$/.test(eventId)) return;
         this.timelineLoading.update(current => new Set([...current, match.id]));
         try {
             const response = await api({ kind: 'timeline', league: match.league, eventId });
