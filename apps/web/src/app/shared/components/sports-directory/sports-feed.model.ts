@@ -98,6 +98,71 @@ export function parseSportsScoreboard(raw: unknown, league: string, sport: strin
     }).sort((a, b) => a.kickoff - b.kickoff);
 }
 
+
+export interface SportsTimelineEvent {
+    id: string;
+    minute: string;
+    title: string;
+    description: string;
+    team: string;
+    icon: string;
+    order: number;
+}
+
+/** Extract only actual provider events, never synthesize goals or cards from scores.
+ * ESPN summaries vary by league and sometimes omit a play-by-play entirely. */
+export function parseSportsTimeline(raw: unknown): SportsTimelineEvent[] {
+    const data = object(raw);
+    const competition = object(array(object(data.header).competitions)[0]);
+    const candidates = [
+        ...array(data.keyEvents),
+        ...array(data.plays),
+        ...array(data.scoringPlays),
+        ...array(data.details),
+        ...array(competition.details),
+    ];
+    const seen = new Set<string>();
+    const result: SportsTimelineEvent[] = [];
+    for (const item of candidates) {
+        const event = object(item);
+        const kind = object(event.type);
+        const clock = object(event.clock);
+        const description = String(event.text || event.description ||
+            event.shortText || kind.text || kind.description || '').trim();
+        if (!description) continue;
+        const category = String(kind.text || kind.description || kind.name || '') + ' ' + description;
+        const normalized = category.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        let title = '', icon = 'info';
+        if (/own goal|gol contra/.test(normalized)) { title = 'Gol contra'; icon = 'sports_soccer'; }
+        else if (/penalty|penalti/.test(normalized) && /goal|gol|scor/.test(normalized)) {
+            title = 'Gol de pênalti'; icon = 'sports_soccer';
+        }
+        else if (/goal|gol|scor/.test(normalized)) { title = 'Gol'; icon = 'sports_soccer'; }
+        else if (/yellow|amarelo/.test(normalized)) { title = 'Cartão amarelo'; icon = 'style'; }
+        else if (/red card|vermelho|second yellow/.test(normalized)) { title = 'Cartão vermelho'; icon = 'style'; }
+        else if (/substitution|substituicao|substitui/.test(normalized)) {
+            title = 'Substituição'; icon = 'sync_alt';
+        }
+        else if (/var|video assistant/.test(normalized)) { title = 'VAR'; icon = 'videocam'; }
+        else if (/half.time|full.time|kick.off|period|intervalo|fim de jogo/.test(normalized)) {
+            title = 'Etapa da partida'; icon = 'schedule';
+        }
+        else continue; // Do not show miscellaneous commentary as verified match events.
+        const minute = String(clock.displayValue || event.displayClock ||
+            event.minute || event.time || '').trim();
+        const number = Number.parseInt(minute.replace(/[^0-9].*$/, ''), 10);
+        const order = Number.isFinite(number) ? number : result.length + 1000;
+        const team = object(event.team);
+        const teamName = String(team.displayName || team.name || '').trim();
+        const key = String(event.id || '') || [minute, normalized, teamName].join(':');
+        if (seen.has(key)) continue;
+        seen.add(key);
+        result.push({ id:key, minute, title, description:description.slice(0,300),
+            team:teamName, icon, order });
+    }
+    return result.sort((a,b) => a.order - b.order).slice(0,150);
+}
+
 export function parseF1Calendar(raw: unknown, year: number): F1Race[] {
     const data = object(object(raw).MRData);
     return flatten(array(object(data.RaceTable).Races),(row): F1Race[] => {
