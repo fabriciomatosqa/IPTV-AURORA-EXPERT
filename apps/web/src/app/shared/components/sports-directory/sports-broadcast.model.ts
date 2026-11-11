@@ -111,13 +111,45 @@ export function confirmedMatchBroadcasts(
     const normalize = (value: string): string =>
         String(value).normalize('NFD').replace(/[\u0300-\u036f]/g, '')
             .toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    const aliases: Record<string, string[]> = {
+        'atletico mg': ['atletico mineiro', 'galo', 'cam'],
+        'athletico pr': ['atletico paranaense', 'athletico paranaense', 'furacao', 'cap'],
+        'atletico pr': ['atletico paranaense', 'athletico paranaense', 'furacao', 'cap'],
+        'corinthians': ['sccp', 'timao'],
+        'palmeiras': ['sep', 'verdao'],
+        'sao paulo': ['spfc'],
+        'flamengo': ['fla', 'mengo'],
+        'fluminense': ['flu', 'fluminense rj'],
+        'gremio': ['gremio fbpa'],
+        'internacional': ['inter rs', 'sport club internacional'],
+        'vasco da gama': ['vasco', 'crvg'],
+        'red bull bragantino': ['bragantino', 'rb bragantino'],
+        'botafogo': ['botafogo rj', 'bfr'],
+        'cruzeiro': ['cruzeiro mg', 'cec'],
+        'vitoria': ['vitoria ba', 'ecv'],
+        'athletic club': ['athletic mg'],
+    };
     const drop = new Set(['club','clube','sport','football','futebol','associacao',
-        'esportiva','atletico','fc','sc','ac','de','do','da','dos','das','the']);
-    const homeWords = normalize(match.home.name).split(' ').filter(w=>w.length>=4 && !drop.has(w));
-    const awayWords = normalize(match.away.name).split(' ').filter(w=>w.length>=4 && !drop.has(w));
-    const uniqueHome = homeWords.filter(w=>!awayWords.includes(w));
-    const uniqueAway = awayWords.filter(w=>!homeWords.includes(w));
-    if (!uniqueHome.length || !uniqueAway.length) return [];
+        'esportiva','fc','sc','ac','de','do','da','dos','das','the']);
+    const variants = (name: string) => {
+        const key = normalize(name);
+        return [key, ...(aliases[key] || [])];
+    };
+    const homeVariants = variants(match.home.name);
+    const awayVariants = variants(match.away.name);
+    const homeWords = normalize(match.home.name).split(' ')
+        .filter(w => w.length >= 2 && !drop.has(w));
+    const awayWords = normalize(match.away.name).split(' ')
+        .filter(w => w.length >= 2 && !drop.has(w));
+    const uniqueHome = homeWords.filter(w => !awayWords.includes(w));
+    const uniqueAway = awayWords.filter(w => !homeWords.includes(w));
+    const contains = (haystack: string, token: string) =>
+        haystack.includes(' ' + token + ' ');
+    const hasTeam = (haystack: string, choices: string[], unique: string[]) =>
+        choices.some(choice => contains(haystack, choice)) ||
+        unique.length > 0 && unique.some(word => contains(haystack, word));
+    if ((!uniqueHome.length && homeVariants.length < 2) ||
+        (!uniqueAway.length && awayVariants.length < 2)) return [];
     return broadcasts.filter(airing => {
         if (airing.sport !== match.sport) return false;
         const timeDiff = airing.start - match.kickoff;
@@ -125,7 +157,7 @@ export function confirmedMatchBroadcasts(
         if (airing.replay && (timeDiff<0 || timeDiff>7*86400000)) return false;
         const description = ' ' + normalize(airing.title + ' ' + airing.details) + ' ';
         // Both distinct opponents must appear, not just a named broadcaster.
-        return uniqueHome.some(word=>description.includes(' '+word+' ')) &&
-               uniqueAway.some(word=>description.includes(' '+word+' '));
+        return hasTeam(description, homeVariants, uniqueHome) &&
+            hasTeam(description, awayVariants, uniqueAway);
     });
 }
