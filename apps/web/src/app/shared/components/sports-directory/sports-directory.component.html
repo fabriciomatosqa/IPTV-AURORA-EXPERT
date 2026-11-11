@@ -304,25 +304,44 @@
         <section class="sports-broadcasts" data-test-id="sports-broadcasts">
             <h2><mat-icon>live_tv</mat-icon> Transmissões identificadas na programação</h2>
             <p>Somente programas esportivos encontrados no guia (EPG) dos canais desta playlist.</p>
-            <div class="sports-broadcast-grid">
-                @for (broadcast of visibleBroadcasts(); track broadcast.id) {
-                    <article class="sports-broadcast-card">
-                        <div>
-                            <small>{{ broadcast.competition }}</small>
-                            <span class="broadcast-status"
-                                [class.broadcast-live]="broadcastStatus(broadcast) === 'AO VIVO'"
-                                [class.broadcast-replay]="broadcastStatus(broadcast) === 'REPRISE'">
-                                {{ broadcastStatus(broadcast) }}
-                            </span>
+            @for (day of groupedBroadcasts(); track day.key) {
+                <div class="sports-day">
+                    <button type="button" class="sports-day-heading"
+                        [attr.aria-expanded]="!collapsedDays().has('guide:' + day.key)"
+                        (click)="toggleDay('guide:' + day.key)">
+                        <span><mat-icon>calendar_month</mat-icon>{{ day.title }}</span>
+                        <span class="sports-day-count">{{ day.broadcasts.length }}
+                            {{ day.broadcasts.length === 1 ? 'transmissão' : 'transmissões' }}
+                            <mat-icon>{{ collapsedDays().has('guide:' + day.key) ? 'expand_more' : 'expand_less' }}</mat-icon>
+                        </span>
+                    </button>
+                    @if (!collapsedDays().has('guide:' + day.key)) {
+                        <div class="sports-broadcast-grid">
+                            @for (broadcast of day.broadcasts; track broadcast.id) {
+                                <article class="sports-broadcast-card">
+                                    <div>
+                                        <small>{{ broadcast.competition }}</small>
+                                        <span class="broadcast-status"
+                                            [class.broadcast-live]="broadcastStatus(broadcast) === 'AO VIVO'"
+                                            [class.broadcast-replay]="broadcastStatus(broadcast) === 'REPRISE'">
+                                            {{ broadcastStatus(broadcast) }}
+                                        </span>
+                                    </div>
+                                    <h3>{{ broadcast.title }}</h3>
+                                    <p>{{ displayTime(broadcast.start) }}</p>
+                                    @if (broadcast.start <= now() && broadcast.stop > now()) {
+                                        <button type="button" (click)="watch.emit(broadcast.channel.id)">
+                                            <mat-icon>play_arrow</mat-icon> Assistir {{ broadcast.channel.name }}
+                                        </button>
+                                    } @else {
+                                        <p>Canal previsto: {{ broadcast.channel.name }}</p>
+                                    }
+                                </article>
+                            }
                         </div>
-                        <h3>{{ broadcast.title }}</h3>
-                        <p>{{ displayDate(broadcast.start) }} · {{ displayTime(broadcast.start) }}</p>
-                        <button type="button" (click)="watch.emit(broadcast.channel.id)">
-                            <mat-icon>play_arrow</mat-icon> Assistir {{ broadcast.channel.name }}
-                        </button>
-                    </article>
-                }
-            </div>
+                    }
+                </div>
+            }
         </section>
     }
 
