@@ -211,3 +211,42 @@
 .sports-public-notice>mat-icon {color:#8be1cf;flex:none;}
 .sports-public-notice strong {font-size:13px;}
 .sports-public-notice p {font-size:12px;line-height:1.5;color:#aebfbc;margin:6px 0 0;}
+
+
+/* Sport → competition → chronological date → fixture/session → channels */
+.sports-competition-list { display:flex; flex-direction:column; gap:28px; }
+.sports-competition-section {
+    min-width:0; padding:16px; border:1px solid #31564f; border-radius:17px;
+    background:linear-gradient(140deg,#142726,#17202c 70%);
+}
+.sports-competition-heading {
+    display:flex; flex-wrap:wrap; align-items:center; gap:10px;
+    padding:3px 2px 13px; border-bottom:1px solid #436560; margin-bottom:15px;
+}
+.sports-competition-heading mat-icon {color:#79dfd2;}
+.sports-competition-heading h2 {font:700 19px 'Segoe UI',sans-serif;color:#eaf8f4;margin:0;flex:1;}
+.sports-competition-heading>span {font-size:11px;color:#93b7ae;}
+.sports-event-competition {margin:12px 0 18px;}
+.sports-competition-subheading {
+    display:flex;align-items:center;gap:8px;font:650 15px 'Segoe UI',sans-serif;
+    color:#bdeae3;margin:12px 0;
+}
+.sports-competition-subheading mat-icon {font-size:18px;width:20px;height:20px;color:#80dbcb;}
+.sports-event-competition .sports-day {margin:12px 0 16px;}
+.team-emblem {width:52px;height:52px;position:relative;flex:none;}
+.team-emblem .team-placeholder {position:absolute;inset:0;display:grid;place-items:center;}
+.team-emblem>img {position:absolute;inset:0;width:52px;height:52px;object-fit:contain;
+    background:#1b2730;border-radius:50%;padding:2px;}
+.guide-fixture-card {border-color:#49695e;}
+.guide-event-title {display:flex;flex-direction:column;align-items:center;gap:10px;
+    min-height:108px;justify-content:center;text-align:center;padding:15px 5px;}
+.guide-event-title strong {font-size:16px;color:#e6f5f1;}
+.guide-event-title span {display:flex;align-items:center;gap:5px;
+    font-size:13px;font-weight:700;color:#90e5d6;}
+.guide-event-title mat-icon {font-size:18px;width:18px;height:18px;}
+.sports-match-grid {grid-template-columns:repeat(auto-fit,minmax(min(100%,345px),1fr));}
+.sports-competition-section .match-card {padding:16px;}
+@media(max-width:720px) {
+    .sports-competition-section {padding:10px;}
+    .sports-competition-heading h2 {font-size:16px;}
+}
