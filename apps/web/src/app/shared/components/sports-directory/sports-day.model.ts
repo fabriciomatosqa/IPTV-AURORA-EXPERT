@@ -72,7 +72,10 @@ export function selectFootballCardFixtures(
     publicLimit = 36,
 ): { games: SportsMatch[]; publicCalendar: boolean } {
     const verified = candidates.filter(match => confirmedIds.has(match.id));
-    if (verified.length || liveOnly)
+    if (verified.length)
         return { games: verified, publicCalendar: false };
-    return { games: candidates.slice(0, publicLimit), publicCalendar: candidates.length > 0 };
+    // "Ao Vivo" can still show independently verified public scores, but
+    // never represent any IPTV channel as confirmed without an EPG match.
+    const limited = candidates.slice(0, publicLimit);
+    return { games: limited, publicCalendar: limited.length > 0 };
 }
